@@ -1,0 +1,5 @@
+matplotlib>=3.8
+plotly>=5.18
+numpy>=1.24
+manim>=0.18
+kaleido>=0.2
