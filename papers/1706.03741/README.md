@@ -33,12 +33,12 @@ Train an RL agent without a hand-designed reward function. Instead, a human watc
 
 ### Interactive Demos (HTML)
 
-| # | Script | Description | Output |
-|---|--------|-------------|--------|
-| 4 | `04_bradley_terry.py` | Epsilon slider, hover values | [HTML](output/interactive/04_bradley_terry.html) |
-| 5 | `05_cross_entropy_loss.py` | 3D rotatable loss surface | [HTML](output/interactive/05_cross_entropy_loss.html) |
-| 9 | `09_ablation_heatmap.py` | Hover-detail ablation heatmap | [HTML](output/interactive/09_ablation_heatmap.html) |
-| 10 | `10_preference_demo.py` | Full RLHF preference simulation | [HTML](output/interactive/10_preference_demo.html) |
+| # | Script | Description | Output | Live Demo |
+|---|--------|-------------|--------|-----------|
+| 4 | `04_bradley_terry.py` | Epsilon slider, hover values | [HTML](output/interactive/04_bradley_terry.html) | [Open](https://csking101.github.io/LuCiD-papers/papers/1706.03741/04_bradley_terry.html) |
+| 5 | `05_cross_entropy_loss.py` | 3D rotatable loss surface | [HTML](output/interactive/05_cross_entropy_loss.html) | [Open](https://csking101.github.io/LuCiD-papers/papers/1706.03741/05_cross_entropy_loss.html) |
+| 9 | `09_ablation_heatmap.py` | Hover-detail ablation heatmap | [HTML](output/interactive/09_ablation_heatmap.html) | [Open](https://csking101.github.io/LuCiD-papers/papers/1706.03741/09_ablation_heatmap.html) |
+| 10 | `10_preference_demo.py` | Full RLHF preference simulation | [HTML](output/interactive/10_preference_demo.html) | [Open](https://csking101.github.io/LuCiD-papers/papers/1706.03741/10_preference_demo.html) |
 
 ## Running
 
