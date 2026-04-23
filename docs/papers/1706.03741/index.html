@@ -356,6 +356,29 @@
         .callout p { margin-bottom: 0.4em; }
         .callout p:last-child { margin-bottom: 0; }
 
+        /* --- TL;DR box --- */
+        .tldr {
+            background: linear-gradient(135deg, #161b22, #1c2333);
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 20px 24px;
+            margin-bottom: 2em;
+        }
+        .tldr .tldr-label {
+            font-size: 0.75em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #f0883e;
+            margin-bottom: 8px;
+        }
+        .tldr p {
+            color: #c9d1d9;
+            font-size: 0.95em;
+            line-height: 1.7;
+            margin-bottom: 0;
+        }
+
         /* --- Section dividers between note/viz --- */
         .section-break {
             height: 1px;
@@ -638,6 +661,9 @@
         <a href="#ablations" data-section="ablations">Ablation Studies</a>
         <a href="#viz-09" data-section="viz-09" class="toc-viz">Ablation Heatmap</a>
         <a href="#conclusion" data-section="conclusion">Conclusion</a>
+        <a href="#compute-cost" data-section="compute-cost" class="toc-viz">Compute vs. Human Cost</a>
+        <a href="#limitations" data-section="limitations" class="toc-viz">Limitations</a>
+        <a href="#legacy" data-section="legacy" class="toc-viz">Historical Significance</a>
         <a href="#viz-10" data-section="viz-10" class="toc-viz">Interactive Demo</a>
     </aside>
 
@@ -654,6 +680,11 @@
             <a href="https://github.com/csking101/LuCiD-papers/tree/main/papers/1706.03741">GitHub</a> &mdash;
             <a href="https://github.com/csking101/LuCiD-papers/tree/main/papers/1706.03741/implementation">Implementation</a>
         </p>
+
+        <div class="tldr">
+            <div class="tldr-label">TL;DR</div>
+            <p>This paper shows you can train RL agents using human preferences instead of hand-designed reward functions. Show a human two short clips of agent behavior, ask which is better, and use those comparisons to learn a reward function. This works on MuJoCo robotics tasks (700 comparisons) and Atari games (5,500 comparisons), requiring feedback on less than 1% of the agent's interactions. It can even teach novel behaviors like backflips &mdash; in about an hour of human time. Published in 2017 by researchers from OpenAI and DeepMind, this is the foundational RLHF paper whose approach later powered InstructGPT and ChatGPT.</p>
+        </div>
 
         <!-- Top nav bar (shown on narrow screens where sidebar is hidden) -->
         <nav class="nav-bar" id="nav-bar">
@@ -731,6 +762,8 @@
                 <li>If an RL system needs to be useful, we need to communicate complex goals to these systems.</li>
                 <li>In this paper, goals are defined in terms of human preferences between pairs of trajectory segments.</li>
                 <li>Therefore, without access to the reward function, the RL task can be solved.</li>
+                <li>This works on Atari games and simulated robot locomotion, while providing feedback on less than 1% of the agent's interactions with the environment.</li>
+                <li>Novel complex behaviors can be trained with about an hour of human time &mdash; considerably more complex than any previously learned from human feedback.</li>
             </ul>
         </div>
 
@@ -741,6 +774,7 @@
                 <li>At the time, success was there in scaling RL with well defined reward functions.</li>
                 <li>That is not the usual case.</li>
                 <li>You can try coming up with a simple function, however, the RL will end up satisfying that function and not solving the overall task.</li>
+                <li>For example, suppose you wanted a robot to clean a table or scramble an egg &mdash; it's not clear how to write a reward function over the robot's sensors. A simple approximation will often result in behavior that games the reward without actually satisfying your preferences. This is a core concern in AI alignment.</li>
                 <li>It'd be better to try to convey objectives to the agents.</li>
                 <li>If you have demonstrations of the task, you can extract a reward function by using inverse RL.</li>
                 <li>You can use Imitation Learning, to clone the demonstrated behaviour as well.</li>
@@ -883,6 +917,10 @@
                 <li>If equal, then the distribution is uniform.</li>
                 <li>If uncomparable, then it's not included in the database.</li>
             </ul>
+
+            <div class="callout callout-insight">
+                <p><strong>Why comparisons instead of scores?</strong> The authors found it much easier for humans to provide consistent comparisons than consistent absolute scores. On continuous control tasks, predicting comparisons worked much better than predicting scores &mdash; likely because reward scales vary substantially, complicating the regression problem. Comparisons smooth this out: you only need to predict which is better, not by how much. This mirrors the Elo system in chess &mdash; you don't need to know how "good" a player is on an absolute scale, just who beats whom.</p>
+            </div>
         </div>
 
         <!-- Viz 3: Preference Elicitation -->
@@ -996,12 +1034,16 @@
             <h3>RL Tasks with Unobserved Rewards</h3>
             <p>Solve a range of benchmark tasks for deep RL without observing the true rewards. The agent learns about the goal by asking a human which segment is better.</p>
             <p>Feedback is given by contractors. Each trajectory segment is 1-2 seconds. Contractors responded in 3-5 seconds, total time was 0.5-5 hours.</p>
+            <p>For MuJoCo, <strong>700 queries</strong> were sent to human raters. For Atari, <strong>5,500 queries</strong>. A synthetic oracle (whose preferences exactly reflect the true reward) was also tested at 350, 700, and 1,400 labels for comparison. The baseline is standard RL with access to the true reward function.</p>
             <p>You can use a synthetic oracle whose preferences over trajectories exactly reflect reward in the underlying task. Aim is to do well without access to reward information, and rely on the scarce feedback. Human feedback can do better however.</p>
+            <p>Variable-length episodes were removed to avoid encoding task information in the termination conditions &mdash; for example, ending the episode when the robot falls over implicitly tells the agent that falling is bad, even without a reward signal.</p>
 
             <h4>Simulated Robotics</h4>
+            <p><strong>Tasks</strong>: Hopper, Walker, HalfCheetah, Reacher, Ant, Swimmer, Pendulum, Double Pendulum &mdash; 8 tasks total.</p>
             <p>Reward functions are linear functions of distances, positions and velocities, and all are quadratic functions of the features.</p>
-            <p>The learnt reward is better at higher queries, but it might be because it's better shaped.</p>
-            <p>Real human feedback is only slightly less effective than synthetic. There are biases too.</p>
+            <p>With 700 labels, the learned reward nearly matches standard RL on all tasks. At 1,400 labels, the RLHF agent actually <strong>slightly outperforms</strong> standard RL &mdash; likely because the learned reward is better shaped (it assigns positive rewards to all behaviors that are typically followed by high reward).</p>
+            <p>Real human feedback is only slightly less effective than synthetic. Depending on the task, human feedback ranged from half as efficient as ground truth to equally efficient.</p>
+            <p>On the Ant task, human feedback significantly <strong>outperformed</strong> synthetic because humans were asked to prefer trajectories where the robot was "standing upright," which provided useful reward shaping. The RL reward function had a similar bonus, but the simple hand-crafted version was not as useful.</p>
         </div>
 
         <!-- Viz 7: MuJoCo Results -->
@@ -1015,7 +1057,16 @@
         <!-- Atari -->
         <div class="note-section fade-in">
             <h4>Atari</h4>
+            <p><strong>Games tested</strong>: BeamRider, Breakout, Enduro, Pong, Qbert, Seaquest, SpaceInvaders &mdash; the same 7 games from Mnih et al. (2013).</p>
             <p>On most games, real human feedback is similar or slightly worse than synthetic, even if synthetic labels are 40% lesser. This may be due to human error in labelling, inconsistency between different contractors labelling the same run, or uneven rate of labelling by contractors. This can make some labels concentrated in the state space.</p>
+            <p>Specific results:</p>
+            <ul>
+                <li><strong>BeamRider and Pong</strong>: synthetic labels match or approach RL with only 3,300 labels.</li>
+                <li><strong>Seaquest and Qbert</strong>: eventually reach RL-level performance but learn more slowly.</li>
+                <li><strong>SpaceInvaders and Breakout</strong>: never fully match RL, but substantial improvement &mdash; passing the first level in SpaceInvaders, reaching a score of 20-50 on Breakout.</li>
+                <li><strong>Qbert</strong>: fails with real human feedback &mdash; short clips are confusing and difficult to evaluate.</li>
+                <li><strong>Enduro</strong>: human feedback <strong>outperforms</strong> RL &mdash; humans reward any progress towards passing cars, essentially providing reward shaping that A2C can't discover through random exploration alone.</li>
+            </ul>
         </div>
 
         <!-- Viz 8: Atari Results -->
@@ -1029,7 +1080,15 @@
         <!-- Novel Behaviours -->
         <div class="note-section fade-in">
             <h4>Novel Behaviours</h4>
-            <p>The evidence for novel behaviours was not entirely conclusive &mdash; it may or may not generalize reliably depending on the task setup and feedback quality.</p>
+            <p>The ultimate purpose of human interaction is to solve tasks where no reward function is available. Using the same parameters as the benchmark experiments, the authors demonstrate:</p>
+            <ul>
+                <li><strong>Hopper backflip</strong>: The robot learns to perform a sequence of backflips, landing upright each time, and repeat. Trained with <strong>900 queries</strong> in less than an hour. This is a behavior you can recognize but would be very hard to specify as a mathematical reward function.</li>
+                <li><strong>HalfCheetah one-legged running</strong>: The robot moves forward while balancing on one leg. Trained with <strong>800 queries</strong> in under an hour.</li>
+                <li><strong>Enduro driving with traffic</strong>: Rather than passing other cars, the agent learns to keep alongside them. Trained with <strong>~1,300 queries</strong> over 4 million frames. The agent stays even with moving cars for a substantial fraction of the episode, though it gets confused by background changes.</li>
+            </ul>
+            <div class="callout callout-key">
+                <p>These demonstrate the core promise of the approach: teaching behaviors you can <strong>recognize</strong> but can't easily <strong>demonstrate</strong> or <strong>specify</strong> as a reward function. A backflip is easy to judge ("did it land upright?") but nearly impossible to write as a mathematical function of joint angles and velocities.</p>
+            </div>
         </div>
 
         <div class="section-break"></div>
@@ -1043,8 +1102,11 @@
                 <p>In offline training, its performance was very poor. The nonstationarity of the occupancy distribution leads to the predictor capturing only a part of the true rewards, and maximising this partial reward can lead to bizarre behaviour that is undesirable as measured by the true reward. Thus, general human feedback is required.</p>
             </div>
 
+            <p>For instance, on Pong, offline training sometimes leads the agent to avoid losing points but not to score points &mdash; resulting in extremely long volleys that repeat the same sequence of events ad infinitum. This demonstrates that human feedback needs to be <strong>intertwined with RL learning</strong>, not provided statically.</p>
+
             <p>On the continuous control tasks, humans gave better scores/feedback. Prediction comparisons here was better than predicting scores. This is likely because the scale of rewards and scores makes things complicated.</p>
             <p>There were large performance differences in using single frames rather than clips. Asking humans to compare longer clips was more helpful per clip and significantly less helpful per frame. Short clips took time to understand the situation for humans, but for longer ones, it was a linear function of the clip length. In Atari, easier to compare longer clips since there is more context.</p>
+            <p>The authors tried to choose the shortest clip length for which evaluation time was linear &mdash; rather than dominated by the human just trying to figure out what's happening in the scene.</p>
         </div>
 
         <!-- Viz 9: Ablation Heatmap -->
@@ -1074,6 +1136,19 @@
                 <p>Agent-environment interactions are radically cheaper than human interaction. Learning a separate reward model using supervised learning reduces the interaction complexity by 3 orders of magnitude.</p>
             </div>
             <p>We can train deep RL agents from human preferences. Also, we are hitting diminishing returns on further improvements in non-expert feedback.</p>
+
+            <h3 id="compute-cost">Compute vs. Human Cost</h3>
+            <p>For the Atari experiments, compute cost was roughly <strong>$25</strong> (a VM with 16 CPUs and one K80 GPU for about a day). Training with 5,000 labels corresponds to roughly 5 hours of human labor, totaling about <strong>$36</strong> at US minimum wage. The fact that compute and human costs are already comparable means we're hitting diminishing returns on further sample-efficiency improvements.</p>
+
+            <h3 id="limitations">Limitations</h3>
+            <ul>
+                <li>The approach depends on the quality and consistency of human feedback. Contractors can be inconsistent, labels can cluster in narrow parts of state space, and some tasks (like Qbert) produce clips that are genuinely confusing to evaluate.</li>
+                <li>The reward model can be exploited &mdash; the policy may find behaviors that score highly under the learned reward without actually being desirable. This is why online learning (continually gathering new feedback) is critical.</li>
+                <li>The method is demonstrated on relatively simple environments. Scaling to more complex real-world tasks with higher-dimensional observations remains an open challenge.</li>
+            </ul>
+
+            <h3 id="legacy">Historical Significance</h3>
+            <p>This paper, authored by researchers from OpenAI (Christiano, Brown, Amodei) and DeepMind (Leike, Martic, Legg), established the RLHF framework that would reshape AI development. The same approach was later scaled to language models in <em>Learning to Summarize from Human Feedback</em> (Stiennon et al., 2020), then to <em>InstructGPT</em> (Ouyang et al., 2022), which directly led to ChatGPT. Dario Amodei went on to co-found Anthropic, where RLHF remains central to Claude's training. Jan Leike later led alignment research at OpenAI. This paper is where that entire trajectory began.</p>
         </div>
 
         <div class="section-break"></div>
@@ -1101,7 +1176,7 @@
                 <a href="https://arxiv.org/abs/1706.03741">Read on arXiv</a>
             </div>
             <p class="last-updated">Last updated: April 2026</p>
-            <p class="last-updated">Personal notes by Chinmaya Sahu. All code, visualizations, and web design generated by AI.</p>
+            <p class="last-updated">Notes by Chinmaya Sahu. Content polish, code, visualizations, and web design by AI.</p>
         </footer>
 
     </main>
