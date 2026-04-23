@@ -12,26 +12,128 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
     <style>
+        /* ============================================================
+           RESET & BASE
+           ============================================================ */
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
             background: #0d1117;
             color: #c9d1d9;
-            line-height: 1.6;
+            line-height: 1.7;
+            font-size: 16px;
         }
-        .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
         a { color: #58a6ff; text-decoration: none; }
         a:hover { text-decoration: underline; }
 
-        /* Header */
+        /* ============================================================
+           PROGRESS BAR
+           ============================================================ */
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            width: 0%;
+            background: linear-gradient(90deg, #58a6ff, #d2a8ff, #f0883e);
+            z-index: 9999;
+            transition: width 0.1s linear;
+        }
+
+        /* ============================================================
+           TWO-COLUMN LAYOUT
+           ============================================================ */
+        .page-wrapper {
+            display: flex;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        /* --- Sidebar (ToC) --- */
+        .toc-sidebar {
+            position: sticky;
+            top: 0;
+            align-self: flex-start;
+            width: 240px;
+            min-width: 240px;
+            height: 100vh;
+            overflow-y: auto;
+            padding: 40px 16px 40px 24px;
+            border-right: 1px solid #21262d;
+            background: #0d1117;
+            z-index: 50;
+        }
+        .toc-sidebar::-webkit-scrollbar { width: 4px; }
+        .toc-sidebar::-webkit-scrollbar-track { background: transparent; }
+        .toc-sidebar::-webkit-scrollbar-thumb { background: #30363d; border-radius: 2px; }
+
+        .toc-sidebar .toc-title {
+            font-size: 0.75em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #484f58;
+            margin-bottom: 12px;
+        }
+        .toc-sidebar a {
+            display: block;
+            padding: 5px 10px;
+            margin: 1px 0;
+            font-size: 0.82em;
+            color: #8b949e;
+            border-left: 2px solid transparent;
+            border-radius: 0 4px 4px 0;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        .toc-sidebar a:hover {
+            color: #c9d1d9;
+            background: #161b22;
+            text-decoration: none;
+        }
+        .toc-sidebar a.active {
+            color: #58a6ff;
+            border-left-color: #58a6ff;
+            background: #161b2280;
+            font-weight: 600;
+        }
+        .toc-sidebar a.toc-viz {
+            color: #6e7681;
+            font-size: 0.78em;
+            padding-left: 18px;
+        }
+        .toc-sidebar a.toc-viz.active {
+            color: #f0883e;
+            border-left-color: #f0883e;
+        }
+
+        /* --- Main content --- */
+        .main-content {
+            flex: 1;
+            min-width: 0;
+            max-width: 1200px;
+            padding: 40px 40px 40px 48px;
+        }
+
+        /* ============================================================
+           HEADER
+           ============================================================ */
         .breadcrumb { font-size: 0.9em; color: #8b949e; margin-bottom: 1em; }
         .breadcrumb a { color: #8b949e; }
         .breadcrumb a:hover { color: #58a6ff; }
-        h1 { font-size: 2em; color: #c9d1d9; margin-bottom: 0.2em; }
+        h1 {
+            font-size: 2.1em;
+            color: #e6edf3;
+            margin-bottom: 0.25em;
+            line-height: 1.25;
+        }
         .meta { color: #8b949e; font-size: 0.95em; margin-bottom: 1.5em; }
         .meta .arxiv { font-family: monospace; color: #f0883e; }
 
-        /* Navigation */
+        /* ============================================================
+           NAVIGATION BAR (top, for narrow screens & always)
+           ============================================================ */
         .nav-bar {
             background: #161b22;
             border: 1px solid #30363d;
@@ -39,53 +141,135 @@
             padding: 12px 16px;
             margin-bottom: 2em;
             position: sticky;
-            top: 0;
+            top: 3px; /* below progress bar */
             z-index: 100;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 4px;
         }
-        .nav-bar span.label { color: #8b949e; font-size: 0.85em; margin-right: 8px; }
+        .nav-bar span.label { color: #8b949e; font-size: 0.85em; margin-right: 6px; }
         .nav-bar a {
             display: inline-block;
             padding: 3px 10px;
-            margin: 3px 3px;
             background: #21262d;
             border: 1px solid #30363d;
             border-radius: 6px;
             font-size: 0.8em;
             color: #c9d1d9;
-            transition: background 0.2s;
+            transition: all 0.2s;
+            text-decoration: none;
         }
         .nav-bar a:hover { background: #30363d; text-decoration: none; }
+        .nav-bar a.active {
+            background: #58a6ff20;
+            border-color: #58a6ff60;
+            color: #58a6ff;
+        }
 
-        /* Note sections */
+        /* ============================================================
+           VISUALIZATION GALLERY (quick-jump grid)
+           ============================================================ */
+        .viz-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+            gap: 10px;
+            margin-bottom: 2.5em;
+        }
+        .viz-gallery-title {
+            font-size: 0.75em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #484f58;
+            margin-bottom: 10px;
+        }
+        .viz-card-mini {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            font-size: 0.78em;
+            color: #c9d1d9;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            border-left: 3px solid transparent;
+        }
+        .viz-card-mini:hover {
+            background: #1c2129;
+            border-color: #484f58;
+            text-decoration: none;
+        }
+        .viz-card-mini .mini-num {
+            font-weight: 700;
+            font-size: 1.1em;
+            min-width: 22px;
+        }
+        .viz-card-mini .mini-title { flex: 1; line-height: 1.3; }
+        .viz-card-mini .mini-tag {
+            font-size: 0.8em;
+            font-weight: 600;
+            padding: 1px 6px;
+            border-radius: 8px;
+        }
+        .viz-card-mini.tool-manim   { border-left-color: #3fb950; }
+        .viz-card-mini.tool-mpl     { border-left-color: #58a6ff; }
+        .viz-card-mini.tool-plotly   { border-left-color: #f0883e; }
+        .viz-card-mini.tool-multi    { border-left-color: #d2a8ff; }
+        .mini-tag-manim  { background: #3fb95020; color: #3fb950; }
+        .mini-tag-mpl    { background: #1f6feb20; color: #58a6ff; }
+        .mini-tag-plotly  { background: #f0883e20; color: #f0883e; }
+        .mini-tag-multi   { background: #d2a8ff20; color: #d2a8ff; }
+
+        /* ============================================================
+           NOTE SECTIONS
+           ============================================================ */
         .note-section {
-            margin-bottom: 2em;
+            margin-bottom: 2.5em;
+            scroll-margin-top: 60px;
         }
         .note-section h2 {
             font-size: 1.5em;
             color: #58a6ff;
-            margin-bottom: 0.5em;
+            margin-bottom: 0.6em;
             padding-bottom: 0.3em;
             border-bottom: 1px solid #21262d;
         }
         .note-section h3 {
             font-size: 1.2em;
             color: #d2a8ff;
-            margin: 1em 0 0.4em;
+            margin: 1.2em 0 0.5em;
         }
         .note-section h4 {
             font-size: 1.05em;
             color: #f0883e;
-            margin: 0.8em 0 0.3em;
+            margin: 1em 0 0.4em;
         }
         .note-section p {
-            margin-bottom: 0.6em;
+            margin-bottom: 0.7em;
             color: #c9d1d9;
         }
         .note-section ul, .note-section ol {
-            margin: 0.4em 0 0.8em 1.5em;
+            margin: 0.5em 0 1em 1.5em;
             color: #c9d1d9;
         }
         .note-section li {
+            margin-bottom: 0.35em;
+            padding-left: 0.2em;
+        }
+        .note-section li::marker {
+            color: #484f58;
+        }
+        .note-section ol li::marker {
+            color: #58a6ff;
+            font-weight: 600;
+        }
+        .note-section ul ul {
+            margin-top: 0.3em;
             margin-bottom: 0.3em;
         }
         .note-section em {
@@ -99,19 +283,104 @@
             background: #161b22;
             border: 1px solid #30363d;
             border-radius: 6px;
-            padding: 16px;
+            padding: 16px 20px;
             margin: 1em 0;
             overflow-x: auto;
         }
 
-        /* Viz sections */
+        /* --- Formal definition blockquote --- */
+        .formal-def {
+            border-left: 3px solid #d2a8ff;
+            background: #d2a8ff08;
+            padding: 16px 20px;
+            margin: 1.2em 0;
+            border-radius: 0 6px 6px 0;
+        }
+        .formal-def p { margin-bottom: 0.5em; }
+        .formal-def .math-block {
+            background: #0d1117;
+            border-color: #30363d;
+        }
+
+        /* --- Callout boxes --- */
+        .callout {
+            border-left: 3px solid #58a6ff;
+            background: #58a6ff08;
+            padding: 14px 18px;
+            margin: 1.2em 0;
+            border-radius: 0 6px 6px 0;
+            font-size: 0.95em;
+        }
+        .callout.callout-key {
+            border-left-color: #f0883e;
+            background: #f0883e08;
+        }
+        .callout.callout-key::before {
+            content: 'Key Idea';
+            display: block;
+            font-size: 0.8em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #f0883e;
+            margin-bottom: 6px;
+        }
+        .callout.callout-insight {
+            border-left-color: #d2a8ff;
+            background: #d2a8ff08;
+        }
+        .callout.callout-insight::before {
+            content: 'Insight';
+            display: block;
+            font-size: 0.8em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #d2a8ff;
+            margin-bottom: 6px;
+        }
+        .callout.callout-note {
+            border-left-color: #58a6ff;
+            background: #58a6ff08;
+        }
+        .callout.callout-note::before {
+            content: 'Note';
+            display: block;
+            font-size: 0.8em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #58a6ff;
+            margin-bottom: 6px;
+        }
+        .callout p { margin-bottom: 0.4em; }
+        .callout p:last-child { margin-bottom: 0; }
+
+        /* --- Section dividers between note/viz --- */
+        .section-break {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #30363d 20%, #30363d 80%, transparent);
+            margin: 2.5em 0;
+        }
+
+        /* ============================================================
+           VISUALIZATION SECTIONS
+           ============================================================ */
         .viz-section {
             background: #161b22;
             border: 1px solid #30363d;
             border-radius: 8px;
             padding: 24px;
-            margin: 1.5em 0;
+            margin: 1.8em 0;
+            scroll-margin-top: 60px;
+            border-left: 3px solid #30363d;
+            position: relative;
         }
+        .viz-section.viz-manim   { border-left-color: #3fb950; }
+        .viz-section.viz-mpl     { border-left-color: #58a6ff; }
+        .viz-section.viz-plotly   { border-left-color: #f0883e; }
+        .viz-section.viz-multi    { border-left-color: #d2a8ff; }
+
         .viz-section h2 {
             font-size: 1.3em;
             color: #c9d1d9;
@@ -126,13 +395,14 @@
             font-weight: 600;
             margin-bottom: 8px;
         }
-        .tag-manim { background: #3fb95033; color: #3fb950; }
-        .tag-matplotlib { background: #1f6feb33; color: #58a6ff; }
-        .tag-plotly { background: #f0883e33; color: #f0883e; }
+        .tag-manim { background: #3fb95020; color: #3fb950; }
+        .tag-matplotlib { background: #1f6feb20; color: #58a6ff; }
+        .tag-plotly { background: #f0883e20; color: #f0883e; }
         .viz-section .desc {
             color: #8b949e;
             font-size: 0.9em;
             margin-bottom: 16px;
+            line-height: 1.5;
         }
         .viz-section video {
             width: 100%;
@@ -143,6 +413,9 @@
             width: 100%;
             border-radius: 6px;
             background: #0d1117;
+        }
+        .viz-section .iframe-wrapper {
+            position: relative;
         }
         .viz-section iframe {
             width: 100%;
@@ -158,21 +431,218 @@
             color: #f0883e;
         }
         .viz-section .open-link:hover { color: #f0883e; }
-        .section-divider { margin: 12px 0; font-size: 0.85em; color: #484f58; }
+        .viz-section .section-divider { margin: 14px 0; font-size: 0.85em; color: #484f58; }
 
-        /* Footer */
+        /* --- Fullscreen button --- */
+        .fullscreen-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            color: #8b949e;
+            padding: 5px 8px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: all 0.2s;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .fullscreen-btn:hover {
+            background: #30363d;
+            color: #c9d1d9;
+        }
+        .fullscreen-btn svg {
+            width: 14px;
+            height: 14px;
+            fill: currentColor;
+        }
+
+        /* --- Fullscreen modal --- */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: #0d1117ee;
+            z-index: 10000;
+            padding: 20px;
+            cursor: pointer;
+        }
+        .modal-overlay.visible { display: flex; align-items: center; justify-content: center; }
+        .modal-overlay .modal-content {
+            width: 95vw;
+            height: 90vh;
+            position: relative;
+            cursor: default;
+        }
+        .modal-overlay iframe {
+            width: 100%;
+            height: 100%;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            background: #fff;
+        }
+        .modal-close {
+            position: absolute;
+            top: -36px;
+            right: 0;
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            color: #c9d1d9;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: background 0.2s;
+        }
+        .modal-close:hover { background: #30363d; }
+
+        /* ============================================================
+           FADE-IN ANIMATION
+           ============================================================ */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(16px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ============================================================
+           BACK-TO-TOP BUTTON
+           ============================================================ */
+        .back-to-top {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            width: 42px;
+            height: 42px;
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 50%;
+            color: #8b949e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 200;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px #00000060;
+        }
+        .back-to-top.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .back-to-top:hover {
+            background: #30363d;
+            color: #c9d1d9;
+            transform: translateY(-2px);
+        }
+        .back-to-top svg { width: 18px; height: 18px; fill: currentColor; }
+
+        /* ============================================================
+           FOOTER
+           ============================================================ */
         footer {
-            margin-top: 2em;
-            padding-top: 1em;
+            margin-top: 3em;
+            padding: 1.5em 0;
             border-top: 1px solid #21262d;
             color: #484f58;
             font-size: 0.85em;
             text-align: center;
         }
+        footer a { color: #58a6ff; }
+        footer .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        footer .last-updated {
+            margin-top: 6px;
+            font-size: 0.9em;
+            color: #30363d;
+        }
+
+        /* ============================================================
+           RESPONSIVE / MOBILE
+           ============================================================ */
+        @media (max-width: 1400px) {
+            .toc-sidebar { display: none; }
+            .main-content { padding: 40px 20px; }
+        }
+        @media (min-width: 1401px) {
+            .nav-bar { display: none; }
+        }
+        @media (max-width: 768px) {
+            h1 { font-size: 1.5em; }
+            .note-section h2 { font-size: 1.25em; }
+            .viz-section { padding: 16px; }
+            .viz-section iframe { height: 400px; }
+            .viz-gallery { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
+            .viz-card-mini { padding: 6px 10px; font-size: 0.75em; }
+            .nav-bar { padding: 10px 12px; }
+            .nav-bar a { font-size: 0.75em; padding: 3px 8px; }
+            .callout, .formal-def { padding: 12px 14px; }
+            .back-to-top { bottom: 16px; right: 16px; width: 38px; height: 38px; }
+        }
+        @media (max-width: 480px) {
+            body { font-size: 15px; }
+            h1 { font-size: 1.3em; }
+            .main-content { padding: 24px 14px; }
+            .viz-section iframe { height: 320px; }
+            .viz-gallery { grid-template-columns: 1fr 1fr; }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
+
+<!-- Progress bar -->
+<div class="progress-bar" id="progress-bar"></div>
+
+<!-- Fullscreen modal -->
+<div class="modal-overlay" id="modal-overlay">
+    <div class="modal-content">
+        <button class="modal-close" id="modal-close">Close (Esc)</button>
+        <iframe id="modal-iframe" src="" title="Fullscreen visualization"></iframe>
+    </div>
+</div>
+
+<div class="page-wrapper">
+
+    <!-- ===================== SIDEBAR (ToC) ===================== -->
+    <aside class="toc-sidebar" id="toc-sidebar">
+        <div class="toc-title">On This Page</div>
+        <a href="#abstract" data-section="abstract">Abstract</a>
+        <a href="#introduction" data-section="introduction">Introduction</a>
+        <a href="#viz-02" data-section="viz-02" class="toc-viz">RL vs RLHF Pipeline</a>
+        <a href="#method" data-section="method">Method</a>
+        <a href="#viz-01" data-section="viz-01" class="toc-viz">System Architecture</a>
+        <a href="#preference-elicitation" data-section="preference-elicitation">Preference Elicitation</a>
+        <a href="#viz-03" data-section="viz-03" class="toc-viz">Elicitation Flow</a>
+        <a href="#reward-function" data-section="reward-function">Reward Function</a>
+        <a href="#viz-04" data-section="viz-04" class="toc-viz">Bradley-Terry Model</a>
+        <a href="#viz-05" data-section="viz-05" class="toc-viz">Cross-Entropy Loss</a>
+        <a href="#selecting-queries" data-section="selecting-queries">Selecting Queries</a>
+        <a href="#viz-06" data-section="viz-06" class="toc-viz">Reward Convergence</a>
+        <a href="#results" data-section="results">Experimental Results</a>
+        <a href="#viz-07" data-section="viz-07" class="toc-viz">MuJoCo Results</a>
+        <a href="#viz-08" data-section="viz-08" class="toc-viz">Atari Results</a>
+        <a href="#ablations" data-section="ablations">Ablation Studies</a>
+        <a href="#viz-09" data-section="viz-09" class="toc-viz">Ablation Heatmap</a>
+        <a href="#conclusion" data-section="conclusion">Conclusion</a>
+        <a href="#viz-10" data-section="viz-10" class="toc-viz">Interactive Demo</a>
+    </aside>
+
+    <!-- ===================== MAIN CONTENT ===================== -->
+    <main class="main-content">
 
         <p class="breadcrumb"><a href="../../">LuCiD-papers</a> / papers /</p>
 
@@ -181,24 +651,81 @@
             <span class="arxiv">1706.03741</span> &mdash;
             Christiano, Leike, Brown, Martic, Legg, Amodei (2017) &mdash;
             <a href="https://arxiv.org/abs/1706.03741">arXiv</a> &mdash;
-            <a href="https://github.com/csking101/LuCiD-papers/tree/main/papers/1706.03741">GitHub</a>
+            <a href="https://github.com/csking101/LuCiD-papers/tree/main/papers/1706.03741">GitHub</a> &mdash;
+            <a href="https://github.com/csking101/LuCiD-papers/tree/main/papers/1706.03741/implementation">Implementation</a>
         </p>
 
-        <nav class="nav-bar">
+        <!-- Top nav bar (shown on narrow screens where sidebar is hidden) -->
+        <nav class="nav-bar" id="nav-bar">
             <span class="label">Sections:</span>
-            <a href="#abstract">Abstract</a>
-            <a href="#introduction">Introduction</a>
-            <a href="#method">Method</a>
-            <a href="#preference-elicitation">Preferences</a>
-            <a href="#reward-function">Reward Function</a>
-            <a href="#results">Results</a>
-            <a href="#ablations">Ablations</a>
-            <a href="#conclusion">Conclusion</a>
-            <a href="#viz-10">Interactive Demo</a>
+            <a href="#abstract" data-section="abstract">Abstract</a>
+            <a href="#introduction" data-section="introduction">Introduction</a>
+            <a href="#method" data-section="method">Method</a>
+            <a href="#preference-elicitation" data-section="preference-elicitation">Preferences</a>
+            <a href="#reward-function" data-section="reward-function">Reward Function</a>
+            <a href="#results" data-section="results">Results</a>
+            <a href="#ablations" data-section="ablations">Ablations</a>
+            <a href="#conclusion" data-section="conclusion">Conclusion</a>
+            <a href="#viz-10" data-section="viz-10">Interactive Demo</a>
         </nav>
 
+        <!-- ===================== VISUALIZATION GALLERY ===================== -->
+        <p class="viz-gallery-title">Visualizations (10)</p>
+        <div class="viz-gallery">
+            <a class="viz-card-mini tool-manim" href="#viz-01">
+                <span class="mini-num">1</span>
+                <span class="mini-title">System Architecture</span>
+                <span class="mini-tag mini-tag-manim">Manim</span>
+            </a>
+            <a class="viz-card-mini tool-manim" href="#viz-02">
+                <span class="mini-num">2</span>
+                <span class="mini-title">RL vs RLHF Pipeline</span>
+                <span class="mini-tag mini-tag-manim">Manim</span>
+            </a>
+            <a class="viz-card-mini tool-manim" href="#viz-03">
+                <span class="mini-num">3</span>
+                <span class="mini-title">Preference Elicitation</span>
+                <span class="mini-tag mini-tag-manim">Manim</span>
+            </a>
+            <a class="viz-card-mini tool-multi" href="#viz-04">
+                <span class="mini-num">4</span>
+                <span class="mini-title">Bradley-Terry Model</span>
+                <span class="mini-tag mini-tag-multi">MPL+Plotly</span>
+            </a>
+            <a class="viz-card-mini tool-multi" href="#viz-05">
+                <span class="mini-num">5</span>
+                <span class="mini-title">Cross-Entropy Loss</span>
+                <span class="mini-tag mini-tag-multi">MPL+Plotly</span>
+            </a>
+            <a class="viz-card-mini tool-manim" href="#viz-06">
+                <span class="mini-num">6</span>
+                <span class="mini-title">Reward Convergence</span>
+                <span class="mini-tag mini-tag-manim">Manim</span>
+            </a>
+            <a class="viz-card-mini tool-mpl" href="#viz-07">
+                <span class="mini-num">7</span>
+                <span class="mini-title">MuJoCo Results</span>
+                <span class="mini-tag mini-tag-mpl">Matplotlib</span>
+            </a>
+            <a class="viz-card-mini tool-mpl" href="#viz-08">
+                <span class="mini-num">8</span>
+                <span class="mini-title">Atari Results</span>
+                <span class="mini-tag mini-tag-mpl">Matplotlib</span>
+            </a>
+            <a class="viz-card-mini tool-multi" href="#viz-09">
+                <span class="mini-num">9</span>
+                <span class="mini-title">Ablation Heatmap</span>
+                <span class="mini-tag mini-tag-multi">MPL+Plotly</span>
+            </a>
+            <a class="viz-card-mini tool-plotly" href="#viz-10">
+                <span class="mini-num">10</span>
+                <span class="mini-title">Preference Simulation</span>
+                <span class="mini-tag mini-tag-plotly">Plotly</span>
+            </a>
+        </div>
+
         <!-- ==================== ABSTRACT ==================== -->
-        <div class="note-section" id="abstract">
+        <div class="note-section fade-in" id="abstract">
             <h2>Abstract</h2>
             <ul>
                 <li>If an RL system needs to be useful, we need to communicate complex goals to these systems.</li>
@@ -208,7 +735,7 @@
         </div>
 
         <!-- ==================== INTRODUCTION ==================== -->
-        <div class="note-section" id="introduction">
+        <div class="note-section fade-in" id="introduction">
             <h2>Introduction</h2>
             <ul>
                 <li>At the time, success was there in scaling RL with well defined reward functions.</li>
@@ -218,7 +745,13 @@
                 <li>If you have demonstrations of the task, you can extract a reward function by using inverse RL.</li>
                 <li>You can use Imitation Learning, to clone the demonstrated behaviour as well.</li>
                 <li>Another alternative is to allow a human to provide feedback on the system's current behaviour and use this feedback to define the task, however this is expensive. For deep RL systems, you need a lot of human feedback.</li>
-                <li>What the paper tries to do is &mdash; <em>learn a reward function from human feedback and then optimize that reward function</em></li>
+            </ul>
+
+            <div class="callout callout-key">
+                <p>What the paper tries to do is &mdash; <em>learn a reward function from human feedback and then optimize that reward function.</em></p>
+            </div>
+
+            <ul>
                 <li>Therefore, we want a well-specified reward function that:
                     <ul>
                         <li>enables us to solve tasks for which we can only recognize the desired behaviour, but not necessarily demonstrate it</li>
@@ -248,7 +781,7 @@
         </div>
 
         <!-- Viz 2: RL vs RLHF Pipeline -->
-        <div class="viz-section" id="viz-02">
+        <div class="viz-section viz-manim fade-in" id="viz-02">
             <h2><span class="num">#2</span> RL vs RLHF Pipeline</h2>
             <span class="tool-tag tag-manim">Manim</span>
             <p class="desc">Side-by-side comparison of the traditional RL pipeline (hand-designed reward) vs the RLHF pipeline (learned reward from human preferences).</p>
@@ -258,8 +791,10 @@
             </video>
         </div>
 
+        <div class="section-break"></div>
+
         <!-- ==================== METHOD ==================== -->
-        <div class="note-section" id="method">
+        <div class="note-section fade-in" id="method">
             <h2>Preliminaries and Method</h2>
 
             <h3>Setting and Goal</h3>
@@ -272,13 +807,15 @@
                 <li>The goal of the agent, is to produce <strong>trajectories that are preferred by human, while making as few queries to the human.</strong></li>
             </ul>
 
-            <p>We say that preferences $\succ$ are generated by a reward function $r : \mathcal{O} \times \mathcal{A} \rightarrow \mathbb{R}$ if</p>
-            <div class="math-block">
-                $$ ((o_0^1,a_0^1),...,(o_{k-1}^1,a_{k-1}^1)) \succ ((o_0^2,a_0^2),...,(o_{k-1}^2,a_{k-1}^2)) $$
-                whenever
-                $$ r(o_{0}^1,a_0^1) + ... + r(o_{k-1}^1,a_{k-1}^1) > r(o_{0}^2,a_0^2) + ... + r(o_{k-1}^2,a_{k-1}^2) $$
+            <div class="formal-def">
+                <p>We say that preferences $\succ$ are generated by a reward function $r : \mathcal{O} \times \mathcal{A} \rightarrow \mathbb{R}$ if</p>
+                <div class="math-block">
+                    $$ ((o_0^1,a_0^1),...,(o_{k-1}^1,a_{k-1}^1)) \succ ((o_0^2,a_0^2),...,(o_{k-1}^2,a_{k-1}^2)) $$
+                    whenever
+                    $$ r(o_{0}^1,a_0^1) + ... + r(o_{k-1}^1,a_{k-1}^1) > r(o_{0}^2,a_0^2) + ... + r(o_{k-1}^2,a_{k-1}^2) $$
+                </div>
+                <p>This means that preferences imply a higher total reward overall. If we know the reward function $r$, we can evaluate the agent quantitatively. However, sometimes there is no reward function by which we can quantitatively evaluate the same.</p>
             </div>
-            <p>This means that preferences imply a higher total reward overall. If we know the reward function $r$, we can evaluate the agent quantitatively. However, sometimes there is no reward function by which we can quantitatively evaluate the same.</p>
 
             <h3>Our Method</h3>
             <p>At each point in time, our method maintains a:</p>
@@ -293,7 +830,11 @@
                 <li>We select pairs of segments $(\sigma^1, \sigma^2)$ from the trajectories produced in step 1, and then send them to a human for comparison.</li>
                 <li>The parameters of the mapping $\widehat{r}$ are optimized via supervised learning to fit the comparisons collected from the human so far.</li>
             </ol>
-            <p>These 3 processes run asynchronously. Trajectories flow from process 1 &rarr; 2, human comparisons from 2 &rarr; 3, and parameters for $\widehat{r}$ from 3 &rarr; 1.</p>
+
+            <div class="callout callout-insight">
+                <p>These 3 processes run asynchronously. Trajectories flow from process 1 &rarr; 2, human comparisons from 2 &rarr; 3, and parameters for $\widehat{r}$ from 3 &rarr; 1.</p>
+            </div>
+
             <ul>
                 <li>Process 1 &rarr; Does the stuff and tries things out.</li>
                 <li>Process 2 &rarr; See's what stuff is done and asks a human to see what was good and what wasn't good.</li>
@@ -302,7 +843,7 @@
         </div>
 
         <!-- Viz 1: System Architecture -->
-        <div class="viz-section" id="viz-01">
+        <div class="viz-section viz-manim fade-in" id="viz-01">
             <h2><span class="num">#1</span> System Architecture</h2>
             <span class="tool-tag tag-manim">Manim</span>
             <p class="desc">Step-by-step animation of the three asynchronous processes: policy training, human preference collection, and reward model learning (Figure 1 from the paper).</p>
@@ -313,7 +854,7 @@
         </div>
 
         <!-- Optimizing the Policy -->
-        <div class="note-section">
+        <div class="note-section fade-in">
             <h3>Optimizing the Policy</h3>
             <p>After using $\widehat{r}$ to compute the rewards, it becomes a normal RL problem.</p>
             <p>We can use any algorithm to solve the problem. However, if $\widehat{r}$ is non-stationary, we would like to choose methods that are robust to changes in the reward function. This is why policy gradient methods are useful.</p>
@@ -322,12 +863,18 @@
                 <li>Advantage Actor-Critic (A2C) &rarr; Atari</li>
                 <li>Trust Region Policy Optimization (TRPO) &rarr; Simulated Robotics Tasks</li>
             </ul>
-            <p>Parameter settings were reused from traditional RL tasks. Only entropy bonus was adjusted for TRPO because TRPO relies on the trust region to ensure adequate exploration. If the reward function is changing, there might be inadequate exploration.</p>
+
+            <div class="callout callout-note">
+                <p>Parameter settings were reused from traditional RL tasks. Only entropy bonus was adjusted for TRPO because TRPO relies on the trust region to ensure adequate exploration. If the reward function is changing, there might be inadequate exploration.</p>
+            </div>
+
             <p>Rewards produced by $\widehat{r}$ were normalized to have zero mean and constant standard deviation. This is preprocessing, since the position of the rewards haven't been determined yet.</p>
         </div>
 
+        <div class="section-break"></div>
+
         <!-- ==================== PREFERENCE ELICITATION ==================== -->
-        <div class="note-section" id="preference-elicitation">
+        <div class="note-section fade-in" id="preference-elicitation">
             <h3>Preference Elicitation</h3>
             <p>The human is given a visualization of two segments, in the form of short movie clips, around 1-2 seconds long. The human says which is good, both good, or unable to compare.</p>
             <p>A database $\mathcal{D}$ of triples $(\sigma^1,\sigma^2,\mu)$, where $\mu$ is the distribution over $\{1,2\}$, indicating which segment the human preferred.</p>
@@ -339,7 +886,7 @@
         </div>
 
         <!-- Viz 3: Preference Elicitation -->
-        <div class="viz-section" id="viz-03">
+        <div class="viz-section viz-manim fade-in" id="viz-03">
             <h2><span class="num">#3</span> Preference Elicitation Flow</h2>
             <span class="tool-tag tag-manim">Manim</span>
             <p class="desc">Walkthrough of the 5-step preference collection process: segment sampling, pair presentation, human comparison, label recording, and reward model update.</p>
@@ -349,8 +896,10 @@
             </video>
         </div>
 
+        <div class="section-break"></div>
+
         <!-- ==================== FITTING THE REWARD FUNCTION ==================== -->
-        <div class="note-section" id="reward-function">
+        <div class="note-section fade-in" id="reward-function">
             <h3>Fitting the Reward Function</h3>
             <p>$\widehat{r}$ is interpreted as a preference-predictor, if we view it as a latent factor explaining the human's judgements and assume that the human's probability of preferring a segment $\sigma^i$ depends exponentially on the value of the latent reward summed over the length of the clip (here discounting isn't used):</p>
             <div class="math-block">
@@ -361,8 +910,11 @@
             <div class="math-block">
                 $$ \text{loss}(\widehat{r}) = - \sum_{(\sigma^1,\sigma^2,\mu)\in \mathcal{D}} \mu(1) \log\widehat{P} [\sigma^1 \succ \sigma^2] + \mu(2) \log\widehat{P} [\sigma^2 \succ \sigma^1] $$
             </div>
-            <p>This follows from the <strong>Bradley-Terry model</strong> &mdash; estimate score functions from pairwise-preferences. It is also the specialization of the <strong>Luce-Shephard choice rule</strong>, to preferences over trajectory segments.</p>
-            <p>It's similar to how difference in Elo points for chess players is calculated pairwise, and estimates the probability of one player defeating another in the game &mdash; the difference in the predicted reward of two trajectory segments estimates the probability that one is chosen over the other by the human.</p>
+
+            <div class="callout callout-insight">
+                <p>This follows from the <strong>Bradley-Terry model</strong> &mdash; estimate score functions from pairwise-preferences. It is also the specialization of the <strong>Luce-Shephard choice rule</strong>, to preferences over trajectory segments.</p>
+                <p>It's similar to how difference in Elo points for chess players is calculated pairwise, and estimates the probability of one player defeating another in the game &mdash; the difference in the predicted reward of two trajectory segments estimates the probability that one is chosen over the other by the human.</p>
+            </div>
 
             <p>There were some modifications done in the approach:</p>
             <ul>
@@ -373,7 +925,7 @@
         </div>
 
         <!-- Viz 4: Bradley-Terry Model -->
-        <div class="viz-section" id="viz-04">
+        <div class="viz-section viz-multi fade-in" id="viz-04">
             <h2><span class="num">#4</span> Bradley-Terry Model</h2>
             <span class="tool-tag tag-matplotlib">Matplotlib</span>
             <span class="tool-tag tag-plotly">Plotly</span>
@@ -381,11 +933,17 @@
             <p class="section-divider">Static figure</p>
             <img src="https://raw.githubusercontent.com/csking101/LuCiD-papers/main/papers/1706.03741/output/static/04_bradley_terry.png" alt="Bradley-Terry Model static figure" loading="lazy">
             <p class="section-divider">Interactive demo &mdash; <a class="open-link" href="04_bradley_terry.html" target="_blank">Open in new tab &rarr;</a></p>
-            <iframe src="04_bradley_terry.html" loading="lazy" title="Bradley-Terry interactive"></iframe>
+            <div class="iframe-wrapper">
+                <button class="fullscreen-btn" data-src="04_bradley_terry.html" title="View fullscreen">
+                    <svg viewBox="0 0 16 16"><path d="M1.5 1h4a.5.5 0 010 1H2v3.5a.5.5 0 01-1 0v-4a.5.5 0 01.5-.5zm13 0a.5.5 0 01.5.5v4a.5.5 0 01-1 0V2h-3.5a.5.5 0 010-1h4zM1 10.5a.5.5 0 011 0V14h3.5a.5.5 0 010 1h-4a.5.5 0 01-.5-.5v-4zm14 0a.5.5 0 01-1 0V14h-3.5a.5.5 0 010 1h4a.5.5 0 00.5-.5v-4z"/></svg>
+                    Fullscreen
+                </button>
+                <iframe src="04_bradley_terry.html" loading="lazy" title="Bradley-Terry interactive"></iframe>
+            </div>
         </div>
 
         <!-- Viz 5: Cross-Entropy Loss -->
-        <div class="viz-section" id="viz-05">
+        <div class="viz-section viz-multi fade-in" id="viz-05">
             <h2><span class="num">#5</span> Cross-Entropy Loss</h2>
             <span class="tool-tag tag-matplotlib">Matplotlib</span>
             <span class="tool-tag tag-plotly">Plotly</span>
@@ -393,11 +951,17 @@
             <p class="section-divider">Static figure</p>
             <img src="https://raw.githubusercontent.com/csking101/LuCiD-papers/main/papers/1706.03741/output/static/05_cross_entropy_loss.png" alt="Cross-Entropy Loss static figure" loading="lazy">
             <p class="section-divider">Interactive demo &mdash; <a class="open-link" href="05_cross_entropy_loss.html" target="_blank">Open in new tab &rarr;</a></p>
-            <iframe src="05_cross_entropy_loss.html" loading="lazy" title="Cross-Entropy Loss interactive"></iframe>
+            <div class="iframe-wrapper">
+                <button class="fullscreen-btn" data-src="05_cross_entropy_loss.html" title="View fullscreen">
+                    <svg viewBox="0 0 16 16"><path d="M1.5 1h4a.5.5 0 010 1H2v3.5a.5.5 0 01-1 0v-4a.5.5 0 01.5-.5zm13 0a.5.5 0 01.5.5v4a.5.5 0 01-1 0V2h-3.5a.5.5 0 010-1h4zM1 10.5a.5.5 0 011 0V14h3.5a.5.5 0 010 1h-4a.5.5 0 01-.5-.5v-4zm14 0a.5.5 0 01-1 0V14h-3.5a.5.5 0 010 1h4a.5.5 0 00.5-.5v-4z"/></svg>
+                    Fullscreen
+                </button>
+                <iframe src="05_cross_entropy_loss.html" loading="lazy" title="Cross-Entropy Loss interactive"></iframe>
+            </div>
         </div>
 
         <!-- Selecting Queries -->
-        <div class="note-section">
+        <div class="note-section fade-in" id="selecting-queries">
             <h3>Selecting Queries</h3>
             <p>Preferences are queries based on an approximation to uncertainty in the reward function estimator.</p>
             <ol>
@@ -405,11 +969,14 @@
                 <li>Use each reward predictor in our ensemble to predict which segment will be preferred from each pair.</li>
                 <li>Select those trajectories for which the predictions have the highest variance across the ensemble members.</li>
             </ol>
-            <p>This is a crude approximation &mdash; in some tasks it impairs performance. Ideally, we would want to query based on the expected value of the information of the query.</p>
+
+            <div class="callout callout-note">
+                <p>This is a crude approximation &mdash; in some tasks it impairs performance. Ideally, we would want to query based on the expected value of the information of the query.</p>
+            </div>
         </div>
 
         <!-- Viz 6: Reward Convergence -->
-        <div class="viz-section" id="viz-06">
+        <div class="viz-section viz-manim fade-in" id="viz-06">
             <h2><span class="num">#6</span> Reward Convergence</h2>
             <span class="tool-tag tag-manim">Manim</span>
             <p class="desc">Animation showing how the reward model's predictions improve and converge as more human comparison data is collected over time.</p>
@@ -419,8 +986,10 @@
             </video>
         </div>
 
+        <div class="section-break"></div>
+
         <!-- ==================== EXPERIMENTAL RESULTS ==================== -->
-        <div class="note-section" id="results">
+        <div class="note-section fade-in" id="results">
             <h2>Experimental Results</h2>
             <p>In TensorFlow, MuJoCo and Arcade Learning Environment interfaced with OpenAI Gym.</p>
 
@@ -436,7 +1005,7 @@
         </div>
 
         <!-- Viz 7: MuJoCo Results -->
-        <div class="viz-section" id="viz-07">
+        <div class="viz-section viz-mpl fade-in" id="viz-07">
             <h2><span class="num">#7</span> MuJoCo Results</h2>
             <span class="tool-tag tag-matplotlib">Matplotlib</span>
             <p class="desc">8-panel reproduction of Figure 2 from the paper: learning curves across MuJoCo continuous control tasks comparing RLHF agents against RL baselines.</p>
@@ -444,13 +1013,13 @@
         </div>
 
         <!-- Atari -->
-        <div class="note-section">
+        <div class="note-section fade-in">
             <h4>Atari</h4>
             <p>On most games, real human feedback is similar or slightly worse than synthetic, even if synthetic labels are 40% lesser. This may be due to human error in labelling, inconsistency between different contractors labelling the same run, or uneven rate of labelling by contractors. This can make some labels concentrated in the state space.</p>
         </div>
 
         <!-- Viz 8: Atari Results -->
-        <div class="viz-section" id="viz-08">
+        <div class="viz-section viz-mpl fade-in" id="viz-08">
             <h2><span class="num">#8</span> Atari Results</h2>
             <span class="tool-tag tag-matplotlib">Matplotlib</span>
             <p class="desc">7-panel reproduction of Figure 3 from the paper: learning curves across Atari games comparing RLHF agents against RL baselines.</p>
@@ -458,22 +1027,28 @@
         </div>
 
         <!-- Novel Behaviours -->
-        <div class="note-section">
+        <div class="note-section fade-in">
             <h4>Novel Behaviours</h4>
             <p>The evidence for novel behaviours was not entirely conclusive &mdash; it may or may not generalize reliably depending on the task setup and feedback quality.</p>
         </div>
 
+        <div class="section-break"></div>
+
         <!-- ==================== ABLATION STUDIES ==================== -->
-        <div class="note-section" id="ablations">
+        <div class="note-section fade-in" id="ablations">
             <h2>Ablation Studies</h2>
             <p>Changes tested: random queries, no ensemble, no online queries (only those gathered at the beginning of training, not throughout), no regularization, no segments, target (true rewards).</p>
-            <p>In offline training, its performance was very poor. The nonstationarity of the occupancy distribution leads to the predictor capturing only a part of the true rewards, and maximising this partial reward can lead to bizarre behaviour that is undesirable as measured by the true reward. Thus, general human feedback is required.</p>
+
+            <div class="callout callout-key">
+                <p>In offline training, its performance was very poor. The nonstationarity of the occupancy distribution leads to the predictor capturing only a part of the true rewards, and maximising this partial reward can lead to bizarre behaviour that is undesirable as measured by the true reward. Thus, general human feedback is required.</p>
+            </div>
+
             <p>On the continuous control tasks, humans gave better scores/feedback. Prediction comparisons here was better than predicting scores. This is likely because the scale of rewards and scores makes things complicated.</p>
             <p>There were large performance differences in using single frames rather than clips. Asking humans to compare longer clips was more helpful per clip and significantly less helpful per frame. Short clips took time to understand the situation for humans, but for longer ones, it was a linear function of the clip length. In Atari, easier to compare longer clips since there is more context.</p>
         </div>
 
         <!-- Viz 9: Ablation Heatmap -->
-        <div class="viz-section" id="viz-09">
+        <div class="viz-section viz-multi fade-in" id="viz-09">
             <h2><span class="num">#9</span> Ablation Heatmap</h2>
             <span class="tool-tag tag-matplotlib">Matplotlib</span>
             <span class="tool-tag tag-plotly">Plotly</span>
@@ -481,30 +1056,222 @@
             <p class="section-divider">Static figure</p>
             <img src="https://raw.githubusercontent.com/csking101/LuCiD-papers/main/papers/1706.03741/output/static/09_ablation_heatmap.png" alt="Ablation Heatmap static figure" loading="lazy">
             <p class="section-divider">Interactive demo &mdash; <a class="open-link" href="09_ablation_heatmap.html" target="_blank">Open in new tab &rarr;</a></p>
-            <iframe src="09_ablation_heatmap.html" loading="lazy" title="Ablation Heatmap interactive"></iframe>
+            <div class="iframe-wrapper">
+                <button class="fullscreen-btn" data-src="09_ablation_heatmap.html" title="View fullscreen">
+                    <svg viewBox="0 0 16 16"><path d="M1.5 1h4a.5.5 0 010 1H2v3.5a.5.5 0 01-1 0v-4a.5.5 0 01.5-.5zm13 0a.5.5 0 01.5.5v4a.5.5 0 01-1 0V2h-3.5a.5.5 0 010-1h4zM1 10.5a.5.5 0 011 0V14h3.5a.5.5 0 010 1h-4a.5.5 0 01-.5-.5v-4zm14 0a.5.5 0 01-1 0V14h-3.5a.5.5 0 010 1h4a.5.5 0 00.5-.5v-4z"/></svg>
+                    Fullscreen
+                </button>
+                <iframe src="09_ablation_heatmap.html" loading="lazy" title="Ablation Heatmap interactive"></iframe>
+            </div>
         </div>
+
+        <div class="section-break"></div>
 
         <!-- ==================== DISCUSSION ==================== -->
-        <div class="note-section" id="conclusion">
+        <div class="note-section fade-in" id="conclusion">
             <h2>Discussion and Conclusions</h2>
-            <p>Agent environment interactions are radically cheaper than human interaction. Learning a separate reward model using supervised learning reduces the interaction complexity by 3 orders of magnitude. We can train deep RL agents from human preferences. Also, we are hitting diminishing returns on further improvements in non-expert feedback.</p>
+            <div class="callout callout-key">
+                <p>Agent-environment interactions are radically cheaper than human interaction. Learning a separate reward model using supervised learning reduces the interaction complexity by 3 orders of magnitude.</p>
+            </div>
+            <p>We can train deep RL agents from human preferences. Also, we are hitting diminishing returns on further improvements in non-expert feedback.</p>
         </div>
 
+        <div class="section-break"></div>
+
         <!-- ==================== INTERACTIVE DEMO ==================== -->
-        <div class="viz-section" id="viz-10">
+        <div class="viz-section viz-plotly fade-in" id="viz-10">
             <h2><span class="num">#10</span> Interactive Preference Simulation</h2>
             <span class="tool-tag tag-plotly">Plotly</span>
             <p class="desc">Full interactive RLHF preference simulation: generate trajectory pairs, make preference comparisons, and watch the reward model learn in real time.</p>
             <p class="section-divider">Interactive demo &mdash; <a class="open-link" href="10_preference_demo.html" target="_blank">Open in new tab &rarr;</a></p>
-            <iframe src="10_preference_demo.html" loading="lazy" style="height: 700px;" title="Preference Simulation interactive"></iframe>
+            <div class="iframe-wrapper">
+                <button class="fullscreen-btn" data-src="10_preference_demo.html" title="View fullscreen">
+                    <svg viewBox="0 0 16 16"><path d="M1.5 1h4a.5.5 0 010 1H2v3.5a.5.5 0 01-1 0v-4a.5.5 0 01.5-.5zm13 0a.5.5 0 01.5.5v4a.5.5 0 01-1 0V2h-3.5a.5.5 0 010-1h4zM1 10.5a.5.5 0 011 0V14h3.5a.5.5 0 010 1h-4a.5.5 0 01-.5-.5v-4zm14 0a.5.5 0 01-1 0V14h-3.5a.5.5 0 010 1h4a.5.5 0 00.5-.5v-4z"/></svg>
+                    Fullscreen
+                </button>
+                <iframe src="10_preference_demo.html" loading="lazy" style="height: 700px;" title="Preference Simulation interactive"></iframe>
+            </div>
         </div>
 
         <footer>
-            <p>
-                <a href="../../">Back to LuCiD-papers</a> &mdash;
+            <div class="footer-links">
+                <a href="../../">Back to LuCiD-papers</a>
                 <a href="https://github.com/csking101/LuCiD-papers/tree/main/papers/1706.03741">View source on GitHub</a>
-            </p>
+                <a href="https://github.com/csking101/LuCiD-papers/tree/main/papers/1706.03741/implementation">Implementation (Cat Grid-World)</a>
+                <a href="https://arxiv.org/abs/1706.03741">Read on arXiv</a>
+            </div>
+            <p class="last-updated">Last updated: April 2026</p>
         </footer>
-    </div>
+
+    </main>
+</div>
+
+<!-- Back to top button -->
+<button class="back-to-top" id="back-to-top" title="Back to top">
+    <svg viewBox="0 0 16 16"><path d="M8 2.5l5.5 5.5H10v5.5H6V8H2.5L8 2.5z"/></svg>
+</button>
+
+<script>
+(function() {
+    'use strict';
+
+    // =============================================
+    // SCROLL PROGRESS BAR
+    // =============================================
+    const progressBar = document.getElementById('progress-bar');
+    function updateProgress() {
+        const scrollTop = window.scrollY;
+        const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+        const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+        progressBar.style.width = progress + '%';
+    }
+
+    // =============================================
+    // BACK-TO-TOP BUTTON
+    // =============================================
+    const backToTop = document.getElementById('back-to-top');
+    function updateBackToTop() {
+        if (window.scrollY > 400) {
+            backToTop.classList.add('visible');
+        } else {
+            backToTop.classList.remove('visible');
+        }
+    }
+    backToTop.addEventListener('click', function() {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    // Combined scroll handler (throttled via rAF)
+    let ticking = false;
+    window.addEventListener('scroll', function() {
+        if (!ticking) {
+            requestAnimationFrame(function() {
+                updateProgress();
+                updateBackToTop();
+                ticking = false;
+            });
+            ticking = true;
+        }
+    });
+
+    // =============================================
+    // ACTIVE SECTION HIGHLIGHTING (IntersectionObserver)
+    // =============================================
+    const sections = document.querySelectorAll('[id]');
+    const tocLinks = document.querySelectorAll('.toc-sidebar a[data-section]');
+    const navLinks = document.querySelectorAll('.nav-bar a[data-section]');
+
+    const sectionObserver = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+                const id = entry.target.id;
+                // Update sidebar links
+                tocLinks.forEach(function(link) {
+                    if (link.getAttribute('data-section') === id) {
+                        link.classList.add('active');
+                    } else {
+                        link.classList.remove('active');
+                    }
+                });
+                // Update nav bar links
+                navLinks.forEach(function(link) {
+                    if (link.getAttribute('data-section') === id) {
+                        link.classList.add('active');
+                    } else {
+                        link.classList.remove('active');
+                    }
+                });
+            }
+        });
+    }, {
+        rootMargin: '-10% 0px -75% 0px',
+        threshold: 0
+    });
+
+    sections.forEach(function(section) {
+        if (section.id) {
+            sectionObserver.observe(section);
+        }
+    });
+
+    // =============================================
+    // FADE-IN ON SCROLL (IntersectionObserver)
+    // =============================================
+    const fadeElements = document.querySelectorAll('.fade-in');
+    const fadeObserver = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+                fadeObserver.unobserve(entry.target);
+            }
+        });
+    }, {
+        rootMargin: '0px 0px -60px 0px',
+        threshold: 0.05
+    });
+
+    fadeElements.forEach(function(el) {
+        fadeObserver.observe(el);
+    });
+
+    // =============================================
+    // FULLSCREEN MODAL FOR IFRAMES
+    // =============================================
+    const modalOverlay = document.getElementById('modal-overlay');
+    const modalIframe = document.getElementById('modal-iframe');
+    const modalClose = document.getElementById('modal-close');
+
+    document.querySelectorAll('.fullscreen-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var src = btn.getAttribute('data-src');
+            modalIframe.src = src;
+            modalOverlay.classList.add('visible');
+            document.body.style.overflow = 'hidden';
+        });
+    });
+
+    function closeModal() {
+        modalOverlay.classList.remove('visible');
+        modalIframe.src = '';
+        document.body.style.overflow = '';
+    }
+
+    modalClose.addEventListener('click', closeModal);
+    modalOverlay.addEventListener('click', function(e) {
+        if (e.target === modalOverlay) closeModal();
+    });
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && modalOverlay.classList.contains('visible')) {
+            closeModal();
+        }
+    });
+
+    // =============================================
+    // LAZY VIDEO LOADING (IntersectionObserver)
+    // =============================================
+    const videos = document.querySelectorAll('video[preload="metadata"]');
+    const videoObserver = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+                var video = entry.target;
+                video.preload = 'auto';
+                videoObserver.unobserve(video);
+            }
+        });
+    }, {
+        rootMargin: '200px 0px',
+        threshold: 0
+    });
+
+    videos.forEach(function(video) {
+        videoObserver.observe(video);
+    });
+
+    // Initial state
+    updateProgress();
+    updateBackToTop();
+})();
+</script>
+
 </body>
 </html>
