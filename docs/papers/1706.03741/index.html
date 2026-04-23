@@ -11,6 +11,7 @@
         };
     </script>
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js" charset="utf-8"></script>
     <style>
         /* ============================================================
            RESET & BASE
@@ -623,6 +624,73 @@
             .viz-section iframe { height: 320px; }
             .viz-gallery { grid-template-columns: 1fr 1fr; }
         }
+
+        /* ============================================================
+           RLHF IMPLEMENTATION DEMO
+           ============================================================ */
+        .rlhf-grid-row {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin: 16px 0;
+        }
+        .rlhf-canvas-box {
+            text-align: center;
+        }
+        .rlhf-canvas-box canvas {
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            background: #161b22;
+            display: block;
+            max-width: 100%;
+        }
+        .rlhf-canvas-box .canvas-label {
+            font-size: 0.85em;
+            color: #8b949e;
+            margin-top: 6px;
+        }
+        .rlhf-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+        .rlhf-btn {
+            padding: 5px 12px;
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            color: #c9d1d9;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: background 0.2s;
+        }
+        .rlhf-btn:hover { background: #30363d; }
+        .rlhf-status {
+            font-size: 0.85em;
+            color: #8b949e;
+            font-family: monospace;
+        }
+        .rlhf-legend {
+            display: flex;
+            gap: 16px;
+            font-size: 0.82em;
+            color: #8b949e;
+            margin: 8px 0;
+            flex-wrap: wrap;
+        }
+        .rlhf-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .rlhf-legend-swatch {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+            display: inline-block;
+        }
     </style>
 </head>
 <body>
@@ -664,6 +732,12 @@
         <a href="#compute-cost" data-section="compute-cost" class="toc-viz">Compute vs. Human Cost</a>
         <a href="#limitations" data-section="limitations" class="toc-viz">Limitations</a>
         <a href="#legacy" data-section="legacy" class="toc-viz">Historical Significance</a>
+        <a href="#rlhf-demo" data-section="rlhf-demo">Implementation Demo</a>
+        <a href="#demo-policy" data-section="demo-policy" class="toc-viz">Policy Grids</a>
+        <a href="#demo-reward" data-section="demo-reward" class="toc-viz">Reward Heatmap</a>
+        <a href="#demo-curves" data-section="demo-curves" class="toc-viz">Training Curves</a>
+        <a href="#demo-trajectory" data-section="demo-trajectory" class="toc-viz">Trajectory Animation</a>
+        <a href="#demo-preferences" data-section="demo-preferences" class="toc-viz">Preference Pairs</a>
         <a href="#viz-10" data-section="viz-10" class="toc-viz">Interactive Demo</a>
     </aside>
 
@@ -697,6 +771,7 @@
             <a href="#results" data-section="results">Results</a>
             <a href="#ablations" data-section="ablations">Ablations</a>
             <a href="#conclusion" data-section="conclusion">Conclusion</a>
+            <a href="#rlhf-demo" data-section="rlhf-demo">Implementation</a>
             <a href="#viz-10" data-section="viz-10">Interactive Demo</a>
         </nav>
 
@@ -1153,6 +1228,97 @@
 
         <div class="section-break"></div>
 
+        <!-- ==================== RLHF IMPLEMENTATION DEMO ==================== -->
+        <div class="note-section fade-in" id="rlhf-demo">
+            <h2>Implementation: Cat Grid-World RLHF</h2>
+            <p>We implemented the paper's RLHF framework on a minimal 8&times;8 grid world: a cat at (0,0) must reach the goal at (7,7), avoiding a trap at (1,0) and a wall at (1,1). A synthetic oracle provides preference comparisons using distance-shaped rewards, and the agent learns both a reward model and policy from these preferences alone &mdash; exactly as described in the paper.</p>
+            <div class="callout callout-note">
+                <p>All visualizations below render from a single training run (100 iterations, ~40s on CPU). Data is loaded from <code>rlhf_results.json</code> and rendered client-side with Canvas and Plotly.</p>
+            </div>
+            <p id="demo-loading" style="color: #f0883e; font-family: monospace; font-size: 0.9em;">Loading demo data...</p>
+        </div>
+
+        <!-- Policy Grids -->
+        <div class="viz-section fade-in" id="demo-policy" style="border-left-color: #58a6ff;">
+            <h2>Learned vs Optimal Policy</h2>
+            <p class="desc">Arrows show the best action at each cell. Learned policy arrows are blue with opacity proportional to confidence. Red-highlighted cells show disagreements with the optimal policy.</p>
+            <div class="rlhf-grid-row">
+                <div class="rlhf-canvas-box">
+                    <canvas id="canvas-learned"></canvas>
+                    <div class="canvas-label">Learned Policy (RLHF, 100 iterations)</div>
+                </div>
+                <div class="rlhf-canvas-box">
+                    <canvas id="canvas-optimal"></canvas>
+                    <div class="canvas-label">Optimal Policy (DP Value Iteration)</div>
+                </div>
+            </div>
+            <div class="rlhf-legend">
+                <div class="rlhf-legend-item"><span class="rlhf-legend-swatch" style="background:#58a6ff30;border:1px solid #58a6ff50;"></span> Start</div>
+                <div class="rlhf-legend-item"><span class="rlhf-legend-swatch" style="background:#3fb95040;border:1px solid #3fb95060;"></span> Goal</div>
+                <div class="rlhf-legend-item"><span class="rlhf-legend-swatch" style="background:#f8514940;border:1px solid #f8514960;"></span> Trap</div>
+                <div class="rlhf-legend-item"><span class="rlhf-legend-swatch" style="background:#30363d;border:1px solid #484f58;"></span> Wall</div>
+                <div class="rlhf-legend-item"><span class="rlhf-legend-swatch" style="background:#f8514920;border:1px solid #f8514950;"></span> Mismatch</div>
+            </div>
+        </div>
+
+        <!-- Reward Heatmap -->
+        <div class="viz-section fade-in" id="demo-reward" style="border-left-color: #f0883e;">
+            <h2>Learned Reward Heatmap</h2>
+            <p class="desc">Cell color shows the reward model's best-action prediction. Green = positive (good), red = negative (bad), dark = near zero. Small arrows indicate the reward model's preferred direction. Compare with the optimal policy to see where the reward model has captured the right incentives.</p>
+            <div class="rlhf-canvas-box" style="display:inline-block;">
+                <canvas id="canvas-reward"></canvas>
+            </div>
+        </div>
+
+        <!-- Training Curves -->
+        <div class="viz-section fade-in" id="demo-curves" style="border-left-color: #d2a8ff;">
+            <h2>Training Curves</h2>
+            <p class="desc">Policy performance and training metrics over 100 RLHF iterations. Policy accuracy is evaluated against the DP optimal baseline every 5 iterations.</p>
+            <div id="plotly-performance"></div>
+            <div id="plotly-losses"></div>
+        </div>
+
+        <!-- Trajectory Animation -->
+        <div class="viz-section fade-in" id="demo-trajectory" style="border-left-color: #f0883e;">
+            <h2>Trajectory Animation</h2>
+            <p class="desc">Watch the trained policy navigate the grid. The orange marker shows the cat's current position; fading trail shows past steps with step numbers every 5th step.</p>
+            <div class="rlhf-canvas-box" style="display:inline-block;">
+                <canvas id="canvas-trajectory"></canvas>
+            </div>
+            <div class="rlhf-controls">
+                <button class="rlhf-btn" id="traj-play">Play</button>
+                <button class="rlhf-btn" id="traj-step-fwd">Step</button>
+                <button class="rlhf-btn" id="traj-reset">Reset</button>
+                <label style="color:#8b949e;font-size:0.85em;">Speed:</label>
+                <input type="range" id="traj-speed" min="50" max="500" value="200" style="width:100px;">
+                <span class="rlhf-status" id="traj-step">Step 0/0</span>
+            </div>
+        </div>
+
+        <!-- Preference Replay -->
+        <div class="viz-section fade-in" id="demo-preferences" style="border-left-color: #d2a8ff;">
+            <h2>Preference Pair Replay</h2>
+            <p class="desc">Browse segment pairs from the preference database. Each pair shows two trajectory segments (numbered steps on the grid) that the synthetic oracle compared &mdash; analogous to the 1-2 second video clips shown to human raters in the paper.</p>
+            <div class="rlhf-grid-row">
+                <div class="rlhf-canvas-box">
+                    <canvas id="canvas-pref-a"></canvas>
+                    <div class="canvas-label">Segment A</div>
+                </div>
+                <div class="rlhf-canvas-box">
+                    <canvas id="canvas-pref-b"></canvas>
+                    <div class="canvas-label">Segment B</div>
+                </div>
+            </div>
+            <div class="rlhf-controls">
+                <button class="rlhf-btn" id="pref-prev">Prev</button>
+                <button class="rlhf-btn" id="pref-next">Next</button>
+                <span class="rlhf-status" id="pref-counter">Pair 1 / 20</span>
+                <span class="rlhf-status" id="pref-label" style="color:#f0883e;"></span>
+            </div>
+        </div>
+
+        <div class="section-break"></div>
+
         <!-- ==================== INTERACTIVE DEMO ==================== -->
         <div class="viz-section viz-plotly fade-in" id="viz-10">
             <h2><span class="num">#10</span> Interactive Preference Simulation</h2>
@@ -1346,6 +1512,538 @@
     // Initial state
     updateProgress();
     updateBackToTop();
+})();
+</script>
+
+<!-- RLHF Implementation Demo Script -->
+<script>
+(function() {
+    'use strict';
+
+    var GRID_W = 8, GRID_H = 8;
+    var DATA = null;
+
+    // ── Canvas setup with DPI scaling ──
+    function setupCanvas(id, cellSize) {
+        var canvas = document.getElementById(id);
+        if (!canvas) return null;
+        var dpr = window.devicePixelRatio || 1;
+        var w = GRID_W * cellSize;
+        var h = GRID_H * cellSize;
+        canvas.width = w * dpr;
+        canvas.height = h * dpr;
+        canvas.style.width = w + 'px';
+        canvas.style.height = h + 'px';
+        var ctx = canvas.getContext('2d');
+        ctx.scale(dpr, dpr);
+        return { ctx: ctx, cell: cellSize };
+    }
+
+    // ── Draw base grid (shared by all grid visualizations) ──
+    function drawBaseGrid(ctx, cell, grid) {
+        var w = grid.width, h = grid.height;
+
+        // Background
+        ctx.fillStyle = '#161b22';
+        ctx.fillRect(0, 0, w * cell, h * cell);
+
+        // Walls
+        for (var i = 0; i < grid.walls.length; i++) {
+            var wl = grid.walls[i];
+            ctx.fillStyle = '#30363d';
+            ctx.fillRect(wl.x * cell, wl.y * cell, cell, cell);
+            ctx.fillStyle = '#484f58';
+            ctx.font = 'bold ' + (cell * 0.35) + 'px monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('#', wl.x * cell + cell / 2, wl.y * cell + cell / 2);
+        }
+
+        // Terminals
+        var tkeys = Object.keys(grid.terminals);
+        for (var i = 0; i < tkeys.length; i++) {
+            var key = tkeys[i];
+            var val = grid.terminals[key];
+            var xy = key.split(',');
+            var x = parseInt(xy[0]), y = parseInt(xy[1]);
+            ctx.fillStyle = val > 0 ? '#3fb95030' : '#f8514930';
+            ctx.fillRect(x * cell, y * cell, cell, cell);
+            ctx.fillStyle = val > 0 ? '#3fb950' : '#f85149';
+            ctx.font = 'bold ' + (cell * 0.4) + 'px monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(val > 0 ? 'G' : 'T', x * cell + cell / 2, y * cell + cell / 2);
+        }
+
+        // Start cell
+        if (grid.start) {
+            ctx.fillStyle = '#58a6ff20';
+            ctx.fillRect(grid.start.x * cell, grid.start.y * cell, cell, cell);
+        }
+
+        // Grid lines
+        ctx.strokeStyle = '#21262d';
+        ctx.lineWidth = 1;
+        for (var i = 0; i <= w; i++) {
+            ctx.beginPath();
+            ctx.moveTo(i * cell, 0);
+            ctx.lineTo(i * cell, h * cell);
+            ctx.stroke();
+        }
+        for (var i = 0; i <= h; i++) {
+            ctx.beginPath();
+            ctx.moveTo(0, i * cell);
+            ctx.lineTo(w * cell, i * cell);
+            ctx.stroke();
+        }
+    }
+
+    // ── Draw arrow at grid cell ──
+    function drawArrow(ctx, x, y, direction, color, alpha, cell) {
+        var cx = x * cell + cell / 2;
+        var cy = y * cell + cell / 2;
+        var sz = cell * 0.25;
+
+        ctx.save();
+        ctx.globalAlpha = Math.max(0.3, alpha);
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        switch (direction) {
+            case 'UP':
+                ctx.moveTo(cx, cy - sz);
+                ctx.lineTo(cx - sz * 0.7, cy + sz * 0.5);
+                ctx.lineTo(cx + sz * 0.7, cy + sz * 0.5);
+                break;
+            case 'DOWN':
+                ctx.moveTo(cx, cy + sz);
+                ctx.lineTo(cx - sz * 0.7, cy - sz * 0.5);
+                ctx.lineTo(cx + sz * 0.7, cy - sz * 0.5);
+                break;
+            case 'LEFT':
+                ctx.moveTo(cx - sz, cy);
+                ctx.lineTo(cx + sz * 0.5, cy - sz * 0.7);
+                ctx.lineTo(cx + sz * 0.5, cy + sz * 0.7);
+                break;
+            case 'RIGHT':
+                ctx.moveTo(cx + sz, cy);
+                ctx.lineTo(cx - sz * 0.5, cy - sz * 0.7);
+                ctx.lineTo(cx - sz * 0.5, cy + sz * 0.7);
+                break;
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // ── Color interpolation ──
+    function lerpColor(a, b, t) {
+        return [
+            Math.round(a[0] + (b[0] - a[0]) * t),
+            Math.round(a[1] + (b[1] - a[1]) * t),
+            Math.round(a[2] + (b[2] - a[2]) * t)
+        ];
+    }
+
+    // ── 1. Policy Grids ──
+    function renderPolicyGrids() {
+        var grid = DATA.grid;
+        var termSet = {};
+        var tkeys = Object.keys(grid.terminals);
+        for (var i = 0; i < tkeys.length; i++) termSet[tkeys[i]] = true;
+        var wallSet = {};
+        for (var i = 0; i < grid.walls.length; i++) wallSet[grid.walls[i].x + ',' + grid.walls[i].y] = true;
+
+        // Learned policy
+        var cL = setupCanvas('canvas-learned', 40);
+        if (!cL) return;
+        drawBaseGrid(cL.ctx, cL.cell, grid);
+
+        var pkeys = Object.keys(DATA.policy_map);
+        for (var i = 0; i < pkeys.length; i++) {
+            var key = pkeys[i];
+            if (termSet[key] || wallSet[key]) continue;
+            var entry = DATA.policy_map[key];
+            var xy = key.split(',');
+            var x = parseInt(xy[0]), y = parseInt(xy[1]);
+            var best = entry.best;
+            var confidence = entry[best];
+
+            // Highlight mismatches
+            var optEntry = DATA.optimal.policy[key];
+            if (optEntry && optEntry.action !== best) {
+                cL.ctx.fillStyle = '#f8514920';
+                cL.ctx.fillRect(x * cL.cell + 1, y * cL.cell + 1, cL.cell - 2, cL.cell - 2);
+            }
+
+            drawArrow(cL.ctx, x, y, best, '#58a6ff', confidence, cL.cell);
+        }
+
+        // Optimal policy
+        var cO = setupCanvas('canvas-optimal', 40);
+        if (!cO) return;
+        drawBaseGrid(cO.ctx, cO.cell, grid);
+
+        var okeys = Object.keys(DATA.optimal.policy);
+        for (var i = 0; i < okeys.length; i++) {
+            var key = okeys[i];
+            if (termSet[key] || wallSet[key]) continue;
+            var entry = DATA.optimal.policy[key];
+            var xy = key.split(',');
+            var x = parseInt(xy[0]), y = parseInt(xy[1]);
+            drawArrow(cO.ctx, x, y, entry.action, '#3fb950', 1.0, cO.cell);
+        }
+    }
+
+    // ── 2. Reward Heatmap ──
+    function renderRewardHeatmap() {
+        var grid = DATA.grid;
+        var heatmap = DATA.reward_heatmap;
+        var cR = setupCanvas('canvas-reward', 50);
+        if (!cR) return;
+        var ctx = cR.ctx, cell = cR.cell;
+
+        var dark = [22, 27, 34];
+        var red = [248, 81, 73];
+        var green = [63, 185, 80];
+
+        var termSet = {};
+        var tkeys = Object.keys(grid.terminals);
+        for (var i = 0; i < tkeys.length; i++) termSet[tkeys[i]] = true;
+
+        var bkeys = Object.keys(heatmap.best_action);
+        for (var i = 0; i < bkeys.length; i++) {
+            var key = bkeys[i];
+            var entry = heatmap.best_action[key];
+            var xy = key.split(',');
+            var x = parseInt(xy[0]), y = parseInt(xy[1]);
+            var val = entry.reward;
+
+            var rgb;
+            if (val >= 0) {
+                var t = heatmap.max_reward > 0 ? val / heatmap.max_reward : 0;
+                rgb = lerpColor(dark, green, t);
+            } else {
+                var t = heatmap.min_reward < 0 ? val / heatmap.min_reward : 0;
+                rgb = lerpColor(dark, red, t);
+            }
+
+            ctx.fillStyle = 'rgb(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ')';
+            ctx.fillRect(x * cell, y * cell, cell, cell);
+
+            // Value text
+            var brightness = (rgb[0] * 299 + rgb[1] * 587 + rgb[2] * 114) / 1000;
+            ctx.fillStyle = brightness > 128 ? '#000' : '#c9d1d9';
+            ctx.font = (cell * 0.22) + 'px monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(val.toFixed(1), x * cell + cell / 2, y * cell + cell / 2);
+        }
+
+        // Walls
+        for (var i = 0; i < grid.walls.length; i++) {
+            var wl = grid.walls[i];
+            ctx.fillStyle = '#30363d';
+            ctx.fillRect(wl.x * cell, wl.y * cell, cell, cell);
+        }
+
+        // Grid lines
+        ctx.strokeStyle = '#00000040';
+        ctx.lineWidth = 0.5;
+        for (var i = 0; i <= grid.width; i++) {
+            ctx.beginPath();
+            ctx.moveTo(i * cell, 0);
+            ctx.lineTo(i * cell, grid.height * cell);
+            ctx.stroke();
+        }
+        for (var i = 0; i <= grid.height; i++) {
+            ctx.beginPath();
+            ctx.moveTo(0, i * cell);
+            ctx.lineTo(grid.width * cell, i * cell);
+            ctx.stroke();
+        }
+
+        // Arrow overlay
+        for (var i = 0; i < bkeys.length; i++) {
+            var key = bkeys[i];
+            if (termSet[key]) continue;
+            var entry = heatmap.best_action[key];
+            var xy = key.split(',');
+            var x = parseInt(xy[0]), y = parseInt(xy[1]);
+            drawArrow(ctx, x, y, entry.action, '#ffffff', 0.35, cell);
+        }
+    }
+
+    // ── 3. Training Curves (Plotly) ──
+    function renderTrainingCurves() {
+        if (typeof Plotly === 'undefined') {
+            document.getElementById('plotly-performance').textContent = 'Plotly not loaded';
+            return;
+        }
+
+        var m = DATA.metrics;
+        var iters = m.map(function(d) { return d.iteration; });
+
+        var darkLayout = {
+            paper_bgcolor: '#0d1117',
+            plot_bgcolor: '#161b22',
+            font: { color: '#c9d1d9', family: '-apple-system, sans-serif', size: 12 },
+            xaxis: { gridcolor: '#21262d', title: 'Iteration', zeroline: false },
+            yaxis: { gridcolor: '#21262d', zeroline: false },
+            legend: { bgcolor: '#161b2280', bordercolor: '#30363d', borderwidth: 1 },
+            margin: { t: 40, b: 50, l: 55, r: 20 },
+            height: 280
+        };
+
+        // Chart 1: Policy performance
+        Plotly.newPlot('plotly-performance', [
+            {
+                x: iters, y: m.map(function(d) { return d.goal_rate; }),
+                name: 'Goal Rate', type: 'scatter', mode: 'lines',
+                line: { color: '#3fb950', width: 2 }
+            },
+            {
+                x: iters, y: m.map(function(d) { return d.trap_rate; }),
+                name: 'Trap Rate', type: 'scatter', mode: 'lines',
+                line: { color: '#f85149', width: 2 }
+            },
+            {
+                x: iters, y: m.map(function(d) { return d.policy_accuracy; }),
+                name: 'Policy Accuracy', type: 'scatter', mode: 'lines',
+                line: { color: '#58a6ff', width: 2 }
+            }
+        ], Object.assign({}, darkLayout, {
+            title: { text: 'Policy Performance', font: { size: 14, color: '#e6edf3' } },
+            yaxis: Object.assign({}, darkLayout.yaxis, { title: 'Rate', range: [0, 1] })
+        }), { responsive: true, displayModeBar: false });
+
+        // Chart 2: Training metrics
+        Plotly.newPlot('plotly-losses', [
+            {
+                x: iters, y: m.map(function(d) { return d.reward_loss; }),
+                name: 'Reward Loss', type: 'scatter', mode: 'lines',
+                line: { color: '#f0883e', width: 2 }
+            },
+            {
+                x: iters, y: m.map(function(d) { return d.entropy; }),
+                name: 'Policy Entropy', type: 'scatter', mode: 'lines',
+                line: { color: '#d2a8ff', width: 2 }
+            }
+        ], Object.assign({}, darkLayout, {
+            title: { text: 'Training Metrics', font: { size: 14, color: '#e6edf3' } },
+            yaxis: Object.assign({}, darkLayout.yaxis, { title: 'Value' })
+        }), { responsive: true, displayModeBar: false });
+    }
+
+    // ── 4. Trajectory Animation ──
+    function initTrajectoryAnimation() {
+        var grid = DATA.grid;
+        // Pick the best trajectory (goal > longest)
+        var traj = DATA.trajectories[0];
+        for (var i = 0; i < DATA.trajectories.length; i++) {
+            if (DATA.trajectories[i].outcome === 'goal') {
+                traj = DATA.trajectories[i];
+                break;
+            }
+        }
+
+        var steps = traj.steps;
+        var currentStep = 0;
+        var playing = false;
+        var intervalId = null;
+
+        var cT = setupCanvas('canvas-trajectory', 40);
+        if (!cT) return;
+        var ctx = cT.ctx, cell = cT.cell;
+        var stepLabel = document.getElementById('traj-step');
+        var playBtn = document.getElementById('traj-play');
+        var speedSlider = document.getElementById('traj-speed');
+
+        function render() {
+            drawBaseGrid(ctx, cell, grid);
+
+            // Trail
+            for (var i = 0; i <= currentStep && i < steps.length; i++) {
+                var s = steps[i];
+                var alpha = 0.15 + 0.85 * (i / Math.max(currentStep, 1));
+                var radius = (i === currentStep) ? cell * 0.3 : cell * 0.12;
+
+                ctx.beginPath();
+                ctx.arc(s.x * cell + cell / 2, s.y * cell + cell / 2, radius, 0, Math.PI * 2);
+                ctx.fillStyle = (i === currentStep)
+                    ? '#f0883e'
+                    : 'rgba(240, 136, 62, ' + (alpha * 0.5) + ')';
+                ctx.fill();
+
+                // Step number every 5th trail dot
+                if (i < currentStep && i % 5 === 0) {
+                    ctx.fillStyle = 'rgba(255,255,255,' + (alpha * 0.7) + ')';
+                    ctx.font = (cell * 0.22) + 'px monospace';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(String(i), s.x * cell + cell / 2, s.y * cell + cell / 2);
+                }
+            }
+
+            // Cat label on current position
+            if (currentStep < steps.length) {
+                var s = steps[currentStep];
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold ' + (cell * 0.35) + 'px monospace';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('C', s.x * cell + cell / 2, s.y * cell + cell / 2);
+            }
+
+            stepLabel.textContent = 'Step ' + currentStep + '/' + (steps.length - 1) + ' \u2014 ' + traj.outcome;
+        }
+
+        function stepForward() {
+            if (currentStep < steps.length - 1) {
+                currentStep++;
+                render();
+            } else if (playing) {
+                stop();
+            }
+        }
+
+        function stop() {
+            playing = false;
+            if (intervalId) clearInterval(intervalId);
+            intervalId = null;
+            playBtn.textContent = 'Play';
+        }
+
+        playBtn.addEventListener('click', function() {
+            if (playing) {
+                stop();
+            } else {
+                if (currentStep >= steps.length - 1) currentStep = 0;
+                playing = true;
+                playBtn.textContent = 'Pause';
+                intervalId = setInterval(stepForward, parseInt(speedSlider.value));
+            }
+        });
+
+        speedSlider.addEventListener('input', function() {
+            if (playing) {
+                clearInterval(intervalId);
+                intervalId = setInterval(stepForward, parseInt(speedSlider.value));
+            }
+        });
+
+        document.getElementById('traj-reset').addEventListener('click', function() {
+            stop();
+            currentStep = 0;
+            render();
+        });
+
+        document.getElementById('traj-step-fwd').addEventListener('click', function() {
+            stop();
+            stepForward();
+        });
+
+        render();
+    }
+
+    // ── 5. Preference Replay ──
+    function initPreferenceReplay() {
+        var prefs = DATA.preferences_sample;
+        if (!prefs || prefs.length === 0) return;
+
+        var grid = DATA.grid;
+        var currentPair = 0;
+
+        var cA = setupCanvas('canvas-pref-a', 40);
+        var cB = setupCanvas('canvas-pref-b', 40);
+        if (!cA || !cB) return;
+
+        var prefLabel = document.getElementById('pref-label');
+        var prefCounter = document.getElementById('pref-counter');
+
+        function drawSegment(ctx, cell, segment, color) {
+            drawBaseGrid(ctx, cell, grid);
+
+            for (var i = 0; i < segment.length; i++) {
+                var s = segment[i];
+                var x = s.obs[0], y = s.obs[1];
+
+                // Line to next step
+                if (i < segment.length - 1) {
+                    var nx = segment[i + 1].obs[0], ny = segment[i + 1].obs[1];
+                    ctx.save();
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 2;
+                    ctx.globalAlpha = 0.4;
+                    ctx.beginPath();
+                    ctx.moveTo(x * cell + cell / 2, y * cell + cell / 2);
+                    ctx.lineTo(nx * cell + cell / 2, ny * cell + cell / 2);
+                    ctx.stroke();
+                    ctx.restore();
+                }
+
+                // Step dot
+                ctx.beginPath();
+                ctx.arc(x * cell + cell / 2, y * cell + cell / 2, cell * 0.25, 0, Math.PI * 2);
+                ctx.fillStyle = color;
+                ctx.fill();
+
+                // Step number
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold ' + (cell * 0.28) + 'px monospace';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(String(i), x * cell + cell / 2, y * cell + cell / 2);
+            }
+        }
+
+        function render() {
+            var pref = prefs[currentPair];
+            drawSegment(cA.ctx, cA.cell, pref.segment_1, '#58a6ff');
+            drawSegment(cB.ctx, cB.cell, pref.segment_2, '#d2a8ff');
+
+            var mu = pref.mu;
+            var verdict;
+            if (mu[0] > mu[1]) verdict = 'Oracle preferred: Segment A';
+            else if (mu[1] > mu[0]) verdict = 'Oracle preferred: Segment B';
+            else verdict = 'Oracle: Equal preference';
+
+            prefLabel.textContent = verdict;
+            prefCounter.textContent = 'Pair ' + (currentPair + 1) + ' / ' + prefs.length;
+        }
+
+        document.getElementById('pref-prev').addEventListener('click', function() {
+            currentPair = (currentPair - 1 + prefs.length) % prefs.length;
+            render();
+        });
+
+        document.getElementById('pref-next').addEventListener('click', function() {
+            currentPair = (currentPair + 1) % prefs.length;
+            render();
+        });
+
+        render();
+    }
+
+    // ── Load data and initialize ──
+    fetch('rlhf_results.json')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            DATA = data;
+            var loadingEl = document.getElementById('demo-loading');
+            if (loadingEl) loadingEl.style.display = 'none';
+            renderPolicyGrids();
+            renderRewardHeatmap();
+            renderTrainingCurves();
+            initTrajectoryAnimation();
+            initPreferenceReplay();
+        })
+        .catch(function(err) {
+            var loadingEl = document.getElementById('demo-loading');
+            if (loadingEl) {
+                loadingEl.textContent = 'Failed to load demo data: ' + err.message;
+                loadingEl.style.color = '#f85149';
+            }
+        });
 })();
 </script>
 

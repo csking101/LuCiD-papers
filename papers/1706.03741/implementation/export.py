@@ -15,6 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from env import Environment, Action
 from reward_model import RewardEnsemble
+from optimal import compute_baseline
 
 
 def export_grid_config(env: Environment) -> dict:
@@ -22,6 +23,7 @@ def export_grid_config(env: Environment) -> dict:
     return {
         "width": env.width,
         "height": env.height,
+        "start": {"x": 0, "y": 0},
         "terminals": {
             f"{x},{y}": val
             for (x, y), val in env.terminal_objects_placement.items()
@@ -180,13 +182,43 @@ def export_preferences_sample(preference_db, n: int = 20) -> list:
     return exported
 
 
+def export_optimal_policy(env: Environment, step_penalty: float = -1.0,
+                          gamma: float = 0.99) -> dict:
+    """
+    Compute and export the DP optimal policy for the grid.
+
+    Returns:
+      {
+        "policy": { "0,0": {"action": "DOWN", "action_int": 1}, ... },
+        "optimal_return": float,
+      }
+    """
+    action_names = {0: "UP", 1: "DOWN", 2: "LEFT", 3: "RIGHT"}
+    V_star, Q_star, pi_star, opt_return = compute_baseline(
+        env, step_penalty, gamma)
+
+    policy_map = {}
+    for (x, y), action_int in pi_star.items():
+        key = f"{x},{y}"
+        policy_map[key] = {
+            "action": action_names[action_int],
+            "action_int": action_int,
+        }
+
+    return {
+        "policy": policy_map,
+        "optimal_return": round(opt_return, 2),
+    }
+
+
 def export_metrics(metrics_history: list) -> list:
     """Export the training metrics history as-is (already JSON-serializable)."""
     return metrics_history
 
 
 def export_all(env, policy, reward_ensemble, preference_db,
-               metrics_history, output_dir: str = None):
+               metrics_history, output_dir: str = None,
+               step_penalty: float = -1.0, gamma: float = 0.99):
     """
     Export everything to a single JSON file.
 
@@ -201,6 +233,7 @@ def export_all(env, policy, reward_ensemble, preference_db,
         "grid": export_grid_config(env),
         "reward_heatmap": export_reward_heatmap(env, reward_ensemble),
         "policy_map": export_policy_map(env, policy),
+        "optimal": export_optimal_policy(env, step_penalty, gamma),
         "trajectories": export_trajectories(env, policy, n_episodes=5,
                                             label="trained"),
         "preferences_sample": export_preferences_sample(preference_db, n=20),
@@ -216,6 +249,7 @@ def export_all(env, policy, reward_ensemble, preference_db,
     print(f"  Grid: {data['grid']['width']}x{data['grid']['height']}")
     print(f"  Reward heatmap: {len(data['reward_heatmap']['per_action'])} cells")
     print(f"  Policy map: {len(data['policy_map'])} cells")
+    print(f"  Optimal policy: {len(data['optimal']['policy'])} cells")
     print(f"  Trajectories: {len(data['trajectories'])} episodes")
     print(f"  Preferences: {len(data['preferences_sample'])} samples")
     print(f"  Metrics: {len(data['metrics'])} iterations")
@@ -224,6 +258,10 @@ def export_all(env, policy, reward_ensemble, preference_db,
 
 
 if __name__ == "__main__":
+    # Disable human feedback for non-interactive export run
+    import config
+    config.HUMAN_FEEDBACK_INTERVAL = 0
+
     # Run training first, then export
     from train import main as train_main
 
@@ -232,4 +270,5 @@ if __name__ == "__main__":
     from train import make_environment
     env = make_environment()
 
-    export_all(env, policy, reward_ensemble, preference_db, metrics_history)
+    export_all(env, policy, reward_ensemble, preference_db, metrics_history,
+               step_penalty=config.STEP_PENALTY, gamma=config.GAMMA)
