@@ -12,11 +12,12 @@ build/
 venv/
 env/
 
-# Manim build artifacts (only keep final MP4s)
+# Manim build artifacts (only keep final MP4s in docs/)
 **/partial_movie_files/
 **/texts/
 **/Tex/
 **/images/
+papers/*/output/animations/videos/**/*.mp4
 
 # OS
 .DS_Store

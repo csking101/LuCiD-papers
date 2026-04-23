@@ -14,6 +14,24 @@ Run: manim -ql --media_dir ../output/animations 03_preference_elicitation.py Pre
 
 from manim import *
 import numpy as np
+import atexit
+import shutil
+from pathlib import Path
+
+# Post-render: copy MP4 to docs/ for GitHub Pages serving
+_SCRIPT_DIR = Path(__file__).resolve().parent
+_PAPER_DIR = _SCRIPT_DIR.parent
+_DOCS_DIR = _PAPER_DIR.parent.parent / "docs" / "papers" / "1706.03741"
+
+def _copy_to_docs():
+    src = _PAPER_DIR / "output/animations/videos/03_preference_elicitation/480p15/PreferenceElicitation.mp4"
+    dst = _DOCS_DIR / "PreferenceElicitation.mp4"
+    if src.exists():
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dst)
+        print(f"Copied {src.name} -> {dst}")
+
+atexit.register(_copy_to_docs)
 
 
 class PreferenceElicitation(Scene):

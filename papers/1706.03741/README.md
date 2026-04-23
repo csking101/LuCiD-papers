@@ -16,10 +16,10 @@ Train an RL agent without a hand-designed reward function. Instead, a human watc
 
 | # | Script | Description | Output |
 |---|--------|-------------|--------|
-| 1 | `01_system_architecture.py` | Three asynchronous processes (Figure 1) | [MP4](output/animations/videos/01_system_architecture/480p15/SystemArchitecture.mp4) |
-| 2 | `02_rl_vs_rlhf_pipeline.py` | Traditional RL vs RLHF side-by-side | [MP4](output/animations/videos/02_rl_vs_rlhf_pipeline/480p15/RLvsRLHF.mp4) |
-| 3 | `03_preference_elicitation.py` | 5-step preference collection flow | [MP4](output/animations/videos/03_preference_elicitation/480p15/PreferenceElicitation.mp4) |
-| 6 | `06_reward_convergence.py` | Reward model improving with more data | [MP4](output/animations/videos/06_reward_convergence/480p15/RewardConvergence.mp4) |
+| 1 | `01_system_architecture.py` | Three asynchronous processes (Figure 1) | [MP4](../../docs/papers/1706.03741/SystemArchitecture.mp4) |
+| 2 | `02_rl_vs_rlhf_pipeline.py` | Traditional RL vs RLHF side-by-side | [MP4](../../docs/papers/1706.03741/RLvsRLHF.mp4) |
+| 3 | `03_preference_elicitation.py` | 5-step preference collection flow | [MP4](../../docs/papers/1706.03741/PreferenceElicitation.mp4) |
+| 6 | `06_reward_convergence.py` | Reward model improving with more data | [MP4](../../docs/papers/1706.03741/RewardConvergence.mp4) |
 
 ### Static Figures (PNG)
 
