@@ -101,6 +101,34 @@
         .l-color { color: #f0883e; }
         .c-color { color: #58a6ff; }
         .d-color { color: #3fb950; }
+        .track-label {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.7em;
+            font-weight: 600;
+            vertical-align: middle;
+            margin-left: 8px;
+        }
+        .track-alignment { background: #8957e533; color: #d2a8ff; }
+        .track-vlm { background: #f0883e33; color: #f0883e; }
+        .paper-card.upcoming {
+            opacity: 0.65;
+            border-style: dashed;
+        }
+        .paper-card.upcoming:hover {
+            opacity: 0.85;
+        }
+        .badge-status {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75em;
+            font-weight: 600;
+        }
+        .badge-done { background: #3fb95033; color: #3fb950; }
+        .badge-learning { background: #1f6feb33; color: #58a6ff; }
+        .badge-upcoming { background: #21262d; color: #8b949e; }
         footer {
             margin-top: 3em;
             padding-top: 1em;
@@ -139,6 +167,8 @@
 
         <div class="paper-card">
             <span class="arxiv">1706.03741</span>
+            <span class="badge-status badge-done">Done</span>
+            <span class="track-label track-alignment">Alignment</span>
             <h3>Deep Reinforcement Learning from Human Preferences</h3>
             <p class="desc">
                 Christiano, Leike, Brown, Martic, Legg, Amodei (2017) --
@@ -155,6 +185,79 @@
             </div>
             <p style="margin-top: 10px;">
                 <a href="https://github.com/csking101/LuCiD-papers/tree/main/papers/1706.03741">View on GitHub</a>
+            </p>
+        </div>
+
+        <h2>Upcoming</h2>
+
+        <h3 style="color: #d2a8ff; font-size: 1em; margin: 12px 0 8px;">Alignment Track</h3>
+
+        <div class="paper-card upcoming">
+            <span class="arxiv">1707.06347</span>
+            <span class="badge-status badge-learning">Learning</span>
+            <span class="track-label track-alignment">Alignment</span>
+            <h3>Proximal Policy Optimization Algorithms</h3>
+            <p class="desc">
+                Schulman, Wolski, Dhariwal, Radford, Klimov (2017) --
+                PPO -- a simple, stable policy gradient method using a clipped surrogate objective.
+                The RL optimizer used inside RLHF.
+            </p>
+        </div>
+
+        <div class="paper-card upcoming">
+            <span class="arxiv">2009.01325</span>
+            <span class="badge-status badge-upcoming">Coming Soon</span>
+            <span class="track-label track-alignment">Alignment</span>
+            <h3>Learning to Summarize from Human Feedback</h3>
+            <p class="desc">
+                Stiennon, Ouyang, Wu, Ziegler, Lowe, Voss, Radford, Amodei, Christiano (2020) --
+                Applies RLHF to text summarization, demonstrating preference-based training scales to NLP tasks.
+            </p>
+        </div>
+
+        <div class="paper-card upcoming">
+            <span class="arxiv">2203.02155</span>
+            <span class="badge-status badge-upcoming">Coming Soon</span>
+            <span class="track-label track-alignment">Alignment</span>
+            <h3>Training Language Models to Follow Instructions (InstructGPT)</h3>
+            <p class="desc">
+                Ouyang, Wu, Jiang, Almeida, Wainwright, Mishkin, Zhang, et al. (2022) --
+                RLHF at scale -- fine-tunes GPT-3 with human feedback to follow instructions.
+            </p>
+        </div>
+
+        <div class="paper-card upcoming">
+            <span class="arxiv">2305.18290</span>
+            <span class="badge-status badge-upcoming">Coming Soon</span>
+            <span class="track-label track-alignment">Alignment</span>
+            <h3>Direct Preference Optimization (DPO)</h3>
+            <p class="desc">
+                Rafailov, Sharma, Mitchell, Ermon, Manning, Finn (2023) --
+                Eliminates the reward model entirely -- optimizes preferences directly via a classification loss.
+            </p>
+        </div>
+
+        <div class="paper-card upcoming">
+            <span class="arxiv">2402.03300</span>
+            <span class="badge-status badge-upcoming">Coming Soon</span>
+            <span class="track-label track-alignment">Alignment</span>
+            <h3>Self-Play Fine-Tuning (SPIN)</h3>
+            <p class="desc">
+                Chen, Shen, Hong, Chen, Jiao, Zhang, Ma, Liu (2024) --
+                Aligns LLMs via self-play without human preference data.
+            </p>
+        </div>
+
+        <h3 style="color: #f0883e; font-size: 1em; margin: 20px 0 8px;">VLM Track</h3>
+
+        <div class="paper-card upcoming">
+            <span class="arxiv">2405.17247</span>
+            <span class="badge-status badge-learning">Learning</span>
+            <span class="track-label track-vlm">VLM</span>
+            <h3>An Introduction to Vision-Language Modeling</h3>
+            <p class="desc">
+                Bordes, Pang, Ajay, et al. (2024) --
+                Comprehensive survey of VLM families: contrastive, masking, and generative approaches.
             </p>
         </div>
 
