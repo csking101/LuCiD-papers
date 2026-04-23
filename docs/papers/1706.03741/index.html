@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1706.03741 — Deep RL from Human Preferences | LuCiD-papers</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            line-height: 1.6;
+        }
+        .container { max-width: 960px; margin: 0 auto; padding: 40px 20px; }
+        a { color: #58a6ff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        /* Header */
+        .breadcrumb { font-size: 0.9em; color: #8b949e; margin-bottom: 1em; }
+        .breadcrumb a { color: #8b949e; }
+        .breadcrumb a:hover { color: #58a6ff; }
+        h1 { font-size: 2em; color: #c9d1d9; margin-bottom: 0.2em; }
+        .meta { color: #8b949e; font-size: 0.95em; margin-bottom: 1.5em; }
+        .meta .arxiv { font-family: monospace; color: #f0883e; }
+
+        /* Navigation */
+        .nav-bar {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 2em;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .nav-bar span { color: #8b949e; font-size: 0.85em; margin-right: 8px; }
+        .nav-bar a {
+            display: inline-block;
+            padding: 3px 10px;
+            margin: 3px 3px;
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            font-size: 0.8em;
+            color: #c9d1d9;
+            transition: background 0.2s;
+        }
+        .nav-bar a:hover { background: #30363d; text-decoration: none; }
+        .nav-bar a .num { color: #8b949e; margin-right: 3px; }
+
+        /* Sections */
+        .viz-section {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        .viz-section h2 {
+            font-size: 1.3em;
+            color: #c9d1d9;
+            margin-bottom: 4px;
+        }
+        .viz-section h2 .num { color: #8b949e; font-weight: normal; }
+        .viz-section .tool-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75em;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .tag-manim { background: #3fb95033; color: #3fb950; }
+        .tag-matplotlib { background: #1f6feb33; color: #58a6ff; }
+        .tag-plotly { background: #f0883e33; color: #f0883e; }
+        .viz-section .desc {
+            color: #8b949e;
+            font-size: 0.9em;
+            margin-bottom: 16px;
+        }
+        .viz-section video {
+            width: 100%;
+            max-width: 854px;
+            border-radius: 6px;
+            background: #000;
+        }
+        .viz-section img {
+            width: 100%;
+            max-width: 854px;
+            border-radius: 6px;
+            background: #0d1117;
+        }
+        .viz-section iframe {
+            width: 100%;
+            max-width: 854px;
+            height: 550px;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            background: #fff;
+        }
+        .viz-section .open-link {
+            display: inline-block;
+            margin-top: 8px;
+            font-size: 0.85em;
+            color: #f0883e;
+        }
+        .viz-section .open-link:hover { color: #f0883e; }
+        .section-divider { margin: 12px 0; font-size: 0.85em; color: #484f58; }
+
+        /* Footer */
+        footer {
+            margin-top: 2em;
+            padding-top: 1em;
+            border-top: 1px solid #21262d;
+            color: #484f58;
+            font-size: 0.85em;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <p class="breadcrumb"><a href="../../">LuCiD-papers</a> / papers /</p>
+
+        <h1>Deep Reinforcement Learning from Human Preferences</h1>
+        <p class="meta">
+            <span class="arxiv">1706.03741</span> &mdash;
+            Christiano, Leike, Brown, Martic, Legg, Amodei (2017) &mdash;
+            <a href="https://arxiv.org/abs/1706.03741">arXiv</a> &mdash;
+            <a href="https://github.com/csking101/LuCiD-papers/tree/main/papers/1706.03741">GitHub</a>
+        </p>
+
+        <nav class="nav-bar">
+            <span>Jump to:</span>
+            <a href="#viz-01"><span class="num">1</span> System Architecture</a>
+            <a href="#viz-02"><span class="num">2</span> RL vs RLHF</a>
+            <a href="#viz-03"><span class="num">3</span> Preference Elicitation</a>
+            <a href="#viz-04"><span class="num">4</span> Bradley-Terry</a>
+            <a href="#viz-05"><span class="num">5</span> Cross-Entropy Loss</a>
+            <a href="#viz-06"><span class="num">6</span> Reward Convergence</a>
+            <a href="#viz-07"><span class="num">7</span> MuJoCo Results</a>
+            <a href="#viz-08"><span class="num">8</span> Atari Results</a>
+            <a href="#viz-09"><span class="num">9</span> Ablation Heatmap</a>
+            <a href="#viz-10"><span class="num">10</span> Preference Sim</a>
+        </nav>
+
+        <!-- Viz 1: System Architecture -->
+        <div class="viz-section" id="viz-01">
+            <h2><span class="num">#1</span> System Architecture</h2>
+            <span class="tool-tag tag-manim">Manim</span>
+            <p class="desc">Step-by-step animation of the three asynchronous processes: policy training, human preference collection, and reward model learning (Figure 1 from the paper).</p>
+            <video controls preload="metadata">
+                <source src="https://raw.githubusercontent.com/csking101/LuCiD-papers/main/papers/1706.03741/output/animations/videos/01_system_architecture/480p15/SystemArchitecture.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+
+        <!-- Viz 2: RL vs RLHF Pipeline -->
+        <div class="viz-section" id="viz-02">
+            <h2><span class="num">#2</span> RL vs RLHF Pipeline</h2>
+            <span class="tool-tag tag-manim">Manim</span>
+            <p class="desc">Side-by-side comparison of the traditional RL pipeline (hand-designed reward) vs the RLHF pipeline (learned reward from human preferences).</p>
+            <video controls preload="metadata">
+                <source src="https://raw.githubusercontent.com/csking101/LuCiD-papers/main/papers/1706.03741/output/animations/videos/02_rl_vs_rlhf_pipeline/480p15/RLvsRLHF.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+
+        <!-- Viz 3: Preference Elicitation -->
+        <div class="viz-section" id="viz-03">
+            <h2><span class="num">#3</span> Preference Elicitation Flow</h2>
+            <span class="tool-tag tag-manim">Manim</span>
+            <p class="desc">Walkthrough of the 5-step preference collection process: segment sampling, pair presentation, human comparison, label recording, and reward model update.</p>
+            <video controls preload="metadata">
+                <source src="https://raw.githubusercontent.com/csking101/LuCiD-papers/main/papers/1706.03741/output/animations/videos/03_preference_elicitation/480p15/PreferenceElicitation.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+
+        <!-- Viz 4: Bradley-Terry Model -->
+        <div class="viz-section" id="viz-04">
+            <h2><span class="num">#4</span> Bradley-Terry Model</h2>
+            <span class="tool-tag tag-matplotlib">Matplotlib</span>
+            <span class="tool-tag tag-plotly">Plotly</span>
+            <p class="desc">The Bradley-Terry sigmoid that converts reward differences into preference probabilities, with human error rate curves showing the effect of the epsilon parameter.</p>
+            <p class="section-divider">Static figure</p>
+            <img src="https://raw.githubusercontent.com/csking101/LuCiD-papers/main/papers/1706.03741/output/static/04_bradley_terry.png" alt="Bradley-Terry Model static figure" loading="lazy">
+            <p class="section-divider">Interactive demo &mdash; <a class="open-link" href="04_bradley_terry.html" target="_blank">Open in new tab &rarr;</a></p>
+            <iframe src="04_bradley_terry.html" loading="lazy" title="Bradley-Terry interactive"></iframe>
+        </div>
+
+        <!-- Viz 5: Cross-Entropy Loss -->
+        <div class="viz-section" id="viz-05">
+            <h2><span class="num">#5</span> Cross-Entropy Loss</h2>
+            <span class="tool-tag tag-matplotlib">Matplotlib</span>
+            <span class="tool-tag tag-plotly">Plotly</span>
+            <p class="desc">Visualization of the cross-entropy loss used to train the reward model on human preference comparisons, including a rotatable 3D loss surface and contour plot.</p>
+            <p class="section-divider">Static figure</p>
+            <img src="https://raw.githubusercontent.com/csking101/LuCiD-papers/main/papers/1706.03741/output/static/05_cross_entropy_loss.png" alt="Cross-Entropy Loss static figure" loading="lazy">
+            <p class="section-divider">Interactive demo &mdash; <a class="open-link" href="05_cross_entropy_loss.html" target="_blank">Open in new tab &rarr;</a></p>
+            <iframe src="05_cross_entropy_loss.html" loading="lazy" title="Cross-Entropy Loss interactive"></iframe>
+        </div>
+
+        <!-- Viz 6: Reward Convergence -->
+        <div class="viz-section" id="viz-06">
+            <h2><span class="num">#6</span> Reward Convergence</h2>
+            <span class="tool-tag tag-manim">Manim</span>
+            <p class="desc">Animation showing how the reward model's predictions improve and converge as more human comparison data is collected over time.</p>
+            <video controls preload="metadata">
+                <source src="https://raw.githubusercontent.com/csking101/LuCiD-papers/main/papers/1706.03741/output/animations/videos/06_reward_convergence/480p15/RewardConvergence.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+
+        <!-- Viz 7: MuJoCo Results -->
+        <div class="viz-section" id="viz-07">
+            <h2><span class="num">#7</span> MuJoCo Results</h2>
+            <span class="tool-tag tag-matplotlib">Matplotlib</span>
+            <p class="desc">8-panel reproduction of Figure 2 from the paper: learning curves across MuJoCo continuous control tasks comparing RLHF agents against RL baselines.</p>
+            <img src="https://raw.githubusercontent.com/csking101/LuCiD-papers/main/papers/1706.03741/output/static/07_mujoco_results.png" alt="MuJoCo Results" loading="lazy">
+        </div>
+
+        <!-- Viz 8: Atari Results -->
+        <div class="viz-section" id="viz-08">
+            <h2><span class="num">#8</span> Atari Results</h2>
+            <span class="tool-tag tag-matplotlib">Matplotlib</span>
+            <p class="desc">7-panel reproduction of Figure 3 from the paper: learning curves across Atari games comparing RLHF agents against RL baselines.</p>
+            <img src="https://raw.githubusercontent.com/csking101/LuCiD-papers/main/papers/1706.03741/output/static/08_atari_results.png" alt="Atari Results" loading="lazy">
+        </div>
+
+        <!-- Viz 9: Ablation Heatmap -->
+        <div class="viz-section" id="viz-09">
+            <h2><span class="num">#9</span> Ablation Heatmap</h2>
+            <span class="tool-tag tag-matplotlib">Matplotlib</span>
+            <span class="tool-tag tag-plotly">Plotly</span>
+            <p class="desc">Heatmap of the ablation study results showing the impact of different design decisions on final performance.</p>
+            <p class="section-divider">Static figure</p>
+            <img src="https://raw.githubusercontent.com/csking101/LuCiD-papers/main/papers/1706.03741/output/static/09_ablation_heatmap.png" alt="Ablation Heatmap static figure" loading="lazy">
+            <p class="section-divider">Interactive demo &mdash; <a class="open-link" href="09_ablation_heatmap.html" target="_blank">Open in new tab &rarr;</a></p>
+            <iframe src="09_ablation_heatmap.html" loading="lazy" title="Ablation Heatmap interactive"></iframe>
+        </div>
+
+        <!-- Viz 10: Preference Simulation -->
+        <div class="viz-section" id="viz-10">
+            <h2><span class="num">#10</span> Preference Simulation</h2>
+            <span class="tool-tag tag-plotly">Plotly</span>
+            <p class="desc">Full interactive RLHF preference simulation: generate trajectory pairs, make preference comparisons, and watch the reward model learn in real time.</p>
+            <p class="section-divider">Interactive demo &mdash; <a class="open-link" href="10_preference_demo.html" target="_blank">Open in new tab &rarr;</a></p>
+            <iframe src="10_preference_demo.html" loading="lazy" style="height: 700px;" title="Preference Simulation interactive"></iframe>
+        </div>
+
+        <footer>
+            <p>
+                <a href="../../">Back to LuCiD-papers</a> &mdash;
+                <a href="https://github.com/csking101/LuCiD-papers/tree/main/papers/1706.03741">View source on GitHub</a>
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

@@ -4,6 +4,8 @@
 
 A collection of visualizations, animations, and interactive demos for AI/ML research papers, following the LCD framework.
 
+**Live demos:** [csking101.github.io/LuCiD-papers](https://csking101.github.io/LuCiD-papers/)
+
 ## Papers
 
 | # | Paper | Title | Static | Interactive | Animated |
@@ -15,8 +17,8 @@ A collection of visualizations, animations, and interactive demos for AI/ML rese
 Each paper is studied through three phases:
 
 - **Learn** -- Read, understand, and take notes on the paper
-- **Code** -- Build visualizations that explain the key concepts
-- **Document** -- Write comprehensive notes linking insights back to the source material
+- **Code** -- Write visualization code hands-on -- practice by building static figures, interactive demos, and animations
+- **Document** -- Publish and share the work -- GitHub Pages demos, structured notes, and paper walkthroughs
 
 Paper notes live in a separate Obsidian vault. This repo holds the visualization code and outputs.
 
