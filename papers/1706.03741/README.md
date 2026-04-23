@@ -4,7 +4,7 @@
 
 **Paper:** [arXiv:1706.03741](https://arxiv.org/abs/1706.03741)
 
-**Notes:** [Obsidian vault](https://github.com/csking101/everything)
+**Notes:** Obsidian vault (private)
 
 ## Key Idea
 

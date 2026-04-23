@@ -18,7 +18,7 @@ Each paper is studied through three phases:
 - **Code** -- Build visualizations that explain the key concepts
 - **Document** -- Write comprehensive notes linking insights back to the source material
 
-Paper notes live in a separate [Obsidian vault](https://github.com/csking101/everything). This repo holds the visualization code and outputs.
+Paper notes live in a separate Obsidian vault. This repo holds the visualization code and outputs.
 
 ## Repository Structure
 
