@@ -1,0 +1,1610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1707.06347 — Proximal Policy Optimization | LuCiD-papers</title>
+    <script>
+        MathJax = {
+            tex: { inlineMath: [['$','$']], displayMath: [['$$','$$']] },
+            options: { skipHtmlTags: ['script','noscript','style','textarea','code'] }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+    <style>
+        /* ============================================================
+           RESET & BASE
+           ============================================================ */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            line-height: 1.7;
+            font-size: 16px;
+        }
+        a { color: #58a6ff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        /* ============================================================
+           PROGRESS BAR
+           ============================================================ */
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            width: 0%;
+            background: linear-gradient(90deg, #58a6ff, #d2a8ff, #f0883e);
+            z-index: 9999;
+            transition: width 0.1s linear;
+        }
+
+        /* ============================================================
+           TWO-COLUMN LAYOUT
+           ============================================================ */
+        .page-wrapper {
+            display: flex;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        /* --- Sidebar (ToC) --- */
+        .toc-sidebar {
+            position: sticky;
+            top: 0;
+            align-self: flex-start;
+            width: 240px;
+            min-width: 240px;
+            height: 100vh;
+            overflow-y: auto;
+            padding: 40px 16px 40px 24px;
+            border-right: 1px solid #21262d;
+            background: #0d1117;
+            z-index: 50;
+        }
+        .toc-sidebar::-webkit-scrollbar { width: 4px; }
+        .toc-sidebar::-webkit-scrollbar-track { background: transparent; }
+        .toc-sidebar::-webkit-scrollbar-thumb { background: #30363d; border-radius: 2px; }
+
+        .toc-sidebar .toc-title {
+            font-size: 0.75em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #484f58;
+            margin-bottom: 12px;
+        }
+        .toc-sidebar a {
+            display: block;
+            padding: 5px 10px;
+            margin: 1px 0;
+            font-size: 0.82em;
+            color: #8b949e;
+            border-left: 2px solid transparent;
+            border-radius: 0 4px 4px 0;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        .toc-sidebar a:hover {
+            color: #c9d1d9;
+            background: #161b22;
+            text-decoration: none;
+        }
+        .toc-sidebar a.active {
+            color: #58a6ff;
+            border-left-color: #58a6ff;
+            background: #161b2280;
+            font-weight: 600;
+        }
+        .toc-sidebar a.toc-viz {
+            color: #6e7681;
+            font-size: 0.78em;
+            padding-left: 18px;
+        }
+        .toc-sidebar a.toc-viz.active {
+            color: #f0883e;
+            border-left-color: #f0883e;
+        }
+
+        /* --- Main content --- */
+        .main-content {
+            flex: 1;
+            min-width: 0;
+            max-width: 1200px;
+            padding: 40px 40px 40px 48px;
+        }
+
+        /* ============================================================
+           HEADER
+           ============================================================ */
+        .breadcrumb { font-size: 0.9em; color: #8b949e; margin-bottom: 1em; }
+        .breadcrumb a { color: #8b949e; }
+        .breadcrumb a:hover { color: #58a6ff; }
+        h1 {
+            font-size: 2.1em;
+            color: #e6edf3;
+            margin-bottom: 0.25em;
+            line-height: 1.25;
+        }
+        .meta { color: #8b949e; font-size: 0.95em; margin-bottom: 1.5em; }
+        .meta .arxiv { font-family: monospace; color: #f0883e; }
+
+        /* ============================================================
+           NAVIGATION BAR
+           ============================================================ */
+        .nav-bar {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 2em;
+            position: sticky;
+            top: 3px;
+            z-index: 100;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 4px;
+        }
+        .nav-bar span.label { color: #8b949e; font-size: 0.85em; margin-right: 6px; }
+        .nav-bar a {
+            display: inline-block;
+            padding: 3px 10px;
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            font-size: 0.8em;
+            color: #c9d1d9;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        .nav-bar a:hover { background: #30363d; text-decoration: none; }
+        .nav-bar a.active {
+            background: #58a6ff20;
+            border-color: #58a6ff60;
+            color: #58a6ff;
+        }
+
+        /* ============================================================
+           VISUALIZATION GALLERY
+           ============================================================ */
+        .viz-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+            gap: 10px;
+            margin-bottom: 2.5em;
+        }
+        .viz-gallery-title {
+            font-size: 0.75em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #484f58;
+            margin-bottom: 10px;
+        }
+        .viz-card-mini {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            font-size: 0.78em;
+            color: #c9d1d9;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            border-left: 3px solid transparent;
+        }
+        .viz-card-mini:hover {
+            background: #1c2129;
+            border-color: #484f58;
+            text-decoration: none;
+        }
+        .viz-card-mini .mini-num {
+            font-weight: 700;
+            font-size: 1.1em;
+            min-width: 22px;
+        }
+        .viz-card-mini .mini-title { flex: 1; line-height: 1.3; }
+        .viz-card-mini .mini-tag {
+            font-size: 0.8em;
+            font-weight: 600;
+            padding: 1px 6px;
+            border-radius: 8px;
+        }
+        .viz-card-mini.tool-manim   { border-left-color: #3fb950; }
+        .viz-card-mini.tool-mpl     { border-left-color: #58a6ff; }
+        .viz-card-mini.tool-plotly   { border-left-color: #f0883e; }
+        .viz-card-mini.tool-multi    { border-left-color: #d2a8ff; }
+        .mini-tag-manim  { background: #3fb95020; color: #3fb950; }
+        .mini-tag-mpl    { background: #1f6feb20; color: #58a6ff; }
+        .mini-tag-plotly  { background: #f0883e20; color: #f0883e; }
+        .mini-tag-multi   { background: #d2a8ff20; color: #d2a8ff; }
+
+        /* ============================================================
+           NOTE SECTIONS
+           ============================================================ */
+        .note-section {
+            margin-bottom: 2.5em;
+            scroll-margin-top: 60px;
+        }
+        .note-section h2 {
+            font-size: 1.5em;
+            color: #58a6ff;
+            margin-bottom: 0.6em;
+            padding-bottom: 0.3em;
+            border-bottom: 1px solid #21262d;
+        }
+        .note-section h3 {
+            font-size: 1.2em;
+            color: #d2a8ff;
+            margin: 1.2em 0 0.5em;
+        }
+        .note-section h4 {
+            font-size: 1.05em;
+            color: #f0883e;
+            margin: 1em 0 0.4em;
+        }
+        .note-section p {
+            margin-bottom: 0.7em;
+            color: #c9d1d9;
+        }
+        .note-section ul, .note-section ol {
+            margin: 0.5em 0 1em 1.5em;
+            color: #c9d1d9;
+        }
+        .note-section li {
+            margin-bottom: 0.35em;
+            padding-left: 0.2em;
+        }
+        .note-section li::marker {
+            color: #484f58;
+        }
+        .note-section ol li::marker {
+            color: #58a6ff;
+            font-weight: 600;
+        }
+        .note-section ul ul {
+            margin-top: 0.3em;
+            margin-bottom: 0.3em;
+        }
+        .note-section em {
+            color: #f0883e;
+            font-style: italic;
+        }
+        .note-section strong {
+            color: #e6edf3;
+        }
+        .note-section .math-block {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 16px 20px;
+            margin: 1em 0;
+            overflow-x: auto;
+        }
+
+        /* --- Formal definition blockquote --- */
+        .formal-def {
+            border-left: 3px solid #d2a8ff;
+            background: #d2a8ff08;
+            padding: 16px 20px;
+            margin: 1.2em 0;
+            border-radius: 0 6px 6px 0;
+        }
+        .formal-def p { margin-bottom: 0.5em; }
+        .formal-def .math-block {
+            background: #0d1117;
+            border-color: #30363d;
+        }
+
+        /* --- Callout boxes --- */
+        .callout {
+            border-left: 3px solid #58a6ff;
+            background: #58a6ff08;
+            padding: 14px 18px;
+            margin: 1.2em 0;
+            border-radius: 0 6px 6px 0;
+            font-size: 0.95em;
+        }
+        .callout.callout-key {
+            border-left-color: #f0883e;
+            background: #f0883e08;
+        }
+        .callout.callout-key::before {
+            content: 'Key Idea';
+            display: block;
+            font-size: 0.8em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #f0883e;
+            margin-bottom: 6px;
+        }
+        .callout.callout-insight {
+            border-left-color: #d2a8ff;
+            background: #d2a8ff08;
+        }
+        .callout.callout-insight::before {
+            content: 'Insight';
+            display: block;
+            font-size: 0.8em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #d2a8ff;
+            margin-bottom: 6px;
+        }
+        .callout.callout-note {
+            border-left-color: #58a6ff;
+            background: #58a6ff08;
+        }
+        .callout.callout-note::before {
+            content: 'Note';
+            display: block;
+            font-size: 0.8em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #58a6ff;
+            margin-bottom: 6px;
+        }
+        .callout p { margin-bottom: 0.4em; }
+        .callout p:last-child { margin-bottom: 0; }
+
+        /* --- TL;DR box --- */
+        .tldr {
+            background: linear-gradient(135deg, #161b22, #1c2333);
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 20px 24px;
+            margin-bottom: 2em;
+        }
+        .tldr .tldr-label {
+            font-size: 0.75em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #f0883e;
+            margin-bottom: 8px;
+        }
+        .tldr p {
+            color: #c9d1d9;
+            font-size: 0.95em;
+            line-height: 1.7;
+            margin-bottom: 0;
+        }
+
+        /* --- Section dividers --- */
+        .section-break {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #30363d 20%, #30363d 80%, transparent);
+            margin: 2.5em 0;
+        }
+
+        /* ============================================================
+           VISUALIZATION SECTIONS
+           ============================================================ */
+        .viz-section {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 24px;
+            margin: 1.8em 0;
+            scroll-margin-top: 60px;
+            border-left: 3px solid #30363d;
+            position: relative;
+        }
+        .viz-section.viz-manim   { border-left-color: #3fb950; }
+        .viz-section.viz-mpl     { border-left-color: #58a6ff; }
+        .viz-section.viz-plotly   { border-left-color: #f0883e; }
+        .viz-section.viz-multi    { border-left-color: #d2a8ff; }
+
+        .viz-section h2 {
+            font-size: 1.3em;
+            color: #c9d1d9;
+            margin-bottom: 4px;
+        }
+        .viz-section h2 .num { color: #8b949e; font-weight: normal; }
+        .viz-section .tool-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75em;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .tag-manim { background: #3fb95020; color: #3fb950; }
+        .tag-matplotlib { background: #1f6feb20; color: #58a6ff; }
+        .tag-plotly { background: #f0883e20; color: #f0883e; }
+        .viz-section .desc {
+            color: #8b949e;
+            font-size: 0.9em;
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+        .viz-section video {
+            width: 100%;
+            border-radius: 6px;
+            background: #000;
+        }
+        .viz-section img {
+            width: 100%;
+            border-radius: 6px;
+            background: #0d1117;
+        }
+        .viz-section .iframe-wrapper {
+            position: relative;
+        }
+        .viz-section iframe {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            background: #fff;
+        }
+        .viz-section .open-link {
+            display: inline-block;
+            margin-top: 8px;
+            font-size: 0.85em;
+            color: #f0883e;
+        }
+        .viz-section .open-link:hover { color: #f0883e; }
+        .viz-section .section-divider { margin: 14px 0; font-size: 0.85em; color: #484f58; }
+
+        /* --- Fullscreen button --- */
+        .fullscreen-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            color: #8b949e;
+            padding: 5px 8px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: all 0.2s;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .fullscreen-btn:hover {
+            background: #30363d;
+            color: #c9d1d9;
+        }
+        .fullscreen-btn svg {
+            width: 14px;
+            height: 14px;
+            fill: currentColor;
+        }
+
+        /* --- Fullscreen modal --- */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: #0d1117ee;
+            z-index: 10000;
+            padding: 20px;
+            cursor: pointer;
+        }
+        .modal-overlay.visible { display: flex; align-items: center; justify-content: center; }
+        .modal-overlay .modal-content {
+            width: 95vw;
+            height: 90vh;
+            position: relative;
+            cursor: default;
+        }
+        .modal-overlay iframe {
+            width: 100%;
+            height: 100%;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            background: #fff;
+        }
+        .modal-close {
+            position: absolute;
+            top: -36px;
+            right: 0;
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            color: #c9d1d9;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: background 0.2s;
+        }
+        .modal-close:hover { background: #30363d; }
+
+        /* ============================================================
+           FADE-IN ANIMATION
+           ============================================================ */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(16px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ============================================================
+           BACK-TO-TOP BUTTON
+           ============================================================ */
+        .back-to-top {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            width: 42px;
+            height: 42px;
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 50%;
+            color: #8b949e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 200;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px #00000060;
+        }
+        .back-to-top.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .back-to-top:hover {
+            background: #30363d;
+            color: #c9d1d9;
+            transform: translateY(-2px);
+        }
+        .back-to-top svg { width: 18px; height: 18px; fill: currentColor; }
+
+        /* ============================================================
+           FOOTER
+           ============================================================ */
+        footer {
+            margin-top: 3em;
+            padding: 1.5em 0;
+            border-top: 1px solid #21262d;
+            color: #484f58;
+            font-size: 0.85em;
+            text-align: center;
+        }
+        footer a { color: #58a6ff; }
+        footer .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        footer .last-updated {
+            margin-top: 6px;
+            font-size: 0.9em;
+            color: #30363d;
+        }
+
+        /* ============================================================
+           PROGRESSION TABLE
+           ============================================================ */
+        .progression-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1em 0;
+            font-size: 0.9em;
+        }
+        .progression-table th {
+            text-align: left;
+            padding: 8px 12px;
+            background: #161b22;
+            border: 1px solid #30363d;
+            color: #58a6ff;
+            font-weight: 600;
+        }
+        .progression-table td {
+            padding: 8px 12px;
+            border: 1px solid #30363d;
+            color: #c9d1d9;
+        }
+        .progression-table tr:hover td {
+            background: #161b2260;
+        }
+
+        /* ============================================================
+           RESPONSIVE / MOBILE
+           ============================================================ */
+        @media (max-width: 1400px) {
+            .toc-sidebar { display: none; }
+            .main-content { padding: 40px 20px; }
+        }
+        @media (min-width: 1401px) {
+            .nav-bar { display: none; }
+        }
+        @media (max-width: 768px) {
+            h1 { font-size: 1.5em; }
+            .note-section h2 { font-size: 1.25em; }
+            .viz-section { padding: 16px; }
+            .viz-section iframe { height: 400px; }
+            .viz-gallery { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
+            .viz-card-mini { padding: 6px 10px; font-size: 0.75em; }
+            .nav-bar { padding: 10px 12px; }
+            .nav-bar a { font-size: 0.75em; padding: 3px 8px; }
+            .callout, .formal-def { padding: 12px 14px; }
+            .back-to-top { bottom: 16px; right: 16px; width: 38px; height: 38px; }
+        }
+        @media (max-width: 480px) {
+            body { font-size: 15px; }
+            h1 { font-size: 1.3em; }
+            .main-content { padding: 24px 14px; }
+            .viz-section iframe { height: 320px; }
+            .viz-gallery { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Progress bar -->
+<div class="progress-bar" id="progress-bar"></div>
+
+<!-- Fullscreen modal -->
+<div class="modal-overlay" id="modal-overlay">
+    <div class="modal-content">
+        <button class="modal-close" id="modal-close">Close (Esc)</button>
+        <iframe id="modal-iframe" src="" title="Fullscreen visualization"></iframe>
+    </div>
+</div>
+
+<div class="page-wrapper">
+
+    <!-- ===================== SIDEBAR (ToC) ===================== -->
+    <aside class="toc-sidebar" id="toc-sidebar">
+        <div class="toc-title">On This Page</div>
+        <a href="#abstract" data-section="abstract">Abstract</a>
+        <a href="#introduction" data-section="introduction">Introduction</a>
+        <a href="#policy-gradients" data-section="policy-gradients">Policy Gradient Methods</a>
+        <a href="#viz-01" data-section="viz-01" class="toc-viz">Statistics Refresher</a>
+        <a href="#viz-02" data-section="viz-02" class="toc-viz">Policy Gradient Intuition</a>
+        <a href="#derivation" data-section="derivation">PG Derivation</a>
+        <a href="#viz-03" data-section="viz-03" class="toc-viz">PG Derivation Animation</a>
+        <a href="#advantage" data-section="advantage">Advantage Function</a>
+        <a href="#viz-04" data-section="viz-04" class="toc-viz">Advantage vs Raw Reward</a>
+        <a href="#gae" data-section="gae">GAE</a>
+        <a href="#viz-05" data-section="viz-05" class="toc-viz">GAE Lambda Tradeoff</a>
+        <a href="#trust-regions" data-section="trust-regions">Trust Region Methods</a>
+        <a href="#viz-06" data-section="viz-06" class="toc-viz">Trust Region Motivation</a>
+        <a href="#kl-divergence" data-section="kl-divergence">KL &amp; TRPO</a>
+        <a href="#viz-07" data-section="viz-07" class="toc-viz">KL Trust Region</a>
+        <a href="#clipped-objective" data-section="clipped-objective">Clipped Surrogate</a>
+        <a href="#viz-08" data-section="viz-08" class="toc-viz">Clipped Surrogate Viz</a>
+        <a href="#algorithm" data-section="algorithm">Algorithm</a>
+        <a href="#viz-09" data-section="viz-09" class="toc-viz">PPO vs TRPO vs PG</a>
+        <a href="#experiments" data-section="experiments">Experiments</a>
+        <a href="#llm-alignment" data-section="llm-alignment">PPO for LLMs</a>
+        <a href="#viz-10" data-section="viz-10" class="toc-viz">PPO LLM Alignment</a>
+        <a href="#viz-11" data-section="viz-11" class="toc-viz">CartPole Demo</a>
+        <a href="#conclusion" data-section="conclusion">Conclusion</a>
+    </aside>
+
+    <!-- ===================== MAIN CONTENT ===================== -->
+    <main class="main-content">
+
+        <p class="breadcrumb"><a href="../../">LuCiD-papers</a> / papers /</p>
+
+        <h1>Proximal Policy Optimization Algorithms</h1>
+        <p class="meta">
+            <span class="arxiv">1707.06347</span> &mdash;
+            Schulman, Wolski, Dhariwal, Radford, Klimov (2017) &mdash;
+            <a href="https://arxiv.org/abs/1707.06347">arXiv</a> &mdash;
+            <a href="https://github.com/csking101/LuCiD-papers/tree/main/papers/1707.06347">GitHub</a>
+        </p>
+
+        <div class="tldr">
+            <div class="tldr-label">TL;DR</div>
+            <p>PPO proposes a family of policy gradient methods that use a <strong>clipped surrogate objective</strong> to constrain policy updates, achieving the stability of trust-region methods (TRPO) with the simplicity of first-order optimization. Instead of solving a constrained optimization problem with second-order methods, PPO clips the importance sampling ratio to $[1-\epsilon, 1+\epsilon]$, preventing destructively large updates. Combined with Generalized Advantage Estimation and multiple epochs of minibatch updates, PPO delivers strong performance on continuous control (MuJoCo) and discrete (Atari) tasks. Published by OpenAI in 2017, PPO became the default RL optimizer for LLM alignment via RLHF &mdash; powering InstructGPT and ChatGPT.</p>
+        </div>
+
+        <!-- Top nav bar (shown on narrow screens where sidebar is hidden) -->
+        <nav class="nav-bar" id="nav-bar">
+            <span class="label">Sections:</span>
+            <a href="#abstract" data-section="abstract">Abstract</a>
+            <a href="#introduction" data-section="introduction">Intro</a>
+            <a href="#policy-gradients" data-section="policy-gradients">Policy Gradients</a>
+            <a href="#derivation" data-section="derivation">Derivation</a>
+            <a href="#advantage" data-section="advantage">Advantage</a>
+            <a href="#gae" data-section="gae">GAE</a>
+            <a href="#trust-regions" data-section="trust-regions">Trust Regions</a>
+            <a href="#clipped-objective" data-section="clipped-objective">Clipping</a>
+            <a href="#algorithm" data-section="algorithm">Algorithm</a>
+            <a href="#experiments" data-section="experiments">Experiments</a>
+            <a href="#llm-alignment" data-section="llm-alignment">LLMs</a>
+            <a href="#viz-11" data-section="viz-11">Demo</a>
+        </nav>
+
+        <!-- ===================== VISUALIZATION GALLERY ===================== -->
+        <p class="viz-gallery-title">Visualizations (11)</p>
+        <div class="viz-gallery">
+            <a class="viz-card-mini tool-manim" href="#viz-01">
+                <span class="mini-num">1</span>
+                <span class="mini-title">Statistics Refresher</span>
+                <span class="mini-tag mini-tag-manim">Manim</span>
+            </a>
+            <a class="viz-card-mini tool-manim" href="#viz-02">
+                <span class="mini-num">2</span>
+                <span class="mini-title">Policy Gradient Intuition</span>
+                <span class="mini-tag mini-tag-manim">Manim</span>
+            </a>
+            <a class="viz-card-mini tool-manim" href="#viz-03">
+                <span class="mini-num">3</span>
+                <span class="mini-title">PG Derivation</span>
+                <span class="mini-tag mini-tag-manim">Manim</span>
+            </a>
+            <a class="viz-card-mini tool-multi" href="#viz-04">
+                <span class="mini-num">4</span>
+                <span class="mini-title">Advantage vs Raw Reward</span>
+                <span class="mini-tag mini-tag-multi">MPL+Plotly</span>
+            </a>
+            <a class="viz-card-mini tool-multi" href="#viz-05">
+                <span class="mini-num">5</span>
+                <span class="mini-title">GAE Lambda Tradeoff</span>
+                <span class="mini-tag mini-tag-multi">MPL+Plotly</span>
+            </a>
+            <a class="viz-card-mini tool-manim" href="#viz-06">
+                <span class="mini-num">6</span>
+                <span class="mini-title">Trust Region Motivation</span>
+                <span class="mini-tag mini-tag-manim">Manim</span>
+            </a>
+            <a class="viz-card-mini tool-multi" href="#viz-07">
+                <span class="mini-num">7</span>
+                <span class="mini-title">KL Trust Region</span>
+                <span class="mini-tag mini-tag-multi">MPL+Plotly</span>
+            </a>
+            <a class="viz-card-mini tool-multi" href="#viz-08">
+                <span class="mini-num">8</span>
+                <span class="mini-title">Clipped Surrogate</span>
+                <span class="mini-tag mini-tag-multi">MPL+Plotly</span>
+            </a>
+            <a class="viz-card-mini tool-manim" href="#viz-09">
+                <span class="mini-num">9</span>
+                <span class="mini-title">PPO vs TRPO vs PG</span>
+                <span class="mini-tag mini-tag-manim">Manim</span>
+            </a>
+            <a class="viz-card-mini tool-multi" href="#viz-10">
+                <span class="mini-num">10</span>
+                <span class="mini-title">PPO for LLM Alignment</span>
+                <span class="mini-tag mini-tag-multi">MPL+Plotly</span>
+            </a>
+            <a class="viz-card-mini tool-plotly" href="#viz-11">
+                <span class="mini-num">11</span>
+                <span class="mini-title">CartPole Demo</span>
+                <span class="mini-tag mini-tag-plotly">Plotly</span>
+            </a>
+        </div>
+
+        <!-- ==================== ABSTRACT ==================== -->
+        <div class="note-section fade-in" id="abstract">
+            <h2>Abstract</h2>
+            <p>The paper proposes a new family of policy gradient methods that alternate between <em>sampling data through interaction with the environment</em> and <em>optimizing a "surrogate" objective function using stochastic gradient ascent</em>.</p>
+            <ul>
+                <li>Gradient <strong>ascent</strong> is used since we want to maximize the reward (as opposed to gradient descent, which minimizes a loss).</li>
+                <li>In RL, we try to maximize the expected cumulative reward.</li>
+                <li>It's <strong>stochastic</strong> because you can't calculate the cumulative reward over all possible trajectories &mdash; only the sampled ones from the mini-batch.</li>
+            </ul>
+        </div>
+
+        <!-- ==================== INTRODUCTION ==================== -->
+        <div class="note-section fade-in" id="introduction">
+            <h2>Introduction</h2>
+            <p>We want a method that is:</p>
+            <ul>
+                <li><strong>Scalable</strong> &mdash; to large models and parallel implementations</li>
+                <li><strong>Data Efficient</strong></li>
+                <li><strong>Robust</strong> &mdash; works on many problems without hyperparameter tuning</li>
+            </ul>
+            <p>The landscape of existing approaches:</p>
+            <ul>
+                <li><strong>Q-learning</strong> with function approximation fails on many simple problems and is poorly understood.</li>
+                <li><strong>TRPO</strong> is complicated &mdash; requires second-order optimization, conjugate gradients, and line search.</li>
+                <li><strong>Vanilla policy gradient</strong> methods are not data efficient or robust.</li>
+            </ul>
+
+            <div class="callout callout-key">
+                <p>PPO achieves the stability of trust-region methods with the simplicity of first-order optimization. The proposed algorithm performs better than existing approaches on continuous control tasks.</p>
+            </div>
+
+            <h3>Two Approaches to Learning a Policy</h3>
+            <ol>
+                <li><strong>Value-function based</strong>: Learn a value function that estimates "how good is each action in this state" and choose the action with the highest value. Only works well with discrete actions. Examples: Q-learning, DQN.</li>
+                <li><strong>Policy gradient</strong>: Parametrize the policy as a neural network that takes the state as input and outputs a probability distribution over actions. Use gradient ascent to adjust parameters so the policy produces actions that lead to higher rewards. Examples: REINFORCE, PPO, TRPO.</li>
+            </ol>
+            <p>The distinction: <em>"Which action is the best action?"</em> (value function) vs <em>"For this state, what should I do?"</em> (policy gradient). However, policy gradient methods have <strong>high variance</strong> &mdash; you might get lucky, or not.</p>
+        </div>
+
+        <div class="section-break"></div>
+
+        <!-- ==================== POLICY GRADIENT METHODS ==================== -->
+        <div class="note-section fade-in" id="policy-gradients">
+            <h2>Background: Policy Gradient Methods</h2>
+            <p>Policy gradient methods work by estimating the gradient of expected reward with respect to the policy parameters, then using stochastic gradient ascent to improve.</p>
+
+            <p>The most commonly used gradient estimator has the form:</p>
+            <div class="math-block">
+                $$ \widehat{g} = \widehat{\mathbb{E}}_{t} \left[\nabla_{\theta}\log\pi_{\theta}(a_t|s_t)\,\widehat{A}_t\right]$$
+            </div>
+            <p>where $\pi_\theta$ is a stochastic policy, $\widehat{A}_t$ is the estimator of the advantage function at timestep $t$, and $\widehat{\mathbb{E}}_t$ denotes an empirical average over a finite batch of samples.</p>
+
+            <p>In practice, automatic differentiation software constructs an objective function whose gradient <em>is</em> the policy gradient estimator:</p>
+            <div class="math-block">
+                $$ L^{PG}(\theta) = \widehat{\mathbb{E}}_t \left[\log\pi_{\theta}(a_t|s_t)\,\widehat{A}_t\right]$$
+            </div>
+
+            <div class="callout callout-key">
+                <p>Performing multiple steps of optimization on $L^{PG}$ using the same trajectory can lead to <strong>destructively large policy updates</strong>. This is the core problem PPO solves.</p>
+            </div>
+
+            <h3>Intuition for the Method</h3>
+            <p>You have a policy parametrized by a neural network ($\theta$). The policy maps states to action probabilities. You want to adjust $\theta$ so the policy collects more rewards.</p>
+            <p>The tricky part: the objective has an expectation over trajectories that depend on $\theta$ in a complex way:</p>
+            <div class="math-block">
+                $$ \theta \rightarrow \text{policy} \rightarrow \text{states visited} \rightarrow \text{rewards} $$
+            </div>
+            <p>How do you differentiate through this? Using the <strong>log-derivative trick</strong>:</p>
+            <div class="math-block">
+                $$\nabla P(x) = P(x) \cdot \nabla \log P(x)$$
+            </div>
+            <p>This lets us rewrite the gradient of an expectation as an expectation we can sample:</p>
+            <div class="math-block">
+                $$\nabla\bigl(\mathbb{E}[\text{reward}]\bigr) = \mathbb{E}\bigl[\text{reward} \cdot \nabla \log \pi(a|s)\bigr]$$
+            </div>
+            <p>The process becomes: run policy &rarr; collect trajectories &rarr; for each (state, action) pair compute reward &times; gradient &rarr; average across samples. This is the <strong>REINFORCE</strong> algorithm.</p>
+        </div>
+
+        <!-- Viz 1: Statistics Refresher -->
+        <div class="viz-section viz-manim fade-in" id="viz-01">
+            <h2><span class="num">#1</span> Statistics Refresher</h2>
+            <span class="tool-tag tag-manim">Manim</span>
+            <p class="desc">Animated review of key statistical concepts underpinning policy gradients: expectation, variance, log-derivative trick, and importance sampling.</p>
+            <video controls preload="metadata">
+                <source src="StatsRefresher.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+
+        <!-- Viz 2: Policy Gradient Intuition -->
+        <div class="viz-section viz-manim fade-in" id="viz-02">
+            <h2><span class="num">#2</span> Policy Gradient Intuition</h2>
+            <span class="tool-tag tag-manim">Manim</span>
+            <p class="desc">Visual walkthrough of the REINFORCE algorithm: how actions with positive advantage get reinforced (probability increased) while actions with negative advantage get suppressed.</p>
+            <video controls preload="metadata">
+                <source src="PolicyGradientIntuition.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+
+        <div class="section-break"></div>
+
+        <!-- ==================== DERIVATION ==================== -->
+        <div class="note-section fade-in" id="derivation">
+            <h2>Derivation of the Policy Gradient Estimator</h2>
+
+            <h3>Setup</h3>
+            <p>We have a parameterized policy $\pi_{\theta}(a_t|s_t)$ and want to maximize the expected return:</p>
+            <div class="math-block">
+                $$J(\theta) = \mathbb{E}_{\tau \sim \pi_{\theta}} \left[ \sum_{t=0}^{T} r_t \right]$$
+            </div>
+            <p>where $\tau = (s_0, a_0, s_1, a_1, \ldots)$ is a trajectory sampled under policy $\pi_{\theta}$.</p>
+
+            <h4>Step 1: Probability of a trajectory</h4>
+            <div class="math-block">
+                $$P(\tau | \theta) = \rho(s_0) \prod_{t=0}^{T} \pi_{\theta}(a_t|s_t) \cdot P(s_{t+1}|s_t, a_t)$$
+            </div>
+            <p>where $\rho(s_0)$ is the initial state distribution and $P(s_{t+1}|s_t,a_t)$ is the environment dynamics.</p>
+
+            <h4>Step 2: Gradient of the objective</h4>
+            <div class="math-block">
+                $$\nabla_{\theta} J(\theta) = \nabla_{\theta} \int P(\tau|\theta) \, R(\tau) \, d\tau$$
+            </div>
+
+            <h4>Step 3: The log-derivative trick</h4>
+            <p>Using $\nabla_{\theta} P(\tau|\theta) = P(\tau|\theta) \cdot \nabla_{\theta} \log P(\tau|\theta)$:</p>
+            <div class="math-block">
+                $$\nabla_{\theta} J(\theta) = \mathbb{E}_{\tau \sim \pi_{\theta}} \left[ \nabla_{\theta} \log P(\tau|\theta) \cdot R(\tau) \right]$$
+            </div>
+
+            <h4>Step 4: Simplify the log-trajectory probability</h4>
+            <div class="math-block">
+                $$\log P(\tau|\theta) = \log \rho(s_0) + \sum_{t=0}^{T} \log \pi_{\theta}(a_t|s_t) + \sum_{t=0}^{T} \log P(s_{t+1}|s_t,a_t)$$
+            </div>
+            <p>Taking the gradient w.r.t. $\theta$:</p>
+            <div class="math-block">
+                $$\nabla_{\theta} \log P(\tau|\theta) = \sum_{t=0}^{T} \nabla_{\theta} \log \pi_{\theta}(a_t|s_t)$$
+            </div>
+
+            <div class="callout callout-insight">
+                <p>The initial state distribution and environment dynamics terms vanish &mdash; they don't depend on $\theta$. This is why policy gradients are <strong>model-free</strong>: we never need to know or differentiate through the environment dynamics.</p>
+            </div>
+
+            <h4>Step 5: The REINFORCE gradient</h4>
+            <div class="math-block">
+                $$\nabla_{\theta} J(\theta) = \mathbb{E}_{\tau \sim \pi_{\theta}} \left[ \sum_{t=0}^{T} \nabla_{\theta} \log \pi_{\theta}(a_t|s_t) \cdot R(\tau) \right]$$
+            </div>
+
+            <h4>Step 6: Introduce the advantage function</h4>
+            <p>Using $R(\tau)$ produces high variance. Replace it with $\widehat{A}_t = Q(s_t, a_t) - V(s_t)$ without changing the expected gradient:</p>
+            <div class="math-block">
+                $$\nabla_{\theta} J(\theta) = \mathbb{E}_{t} \left[ \nabla_{\theta} \log \pi_{\theta}(a_t|s_t) \cdot \widehat{A}_t \right]$$
+            </div>
+
+            <h4>Step 7: The policy gradient estimator</h4>
+            <p>Estimate this expectation by sampling and averaging:</p>
+            <div class="formal-def">
+                <div class="math-block">
+                    $$\boxed{\widehat{g} = \widehat{\mathbb{E}}_{t} \left[ \nabla_{\theta} \log \pi_{\theta}(a_t|s_t) \, \widehat{A}_t \right]}$$
+                </div>
+                <p>where $\widehat{\mathbb{E}}_t$ denotes the empirical average over a finite batch of timesteps, and $\widehat{A}_t$ is an estimator of the advantage function (computed using GAE in PPO's case).</p>
+            </div>
+        </div>
+
+        <!-- Viz 3: Policy Gradient Derivation -->
+        <div class="viz-section viz-manim fade-in" id="viz-03">
+            <h2><span class="num">#3</span> Policy Gradient Derivation</h2>
+            <span class="tool-tag tag-manim">Manim</span>
+            <p class="desc">Step-by-step animated derivation of the policy gradient estimator, from trajectory probability through the log-derivative trick to the final REINFORCE formula.</p>
+            <video controls preload="metadata">
+                <source src="PolicyGradientDerivation.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+
+        <div class="section-break"></div>
+
+        <!-- ==================== ADVANTAGE FUNCTION ==================== -->
+        <div class="note-section fade-in" id="advantage">
+            <h2>The Advantage Function</h2>
+
+            <h3>Building Blocks</h3>
+            <p><strong>Value function</strong> $V(s_t)$ &mdash; "If I'm in state $s_t$ and follow my policy from here, what's my expected total future reward?"</p>
+            <div class="math-block">
+                $$V(s_t) = \mathbb{E}_{\pi} \left[ \sum_{t'=t}^{T} r_{t'} \;\middle|\; s_t \right]$$
+            </div>
+
+            <p><strong>Action-value function</strong> $Q(s_t, a_t)$ &mdash; "If I take <em>specific</em> action $a_t$ in state $s_t$, then follow my policy after that?"</p>
+            <div class="math-block">
+                $$Q(s_t, a_t) = \mathbb{E}_{\pi} \left[ \sum_{t'=t}^{T} r_{t'} \;\middle|\; s_t, a_t \right]$$
+            </div>
+
+            <p>Note that $V$ is just $Q$ averaged over all actions weighted by the policy: $V(s_t) = \sum_{a} \pi(a|s_t) \cdot Q(s_t, a)$.</p>
+
+            <h3>Definition</h3>
+            <div class="formal-def">
+                <div class="math-block">
+                    $$A(s_t, a_t) = Q(s_t, a_t) - V(s_t)$$
+                </div>
+                <p>"How much better (or worse) is this specific action compared to what I'd get on average from this state?"</p>
+                <ul>
+                    <li>$A > 0$: this action is better than the average action from this state</li>
+                    <li>$A < 0$: this action is worse than average</li>
+                    <li>$A = 0$: this action is exactly as good as average</li>
+                </ul>
+            </div>
+
+            <h3>Why This Definition? &mdash; Variance Reduction</h3>
+            <p>The "something" multiplying $\nabla_\theta \log \pi_\theta(a_t|s_t)$ in the policy gradient can be:</p>
+            <ol>
+                <li><strong>Total trajectory reward</strong> $R(\tau)$ &mdash; valid but high variance</li>
+                <li><strong>Future reward from $t$ onward</strong> $\sum_{t' \geq t} r_{t'}$ &mdash; valid, lower variance</li>
+                <li><strong>$Q(s_t, a_t)$</strong> &mdash; same expected gradient, focuses on the action's value</li>
+                <li><strong>$Q(s_t, a_t) - V(s_t)$</strong> &mdash; same expected gradient, <em>lowest variance</em></li>
+            </ol>
+
+            <div class="callout callout-insight">
+                <p>Rewards from the past can't influence future rewards, so past rewards just add variance. Looking at only the "rewards to go" ($Q$ from time $t$) removes that noise. Adding a state-dependent baseline ($V$) reduces variance even further &mdash; without introducing any bias.</p>
+            </div>
+
+            <h4>Proof that subtracting $V(s_t)$ adds zero in expectation</h4>
+            <div class="math-block">
+                $$\mathbb{E}_{a \sim \pi} \left[ \nabla_\theta \log \pi_\theta(a|s) \cdot V(s) \right]
+                = V(s) \cdot \sum_{a} \nabla_\theta \pi_\theta(a|s)
+                = V(s) \cdot \nabla_\theta \underbrace{\sum_{a} \pi_\theta(a|s)}_{= 1}
+                = 0$$
+            </div>
+            <p>Therefore subtracting $V(s_t)$ adds zero in expectation but dramatically reduces variance. <strong>The advantage is the optimal baseline for variance reduction in policy gradients.</strong></p>
+
+            <h3>Summary</h3>
+            <p>By using gradient ascent with the advantage, we push up actions that have higher-than-average returns and push down those with lower-than-average returns. The advantage acts as both a <em>filter</em> and a <em>multiplier</em>.</p>
+        </div>
+
+        <!-- Viz 4: Advantage vs Raw Reward -->
+        <div class="viz-section viz-multi fade-in" id="viz-04">
+            <h2><span class="num">#4</span> Advantage vs Raw Reward</h2>
+            <span class="tool-tag tag-matplotlib">Matplotlib</span>
+            <span class="tool-tag tag-plotly">Plotly</span>
+            <p class="desc">Side-by-side comparison of policy gradient updates using raw trajectory rewards vs advantage-based estimation, showing how variance is reduced.</p>
+            <p class="section-divider">Static figure</p>
+            <img src="https://raw.githubusercontent.com/csking101/LuCiD-papers/main/papers/1707.06347/output/static/04_advantage_vs_raw_reward.png" alt="Advantage vs Raw Reward" loading="lazy">
+            <p class="section-divider">Interactive demo &mdash; <a class="open-link" href="04_advantage_vs_raw_reward.html" target="_blank">Open in new tab &rarr;</a></p>
+            <div class="iframe-wrapper">
+                <button class="fullscreen-btn" data-src="04_advantage_vs_raw_reward.html" title="View fullscreen">
+                    <svg viewBox="0 0 16 16"><path d="M1.5 1h4a.5.5 0 010 1H2v3.5a.5.5 0 01-1 0v-4a.5.5 0 01.5-.5zm13 0a.5.5 0 01.5.5v4a.5.5 0 01-1 0V2h-3.5a.5.5 0 010-1h4zM1 10.5a.5.5 0 011 0V14h3.5a.5.5 0 010 1h-4a.5.5 0 01-.5-.5v-4zm14 0a.5.5 0 01-1 0V14h-3.5a.5.5 0 010 1h4a.5.5 0 00.5-.5v-4z"/></svg>
+                    Fullscreen
+                </button>
+                <iframe src="04_advantage_vs_raw_reward.html" loading="lazy" title="Advantage vs Raw Reward interactive"></iframe>
+            </div>
+        </div>
+
+        <div class="section-break"></div>
+
+        <!-- ==================== GAE ==================== -->
+        <div class="note-section fade-in" id="gae">
+            <h2>Generalized Advantage Estimation (GAE)</h2>
+            <p>The $\widehat{A}_t$ in the PPO equation means "we don't know the true $A$, so we estimate it." PPO uses <strong>GAE</strong>, which introduces a parameter $\lambda$ that trades off bias and variance.</p>
+
+            <h3>TD Residual</h3>
+            <p>First, define the <strong>temporal difference (TD) residual</strong> at timestep $t$:</p>
+            <div class="formal-def">
+                <div class="math-block">
+                    $$\delta_t^V = r_t + \gamma V(s_{t+1}) - V(s_t)$$
+                </div>
+                <p>A one-step estimate of the advantage: "I got reward $r_t$, ended up in a state worth $V(s_{t+1})$, so the discounted value of what actually happened is $r_t + \gamma V(s_{t+1})$. Subtract what I expected, $V(s_t)$, to get the surprise."</p>
+            </div>
+
+            <h3>The GAE Formula</h3>
+            <div class="math-block">
+                $$\widehat{A}_t^{\text{GAE}(\gamma, \lambda)} = \sum_{l=0}^{\infty} (\gamma \lambda)^l \, \delta_{t+l}^V = \delta_t^V + (\gamma \lambda) \delta_{t+1}^V + (\gamma \lambda)^2 \delta_{t+2}^V + \cdots$$
+            </div>
+            <p>where $\gamma \in [0, 1]$ is the discount factor and $\lambda \in [0, 1]$ controls the bias-variance tradeoff.</p>
+
+            <h3>Special Cases</h3>
+            <h4>When $\lambda = 0$</h4>
+            <div class="math-block">
+                $$\widehat{A}_t = \delta_t^V = r_t + \gamma V(s_{t+1}) - V(s_t)$$
+            </div>
+            <p>Just the one-step TD residual. <strong>Low variance</strong> (only depends on one step of randomness) but <strong>high bias</strong> (relies entirely on $V$ being accurate).</p>
+
+            <h4>When $\lambda = 1$</h4>
+            <div class="math-block">
+                $$\widehat{A}_t = -V(s_t) + \sum_{l=0}^{\infty} \gamma^l r_{t+l}$$
+            </div>
+            <p>The full Monte Carlo return minus the baseline. <strong>No bias</strong> (uses actual rewards) but <strong>high variance</strong> (depends on the entire future trajectory).</p>
+
+            <div class="callout callout-key">
+                <p>$\lambda$ interpolates smoothly between these extremes. Instead of choosing between "trust your value function estimate" ($\lambda=0$) and "trust the raw Monte Carlo returns" ($\lambda=1$), GAE blends them. The $(\gamma\lambda)^l$ weighting means nearby TD residuals matter more and distant ones are exponentially downweighted. In practice, PPO typically uses <strong>$\lambda = 0.95$</strong>.</p>
+            </div>
+
+            <div class="callout callout-note">
+                <p><strong>LLM connection:</strong> When PPO is used for LLM fine-tuning, each token generation is an action. Tokens with positive advantage (better than average continuations) get reinforced &mdash; made more likely &mdash; while tokens with negative advantage get suppressed.</p>
+            </div>
+        </div>
+
+        <!-- Viz 5: GAE Lambda Tradeoff -->
+        <div class="viz-section viz-multi fade-in" id="viz-05">
+            <h2><span class="num">#5</span> GAE Lambda Tradeoff</h2>
+            <span class="tool-tag tag-matplotlib">Matplotlib</span>
+            <span class="tool-tag tag-plotly">Plotly</span>
+            <p class="desc">Interactive visualization of how the GAE lambda parameter controls the bias-variance tradeoff in advantage estimation, with TD weight decay curves for different lambda values.</p>
+            <p class="section-divider">Static figure</p>
+            <img src="https://raw.githubusercontent.com/csking101/LuCiD-papers/main/papers/1707.06347/output/static/05_gae_lambda_tradeoff.png" alt="GAE Lambda Tradeoff" loading="lazy">
+            <p class="section-divider">Interactive demo &mdash; <a class="open-link" href="05_gae_lambda_tradeoff.html" target="_blank">Open in new tab &rarr;</a></p>
+            <div class="iframe-wrapper">
+                <button class="fullscreen-btn" data-src="05_gae_lambda_tradeoff.html" title="View fullscreen">
+                    <svg viewBox="0 0 16 16"><path d="M1.5 1h4a.5.5 0 010 1H2v3.5a.5.5 0 01-1 0v-4a.5.5 0 01.5-.5zm13 0a.5.5 0 01.5.5v4a.5.5 0 01-1 0V2h-3.5a.5.5 0 010-1h4zM1 10.5a.5.5 0 011 0V14h3.5a.5.5 0 010 1h-4a.5.5 0 01-.5-.5v-4zm14 0a.5.5 0 01-1 0V14h-3.5a.5.5 0 010 1h4a.5.5 0 00.5-.5v-4z"/></svg>
+                    Fullscreen
+                </button>
+                <iframe src="05_gae_lambda_tradeoff.html" loading="lazy" title="GAE Lambda Tradeoff interactive"></iframe>
+            </div>
+        </div>
+
+        <div class="section-break"></div>
+
+        <!-- ==================== TRUST REGION METHODS ==================== -->
+        <div class="note-section fade-in" id="trust-regions">
+            <h2>Trust Region Methods</h2>
+            <p>In TRPO, the objective function ("surrogate objective") is maximized subject to a constraint on the size of the policy update.</p>
+
+            <h3>The Fundamental Problem with Policy Gradients</h3>
+            <p>The policy gradient gives us a <em>direction</em> to move $\theta$, but says nothing about <em>how far</em> to move:</p>
+            <div class="math-block">
+                $$\theta_{\text{new}} = \theta_{\text{old}} + \alpha \, \widehat{g}$$
+            </div>
+            <p>The learning rate $\alpha$ is the problem. This is much worse than in supervised learning, for a reason specific to RL.</p>
+
+            <h3>Why RL Is Different From Supervised Learning</h3>
+            <p>In supervised learning, your dataset is <strong>fixed</strong>. A bad gradient step makes the loss go up, but next step you compute a gradient on the same data and recover.</p>
+            <p>In RL, your dataset is <strong>generated by your policy</strong>. A bad gradient step changes your policy, which changes what trajectories you collect, which changes the quality of your next gradient estimate.</p>
+
+            <div class="callout callout-key">
+                <p>This creates a <strong>feedback loop</strong>: bad update &rarr; bad policy &rarr; bad data &rarr; bad gradient &rarr; worse update &rarr; &hellip; A single overly large update can be <strong>unrecoverable</strong>. The policy enters a region of parameter space where it collects useless data, and no amount of subsequent gradient steps can fix it.</p>
+            </div>
+
+            <h3>The Step Size Dilemma</h3>
+            <ul>
+                <li><strong>Small $\alpha$</strong>: safe but slow &mdash; you might need millions of updates.</li>
+                <li><strong>Large $\alpha$</strong>: fast but dangerous &mdash; risk the death spiral above.</li>
+                <li><strong>Adaptive methods</strong> (Adam, RMSProp) don't solve this. They adapt step sizes per-parameter, but have no notion of "how much did the <em>policy</em> change?"</li>
+            </ul>
+
+            <div class="callout callout-insight">
+                <p><strong>The core insight:</strong> we don't care how much $\theta$ changes in Euclidean space. We care how much the <em>policy distribution</em> changes. A step of size 0.01 in $\theta$ might barely change the policy, or it might completely flip the action probabilities &mdash; depending on the local geometry.</p>
+            </div>
+        </div>
+
+        <!-- Viz 6: Trust Region Motivation -->
+        <div class="viz-section viz-manim fade-in" id="viz-06">
+            <h2><span class="num">#6</span> Trust Region Motivation</h2>
+            <span class="tool-tag tag-manim">Manim</span>
+            <p class="desc">Animated comparison of parameter-space vs policy-space distances, showing how a small parameter change can cause a large policy shift and why KL-based trust regions are needed.</p>
+            <video controls preload="metadata">
+                <source src="TrustRegionMotivation.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+
+        <div class="section-break"></div>
+
+        <!-- ==================== KL DIVERGENCE & TRPO ==================== -->
+        <div class="note-section fade-in" id="kl-divergence">
+            <h2>From Parameter Space to Distribution Space</h2>
+            <p>We need a measure of distance between <em>policies</em>, not between parameter vectors. This is where <strong>KL divergence</strong> comes in:</p>
+            <div class="formal-def">
+                <div class="math-block">
+                    $$\text{KL}\left[\pi_{\theta_{\text{old}}}(\cdot|s) \;\|\; \pi_\theta(\cdot|s)\right] = \sum_a \pi_{\theta_{\text{old}}}(a|s) \log \frac{\pi_{\theta_{\text{old}}}(a|s)}{\pi_\theta(a|s)}$$
+                </div>
+                <p>KL divergence measures how different two probability distributions are. Always $\geq 0$, equals $0$ only when the distributions are identical. It is <strong>invariant to parametrization</strong> &mdash; even if the policy's parameters $\theta$ have changed a lot, it doesn't matter if the output distribution is similar.</p>
+            </div>
+
+            <h3>The Local Approximation (Surrogate Objective)</h3>
+            <p>If $\pi_\theta$ is close to $\pi_{\theta_{\text{old}}}$, we can approximate the true objective by using importance sampling:</p>
+            <div class="math-block">
+                $$L^{CPI}(\theta) = \widehat{\mathbb{E}}_t \left[ \frac{\pi_\theta(a_t|s_t)}{\pi_{\theta_{\text{old}}}(a_t|s_t)} \widehat{A}_t \right]$$
+            </div>
+            <p>This surrogate is a good approximation <strong>only locally</strong>. Far from $\theta_{\text{old}}$, it breaks down because the state distribution diverges and the importance sampling ratio becomes unreliable.</p>
+
+            <h3>TRPO: Constrained Optimization</h3>
+            <p>TRPO formalizes "stay close" as:</p>
+            <div class="formal-def">
+                <div class="math-block">
+                    $$\underset{\theta}{\text{maximize}} \quad \widehat{\mathbb{E}}_t \left[ \frac{\pi_\theta(a_t|s_t)}{\pi_{\theta_{\text{old}}}(a_t|s_t)} \widehat{A}_t \right]$$
+                    $$\text{subject to} \quad \widehat{\mathbb{E}}_t \left[ \text{KL}\left[\pi_{\theta_{\text{old}}}(\cdot|s_t) \;\|\; \pi_\theta(\cdot|s_t)\right] \right] \leq \delta$$
+                </div>
+                <p>The constraint defines a <strong>trust region</strong> &mdash; the set of all $\theta$ values where the KL divergence from the old policy is at most $\delta$. With a <strong>monotonic improvement guarantee</strong>.</p>
+            </div>
+
+            <h3>The Cost of TRPO</h3>
+            <p>Solving this constrained problem requires:</p>
+            <ol>
+                <li>Computing the <strong>Fisher information matrix</strong> $F$ (second-order derivative of KL w.r.t. $\theta$)</li>
+                <li>Using <strong>conjugate gradient</strong> to approximately solve $F^{-1} g$</li>
+                <li>A <strong>line search</strong> to find the largest step satisfying the KL constraint</li>
+            </ol>
+            <p>This is doable but expensive and complex. This complexity is precisely what motivates PPO.</p>
+        </div>
+
+        <!-- Viz 7: KL Trust Region -->
+        <div class="viz-section viz-multi fade-in" id="viz-07">
+            <h2><span class="num">#7</span> KL Trust Region</h2>
+            <span class="tool-tag tag-matplotlib">Matplotlib</span>
+            <span class="tool-tag tag-plotly">Plotly</span>
+            <p class="desc">Visualization of the KL divergence constraint defining the trust region in policy space, showing how different constraint radii affect the allowed policy updates.</p>
+            <p class="section-divider">Static figure</p>
+            <img src="https://raw.githubusercontent.com/csking101/LuCiD-papers/main/papers/1707.06347/output/static/07_kl_trust_region.png" alt="KL Trust Region" loading="lazy">
+            <p class="section-divider">Interactive demo &mdash; <a class="open-link" href="07_kl_trust_region.html" target="_blank">Open in new tab &rarr;</a></p>
+            <div class="iframe-wrapper">
+                <button class="fullscreen-btn" data-src="07_kl_trust_region.html" title="View fullscreen">
+                    <svg viewBox="0 0 16 16"><path d="M1.5 1h4a.5.5 0 010 1H2v3.5a.5.5 0 01-1 0v-4a.5.5 0 01.5-.5zm13 0a.5.5 0 01.5.5v4a.5.5 0 01-1 0V2h-3.5a.5.5 0 010-1h4zM1 10.5a.5.5 0 011 0V14h3.5a.5.5 0 010 1h-4a.5.5 0 01-.5-.5v-4zm14 0a.5.5 0 01-1 0V14h-3.5a.5.5 0 010 1h4a.5.5 0 00.5-.5v-4z"/></svg>
+                    Fullscreen
+                </button>
+                <iframe src="07_kl_trust_region.html" loading="lazy" title="KL Trust Region interactive"></iframe>
+            </div>
+        </div>
+
+        <div class="section-break"></div>
+
+        <!-- ==================== CLIPPED SURROGATE OBJECTIVE ==================== -->
+        <div class="note-section fade-in" id="clipped-objective">
+            <h2>Clipped Surrogate Objective</h2>
+
+            <p>Define the probability ratio:</p>
+            <div class="math-block">
+                $$r_t(\theta) = \frac{\pi_\theta(a_t|s_t)}{\pi_{\theta_{\text{old}}}(a_t|s_t)} \qquad \text{so } r_t(\theta_{\text{old}}) = 1$$
+            </div>
+
+            <p>Without a constraint, maximizing $L^{CPI}(\theta) = \widehat{\mathbb{E}}_t [r_t(\theta)\widehat{A}_t]$ could lead to excessively large policy updates. PPO modifies the objective to penalize changes that move $r_t(\theta)$ away from 1:</p>
+
+            <div class="formal-def">
+                <div class="math-block">
+                    $$ L^{\text{CLIP}}(\theta) = \widehat{\mathbb{E}}_t\left[\min\bigl(r_t(\theta)\widehat{A}_t,\;\text{clip}(r_t(\theta),\,1-\epsilon,\,1+\epsilon)\,\widehat{A}_t\bigr)\right]$$
+                </div>
+                <p>where $\epsilon$ is a hyperparameter (typically $0.2$). By taking the <strong>minimum</strong> of the clipped and unclipped objective, the final objective is a pessimistic (lower) bound on the unclipped objective.</p>
+            </div>
+
+            <p>The motivation:</p>
+            <ul>
+                <li>The first term is the same as TRPO's surrogate.</li>
+                <li>The second term clips the ratio, removing the incentive to move $r_t(\theta)$ outside $[1-\epsilon, 1+\epsilon]$.</li>
+                <li>Where $r = 1$, both terms are equal. They diverge as $\theta$ moves away from $\theta_{\text{old}}$.</li>
+                <li>The $\min$ handles both positive and negative advantages correctly.</li>
+            </ul>
+
+            <div class="callout callout-key">
+                <p>When the advantage is <strong>positive</strong> ($A > 0$): the objective increases as $r$ increases (reinforcing the action), but clips at $1+\epsilon$ &mdash; preventing excessive reinforcement. When the advantage is <strong>negative</strong> ($A < 0$): the objective increases as $r$ decreases (suppressing the action), but clips at $1-\epsilon$ &mdash; preventing excessive suppression.</p>
+            </div>
+
+            <h3>Adaptive KL Penalty (Alternative)</h3>
+            <p>As an alternative to clipping, PPO can use an adaptive KL penalty:</p>
+            <div class="math-block">
+                $$L^{KLPEN}(\theta) = \widehat{\mathbb{E}}_t \left[ \frac{\pi_\theta(a_t|s_t)}{\pi_{\theta_{\text{old}}}(a_t|s_t)} \widehat{A}_t - \beta \, \text{KL}\left[\pi_{\theta_{\text{old}}}(\cdot|s_t) \;\|\; \pi_\theta(\cdot|s_t)\right] \right]$$
+            </div>
+            <p>The coefficient $\beta$ is adjusted dynamically:</p>
+            <ul>
+                <li>If $d < d_{\text{targ}} / 1.5$: update was too conservative, decrease $\beta \leftarrow \beta / 2$</li>
+                <li>If $d > d_{\text{targ}} \times 1.5$: update was too aggressive, increase $\beta \leftarrow \beta \times 2$</li>
+            </ul>
+            <p>In practice, this worked worse than the clipped surrogate objective.</p>
+
+            <h3>The Progression</h3>
+            <table class="progression-table">
+                <thead>
+                    <tr><th>Method</th><th>How it controls step size</th><th>Complexity</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Vanilla PG</td><td>Fixed learning rate $\alpha$</td><td>Simple, unstable</td></tr>
+                    <tr><td>TRPO</td><td>Hard KL constraint, second-order optimization</td><td>Stable, complex</td></tr>
+                    <tr><td>PPO (clip)</td><td>Clip importance ratio to $[1-\epsilon, 1+\epsilon]$</td><td>Stable, simple</td></tr>
+                    <tr><td>PPO (penalty)</td><td>Adaptive KL penalty in objective</td><td>Stable, simple</td></tr>
+                </tbody>
+            </table>
+
+            <div class="callout callout-insight">
+                <p>The narrative arc: gradient direction is easy, step size is hard &rarr; step size in parameter space is the wrong thing to control &rarr; control distance in policy space instead (KL) &rarr; TRPO does this exactly but is complex &rarr; <strong>PPO approximates it simply</strong>.</p>
+            </div>
+        </div>
+
+        <!-- Viz 8: Clipped Surrogate -->
+        <div class="viz-section viz-multi fade-in" id="viz-08">
+            <h2><span class="num">#8</span> Clipped Surrogate Objective</h2>
+            <span class="tool-tag tag-matplotlib">Matplotlib</span>
+            <span class="tool-tag tag-plotly">Plotly</span>
+            <p class="desc">Visualization of the PPO clipping mechanism: how the surrogate objective is clipped for both positive and negative advantages, with the effective loss landscape.</p>
+            <p class="section-divider">Static figure</p>
+            <img src="https://raw.githubusercontent.com/csking101/LuCiD-papers/main/papers/1707.06347/output/static/08_clipped_surrogate.png" alt="Clipped Surrogate Objective" loading="lazy">
+            <p class="section-divider">Interactive demo &mdash; <a class="open-link" href="08_clipped_surrogate.html" target="_blank">Open in new tab &rarr;</a></p>
+            <div class="iframe-wrapper">
+                <button class="fullscreen-btn" data-src="08_clipped_surrogate.html" title="View fullscreen">
+                    <svg viewBox="0 0 16 16"><path d="M1.5 1h4a.5.5 0 010 1H2v3.5a.5.5 0 01-1 0v-4a.5.5 0 01.5-.5zm13 0a.5.5 0 01.5.5v4a.5.5 0 01-1 0V2h-3.5a.5.5 0 010-1h4zM1 10.5a.5.5 0 011 0V14h3.5a.5.5 0 010 1h-4a.5.5 0 01-.5-.5v-4zm14 0a.5.5 0 01-1 0V14h-3.5a.5.5 0 010 1h4a.5.5 0 00.5-.5v-4z"/></svg>
+                    Fullscreen
+                </button>
+                <iframe src="08_clipped_surrogate.html" loading="lazy" title="Clipped Surrogate interactive"></iframe>
+            </div>
+        </div>
+
+        <div class="section-break"></div>
+
+        <!-- ==================== ALGORITHM ==================== -->
+        <div class="note-section fade-in" id="algorithm">
+            <h2>Algorithm</h2>
+
+            <h3>Combined Loss</h3>
+            <p>If the policy and value function share parameters (common in practice), the loss function combines the policy surrogate, a value function error term, and an entropy bonus:</p>
+            <div class="formal-def">
+                <div class="math-block">
+                    $$L_t^{CLIP+VF+S}(\theta) = \widehat{\mathbb{E}}_t \left[ L_t^{CLIP}(\theta) - c_1 L_t^{VF}(\theta) + c_2 S[\pi_\theta](s_t) \right]$$
+                </div>
+                <p>where $c_1, c_2$ are coefficients, $S[\pi_\theta](s_t)$ is an entropy bonus to encourage exploration, and $L_t^{VF}(\theta) = ( V_\theta(s_t) - V_t^{\text{targ}} )^2$ is the squared-error value function loss.</p>
+            </div>
+
+            <h3>Truncated GAE</h3>
+            <p>The implementation runs the policy for $T$ timesteps (per trajectory segment, not per episode) and uses a truncated version of GAE:</p>
+            <div class="math-block">
+                $$\widehat{A}_t = \delta_t + (\gamma \lambda)\delta_{t+1} + \cdots + (\gamma \lambda)^{T-t+1}\delta_{T-1}$$
+                $$\text{where } \delta_t = r_t + \gamma V(s_{t+1}) - V(s_t)$$
+            </div>
+
+            <h3>PPO, Actor-Critic Style</h3>
+            <div class="formal-def">
+                <p><strong>Algorithm 1:</strong></p>
+                <p><strong>for</strong> iteration $= 1, 2, \ldots$ <strong>do</strong></p>
+                <p style="padding-left: 20px;"><strong>for</strong> actor $= 1, 2, \ldots, N$ <strong>do</strong></p>
+                <p style="padding-left: 40px;">Run policy $\pi_{\theta_{\text{old}}}$ in environment for $T$ timesteps</p>
+                <p style="padding-left: 40px;">Compute advantage estimates $\widehat{A}_1, \ldots, \widehat{A}_T$</p>
+                <p style="padding-left: 20px;"><strong>end for</strong></p>
+                <p style="padding-left: 20px;">Optimize surrogate $L$ w.r.t. $\theta$, with $K$ epochs and minibatch size $M \leq NT$</p>
+                <p style="padding-left: 20px;">$\theta_{\text{old}} \leftarrow \theta$</p>
+                <p><strong>end for</strong></p>
+            </div>
+
+            <div class="callout callout-insight">
+                <p>The algorithm is simple: collect a batch of experience with the current policy across $N$ parallel workers ($NT$ total timesteps). Compute advantages using GAE. Do $K$ passes of minibatch gradient ascent on the clipped surrogate. Snapshot the updated policy, throw away the batch, collect fresh data, and repeat. <strong>The clipping is what makes the $K$ epochs of reuse safe</strong> &mdash; without it, multiple passes over the same data would push the policy too far from where the data was collected.</p>
+            </div>
+        </div>
+
+        <!-- Viz 9: PPO vs TRPO vs PG -->
+        <div class="viz-section viz-manim fade-in" id="viz-09">
+            <h2><span class="num">#9</span> PPO vs TRPO vs PG</h2>
+            <span class="tool-tag tag-manim">Manim</span>
+            <p class="desc">Animated comparison of vanilla policy gradient, TRPO, and PPO: showing how each method handles the step-size problem differently, with PPO achieving TRPO's stability via simple clipping.</p>
+            <video controls preload="metadata">
+                <source src="PPOvsTRPOvsPG.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+
+        <div class="section-break"></div>
+
+        <!-- ==================== EXPERIMENTS ==================== -->
+        <div class="note-section fade-in" id="experiments">
+            <h2>Experiments</h2>
+
+            <h3>Comparison of Surrogate Objectives</h3>
+            <ul>
+                <li>Tested clipping in log space &mdash; not much improvement.</li>
+                <li>Used MuJoCo tasks with 1 million timesteps.</li>
+                <li>Hyperparameters: $\epsilon$ (clip), $\beta$ (KL penalty), $d_{\text{targ}}$ (target KL).</li>
+                <li>A 2-layer MLP with tanh activations was used. Policy and value function parameters were <strong>not shared</strong>, so the entropy bonus was not used.</li>
+            </ul>
+
+            <h3>Continuous Control (MuJoCo)</h3>
+            <p><strong>PPO outperformed on almost every task.</strong> To showcase performance on high-dimensional problems, the authors trained on 3D humanoid tasks: running, steering, getting up off the ground, and being pelted by cubes.</p>
+
+            <h3>Atari</h3>
+            <p><strong>PPO achieved better results</strong> across Atari games as well. Some practitioners have used the adaptive KL variant for robotics applications.</p>
+
+            <div class="callout callout-note">
+                <p>The experiments confirmed that the clipped surrogate objective ($L^{CLIP}$) with $\epsilon = 0.2$ consistently matched or exceeded the performance of TRPO's constrained optimization &mdash; while being far simpler to implement and tune.</p>
+            </div>
+        </div>
+
+        <div class="section-break"></div>
+
+        <!-- ==================== PPO FOR LLM ALIGNMENT ==================== -->
+        <div class="note-section fade-in" id="llm-alignment">
+            <h2>PPO for LLM Alignment</h2>
+            <p>PPO became the standard RL algorithm for aligning language models via RLHF (Reinforcement Learning from Human Feedback). The connection:</p>
+            <ol>
+                <li><strong>Policy</strong> = the language model. Given a prompt (state), it generates tokens (actions).</li>
+                <li><strong>Reward model</strong> = trained from human preferences (as in the <a href="../1706.03741/">RLHF paper</a>).</li>
+                <li><strong>PPO optimization</strong> = fine-tune the LM to maximize the learned reward while staying close to the original model (via KL penalty).</li>
+            </ol>
+
+            <div class="callout callout-key">
+                <p>The KL penalty in LLM alignment serves the same purpose as PPO's clipping: prevent the model from diverging too far from the base policy. Without it, the model would "hack" the reward model by generating degenerate text that scores highly but is nonsensical. This is the same trust-region principle, applied at the token level.</p>
+            </div>
+
+            <p>This pipeline &mdash; pretrain LM, train reward model from preferences, fine-tune with PPO &mdash; powered <strong>InstructGPT</strong> (Ouyang et al., 2022) and <strong>ChatGPT</strong>. PPO's simplicity and stability made it the practical choice over TRPO for this application.</p>
+        </div>
+
+        <!-- Viz 10: PPO for LLM Alignment -->
+        <div class="viz-section viz-multi fade-in" id="viz-10">
+            <h2><span class="num">#10</span> PPO for LLM Alignment</h2>
+            <span class="tool-tag tag-matplotlib">Matplotlib</span>
+            <span class="tool-tag tag-plotly">Plotly</span>
+            <p class="desc">Visualization of how PPO is applied in the RLHF pipeline for language model alignment: the three-stage process from pretraining through reward modeling to PPO fine-tuning.</p>
+            <p class="section-divider">Static figure</p>
+            <img src="https://raw.githubusercontent.com/csking101/LuCiD-papers/main/papers/1707.06347/output/static/10_ppo_llm_alignment.png" alt="PPO for LLM Alignment" loading="lazy">
+            <p class="section-divider">Interactive demo &mdash; <a class="open-link" href="10_ppo_llm_alignment.html" target="_blank">Open in new tab &rarr;</a></p>
+            <div class="iframe-wrapper">
+                <button class="fullscreen-btn" data-src="10_ppo_llm_alignment.html" title="View fullscreen">
+                    <svg viewBox="0 0 16 16"><path d="M1.5 1h4a.5.5 0 010 1H2v3.5a.5.5 0 01-1 0v-4a.5.5 0 01.5-.5zm13 0a.5.5 0 01.5.5v4a.5.5 0 01-1 0V2h-3.5a.5.5 0 010-1h4zM1 10.5a.5.5 0 011 0V14h3.5a.5.5 0 010 1h-4a.5.5 0 01-.5-.5v-4zm14 0a.5.5 0 01-1 0V14h-3.5a.5.5 0 010 1h4a.5.5 0 00.5-.5v-4z"/></svg>
+                    Fullscreen
+                </button>
+                <iframe src="10_ppo_llm_alignment.html" loading="lazy" title="PPO LLM Alignment interactive"></iframe>
+            </div>
+        </div>
+
+        <div class="section-break"></div>
+
+        <!-- ==================== INTERACTIVE DEMO ==================== -->
+        <div class="viz-section viz-plotly fade-in" id="viz-11">
+            <h2><span class="num">#11</span> Interactive CartPole Demo</h2>
+            <span class="tool-tag tag-plotly">Plotly/JS</span>
+            <p class="desc">Self-contained PPO implementation running in your browser: watch a simulated CartPole agent learn to balance a pole through clipped surrogate optimization. Adjust hyperparameters ($\epsilon$, $\gamma$, $\lambda$) and observe their effects in real time.</p>
+            <p class="section-divider">Interactive demo &mdash; <a class="open-link" href="11_ppo_cartpole_demo.html" target="_blank">Open in new tab &rarr;</a></p>
+            <div class="iframe-wrapper">
+                <button class="fullscreen-btn" data-src="11_ppo_cartpole_demo.html" title="View fullscreen">
+                    <svg viewBox="0 0 16 16"><path d="M1.5 1h4a.5.5 0 010 1H2v3.5a.5.5 0 01-1 0v-4a.5.5 0 01.5-.5zm13 0a.5.5 0 01.5.5v4a.5.5 0 01-1 0V2h-3.5a.5.5 0 010-1h4zM1 10.5a.5.5 0 011 0V14h3.5a.5.5 0 010 1h-4a.5.5 0 01-.5-.5v-4zm14 0a.5.5 0 01-1 0V14h-3.5a.5.5 0 010 1h4a.5.5 0 00.5-.5v-4z"/></svg>
+                    Fullscreen
+                </button>
+                <iframe src="11_ppo_cartpole_demo.html" loading="lazy" style="height: 750px;" title="PPO CartPole Demo interactive"></iframe>
+            </div>
+        </div>
+
+        <div class="section-break"></div>
+
+        <!-- ==================== CONCLUSION ==================== -->
+        <div class="note-section fade-in" id="conclusion">
+            <h2>Conclusion</h2>
+            <p>Proximal Policy Optimization introduces a set of <strong>policy optimization methods</strong> that use <strong>stochastic gradient ascent</strong> to perform each policy update. These methods are as stable and <strong>reliable</strong> as trust-region methods, but <strong>simpler</strong> to implement, requiring only first-order optimization. Better overall performance across both continuous control and discrete action domains.</p>
+
+            <div class="callout callout-key">
+                <p>PPO's lasting impact goes beyond its original benchmarks. By making trust-region-quality RL optimization accessible to any practitioner with a standard deep learning toolkit, PPO became the backbone of LLM alignment &mdash; the algorithm that fine-tuned the models behind ChatGPT, Claude, and other instruction-following AI systems.</p>
+            </div>
+        </div>
+
+        <footer>
+            <div class="footer-links">
+                <a href="../../">Back to LuCiD-papers</a>
+                <a href="https://github.com/csking101/LuCiD-papers/tree/main/papers/1707.06347">View source on GitHub</a>
+                <a href="https://arxiv.org/abs/1707.06347">Read on arXiv</a>
+            </div>
+            <p class="last-updated">Last updated: April 2026</p>
+            <p class="last-updated">Notes by Chinmaya Sahu. Content polish, code, visualizations, and web design by AI.</p>
+        </footer>
+
+    </main>
+</div>
+
+<!-- Back to top button -->
+<button class="back-to-top" id="back-to-top" title="Back to top">
+    <svg viewBox="0 0 16 16"><path d="M8 2.5l5.5 5.5H10v5.5H6V8H2.5L8 2.5z"/></svg>
+</button>
+
+<script>
+(function() {
+    'use strict';
+
+    // =============================================
+    // SCROLL PROGRESS BAR
+    // =============================================
+    const progressBar = document.getElementById('progress-bar');
+    function updateProgress() {
+        const scrollTop = window.scrollY;
+        const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+        const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+        progressBar.style.width = progress + '%';
+    }
+
+    // =============================================
+    // BACK-TO-TOP BUTTON
+    // =============================================
+    const backToTop = document.getElementById('back-to-top');
+    function updateBackToTop() {
+        if (window.scrollY > 400) {
+            backToTop.classList.add('visible');
+        } else {
+            backToTop.classList.remove('visible');
+        }
+    }
+    backToTop.addEventListener('click', function() {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    // Combined scroll handler (throttled via rAF)
+    let ticking = false;
+    window.addEventListener('scroll', function() {
+        if (!ticking) {
+            requestAnimationFrame(function() {
+                updateProgress();
+                updateBackToTop();
+                ticking = false;
+            });
+            ticking = true;
+        }
+    });
+
+    // =============================================
+    // ACTIVE SECTION HIGHLIGHTING (IntersectionObserver)
+    // =============================================
+    const sections = document.querySelectorAll('[id]');
+    const tocLinks = document.querySelectorAll('.toc-sidebar a[data-section]');
+    const navLinks = document.querySelectorAll('.nav-bar a[data-section]');
+
+    const sectionObserver = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+                const id = entry.target.id;
+                tocLinks.forEach(function(link) {
+                    if (link.getAttribute('data-section') === id) {
+                        link.classList.add('active');
+                    } else {
+                        link.classList.remove('active');
+                    }
+                });
+                navLinks.forEach(function(link) {
+                    if (link.getAttribute('data-section') === id) {
+                        link.classList.add('active');
+                    } else {
+                        link.classList.remove('active');
+                    }
+                });
+            }
+        });
+    }, {
+        rootMargin: '-10% 0px -75% 0px',
+        threshold: 0
+    });
+
+    sections.forEach(function(section) {
+        if (section.id) {
+            sectionObserver.observe(section);
+        }
+    });
+
+    // =============================================
+    // FADE-IN ON SCROLL (IntersectionObserver)
+    // =============================================
+    const fadeElements = document.querySelectorAll('.fade-in');
+    const fadeObserver = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+                fadeObserver.unobserve(entry.target);
+            }
+        });
+    }, {
+        rootMargin: '0px 0px -60px 0px',
+        threshold: 0.05
+    });
+
+    fadeElements.forEach(function(el) {
+        fadeObserver.observe(el);
+    });
+
+    // =============================================
+    // FULLSCREEN MODAL FOR IFRAMES
+    // =============================================
+    const modalOverlay = document.getElementById('modal-overlay');
+    const modalIframe = document.getElementById('modal-iframe');
+    const modalClose = document.getElementById('modal-close');
+
+    document.querySelectorAll('.fullscreen-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var src = btn.getAttribute('data-src');
+            modalIframe.src = src;
+            modalOverlay.classList.add('visible');
+            document.body.style.overflow = 'hidden';
+        });
+    });
+
+    function closeModal() {
+        modalOverlay.classList.remove('visible');
+        modalIframe.src = '';
+        document.body.style.overflow = '';
+    }
+
+    modalClose.addEventListener('click', closeModal);
+    modalOverlay.addEventListener('click', function(e) {
+        if (e.target === modalOverlay) closeModal();
+    });
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && modalOverlay.classList.contains('visible')) {
+            closeModal();
+        }
+    });
+
+    // =============================================
+    // LAZY VIDEO LOADING (IntersectionObserver)
+    // =============================================
+    const videos = document.querySelectorAll('video[preload="metadata"]');
+    const videoObserver = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+                var video = entry.target;
+                video.preload = 'auto';
+                videoObserver.unobserve(video);
+            }
+        });
+    }, {
+        rootMargin: '200px 0px',
+        threshold: 0
+    });
+
+    videos.forEach(function(video) {
+        videoObserver.observe(video);
+    });
+
+    // Initial state
+    updateProgress();
+    updateBackToTop();
+})();
+</script>
+
+</body>
+</html>

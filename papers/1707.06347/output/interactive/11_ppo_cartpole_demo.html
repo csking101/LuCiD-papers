@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PPO CartPole Demo</title>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0d1117; color: #c9d1d9; padding: 20px;
+  }
+  h1 { color: #e6edf3; font-size: 1.6em; margin-bottom: 6px; }
+  .subtitle { color: #8b949e; font-size: 0.9em; margin-bottom: 16px; }
+  .container { max-width: 1100px; margin: 0 auto; }
+  .controls {
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+    margin-bottom: 16px; padding: 12px 16px;
+    background: #161b22; border: 1px solid #30363d; border-radius: 8px;
+  }
+  button {
+    padding: 6px 14px; background: #21262d; border: 1px solid #30363d;
+    border-radius: 6px; color: #c9d1d9; cursor: pointer; font-size: 0.85em;
+    transition: background 0.2s;
+  }
+  button:hover { background: #30363d; }
+  button.primary { background: #238636; border-color: #2ea043; }
+  button.primary:hover { background: #2ea043; }
+  button.danger { background: #da3633; border-color: #f85149; }
+  button.danger:hover { background: #f85149; }
+  .stat-box {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; background: #0d1117; border: 1px solid #30363d;
+    border-radius: 6px; font-size: 0.82em; font-family: monospace;
+  }
+  .stat-label { color: #8b949e; }
+  .stat-val { color: #58a6ff; font-weight: bold; }
+  .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .chart-box {
+    background: #161b22; border: 1px solid #30363d; border-radius: 8px;
+    padding: 10px; min-height: 320px;
+  }
+  .canvas-container {
+    text-align: center; margin-bottom: 12px;
+    background: #161b22; border: 1px solid #30363d; border-radius: 8px;
+    padding: 14px;
+  }
+  canvas { background: #0d1117; border-radius: 4px; display: block; margin: 0 auto; }
+  .info {
+    background: #161b22; border: 1px solid #30363d; border-radius: 8px;
+    padding: 14px; margin-top: 12px; font-size: 0.85em; color: #8b949e;
+  }
+  .info strong { color: #c9d1d9; }
+  @media (max-width: 768px) {
+    .charts { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>PPO CartPole Demo</h1>
+  <p class="subtitle">Interactive demonstration of PPO learning to balance a pole.
+    Click "Run Episode" to collect data, then "PPO Update" to train.</p>
+
+  <div class="controls">
+    <button class="primary" id="btn-episode">Run Episode</button>
+    <button id="btn-update">PPO Update (K=4 epochs)</button>
+    <button class="danger" id="btn-reset">Reset</button>
+    <div class="stat-box"><span class="stat-label">Episode:</span><span class="stat-val" id="stat-ep">0</span></div>
+    <div class="stat-box"><span class="stat-label">Avg Reward:</span><span class="stat-val" id="stat-reward">0</span></div>
+    <div class="stat-box"><span class="stat-label">KL:</span><span class="stat-val" id="stat-kl">0.000</span></div>
+    <div class="stat-box"><span class="stat-label">Clip Frac:</span><span class="stat-val" id="stat-clip">0%</span></div>
+  </div>
+
+  <div class="canvas-container">
+    <canvas id="cartpole-canvas" width="500" height="200"></canvas>
+  </div>
+
+  <div class="charts">
+    <div class="chart-box" id="chart-reward"></div>
+    <div class="chart-box" id="chart-policy"></div>
+    <div class="chart-box" id="chart-kl"></div>
+    <div class="chart-box" id="chart-clip"></div>
+  </div>
+
+  <div class="info">
+    <strong>How it works:</strong> The agent uses a simple linear policy to decide
+    whether to push the cart left or right. "Run Episode" collects a trajectory
+    using the current policy. "PPO Update" performs K=4 epochs of minibatch gradient
+    ascent on the clipped surrogate objective (epsilon=0.2). Watch the policy improve,
+    the KL divergence stay bounded, and the clip fraction indicate how much clipping occurs.
+  </div>
+</div>
+
+<script>
+(function() {
+'use strict';
+
+// ── CartPole Environment ──
+var GRAVITY = 9.8, CART_MASS = 1.0, POLE_MASS = 0.1, POLE_LEN = 0.5;
+var FORCE_MAG = 10.0, DT = 0.02, MAX_STEPS = 200;
+var TOTAL_MASS = CART_MASS + POLE_MASS;
+var POLE_MASS_LEN = POLE_MASS * POLE_LEN;
+
+function CartPole() {
+  this.reset = function() {
+    this.x = (Math.random() - 0.5) * 0.1;
+    this.xdot = (Math.random() - 0.5) * 0.1;
+    this.theta = (Math.random() - 0.5) * 0.1;
+    this.thetadot = (Math.random() - 0.5) * 0.1;
+    this.step_count = 0;
+    return this.getState();
+  };
+  this.getState = function() { return [this.x, this.xdot, this.theta, this.thetadot]; };
+  this.step = function(action) {
+    var force = action === 1 ? FORCE_MAG : -FORCE_MAG;
+    var costh = Math.cos(this.theta), sinth = Math.sin(this.theta);
+    var temp = (force + POLE_MASS_LEN * this.thetadot * this.thetadot * sinth) / TOTAL_MASS;
+    var thetaacc = (GRAVITY * sinth - costh * temp) /
+      (POLE_LEN * (4/3 - POLE_MASS * costh * costh / TOTAL_MASS));
+    var xacc = temp - POLE_MASS_LEN * thetaacc * costh / TOTAL_MASS;
+    this.x += DT * this.xdot;
+    this.xdot += DT * xacc;
+    this.theta += DT * this.thetadot;
+    this.thetadot += DT * thetaacc;
+    this.step_count++;
+    var done = Math.abs(this.x) > 2.4 || Math.abs(this.theta) > 0.2095 || this.step_count >= MAX_STEPS;
+    return { state: this.getState(), reward: done ? 0 : 1, done: done };
+  };
+}
+
+// ── Linear Policy ──
+var EPSILON = 0.2;
+var weights = [0, 0, 0, 0];  // 4 features -> P(right)
+var bias = 0;
+
+function sigmoid(z) { return 1.0 / (1.0 + Math.exp(-z)); }
+
+function policyProb(state) {
+  var z = bias;
+  for (var i = 0; i < 4; i++) z += weights[i] * state[i];
+  return sigmoid(z);  // P(action=1=right)
+}
+
+function sampleAction(state) {
+  var p = policyProb(state);
+  return Math.random() < p ? 1 : 0;
+}
+
+function logProb(state, action) {
+  var p = policyProb(state);
+  return action === 1 ? Math.log(p + 1e-8) : Math.log(1 - p + 1e-8);
+}
+
+// ── Data Collection ──
+var history = { rewards: [], kls: [], clipfracs: [] };
+var episode = 0;
+
+function collectEpisode() {
+  var env = new CartPole();
+  var state = env.reset();
+  var trajectory = [];
+  var totalReward = 0;
+
+  while (true) {
+    var action = sampleAction(state);
+    var lp = logProb(state, action);
+    var result = env.step(action);
+    trajectory.push({ state: state.slice(), action: action, reward: result.reward, logprob: lp });
+    totalReward += result.reward;
+    state = result.state;
+    if (result.done) break;
+  }
+
+  // Compute advantages (simple: rewards-to-go minus mean)
+  var T = trajectory.length;
+  var rtg = new Array(T);
+  rtg[T - 1] = trajectory[T - 1].reward;
+  for (var t = T - 2; t >= 0; t--) {
+    rtg[t] = trajectory[t].reward + 0.99 * rtg[t + 1];
+  }
+  var meanRtg = rtg.reduce(function(a, b) { return a + b; }, 0) / T;
+  for (var t = 0; t < T; t++) {
+    trajectory[t].advantage = rtg[t] - meanRtg;
+  }
+
+  return { trajectory: trajectory, totalReward: totalReward };
+}
+
+// ── PPO Update ──
+function ppoUpdate(trajectory, K) {
+  var lr = 0.05;
+  var oldLogprobs = trajectory.map(function(tr) { return tr.logprob; });
+  var totalClipped = 0, totalSamples = 0;
+  var klSum = 0;
+
+  for (var epoch = 0; epoch < K; epoch++) {
+    var gradW = [0, 0, 0, 0], gradB = 0;
+    var batchClipped = 0;
+
+    for (var i = 0; i < trajectory.length; i++) {
+      var s = trajectory[i].state;
+      var a = trajectory[i].action;
+      var adv = trajectory[i].advantage;
+      var oldLp = oldLogprobs[i];
+      var newLp = logProb(s, a);
+
+      var ratio = Math.exp(newLp - oldLp);
+      var clippedRatio = Math.max(1 - EPSILON, Math.min(1 + EPSILON, ratio));
+
+      var surr1 = ratio * adv;
+      var surr2 = clippedRatio * adv;
+      var useClipped = surr2 < surr1;
+      if (Math.abs(ratio - clippedRatio) > 1e-6) batchClipped++;
+
+      // Gradient of surrogate: use the min objective
+      var effectiveRatio = useClipped ? clippedRatio : ratio;
+      var p = policyProb(s);
+      var dlogp = a === 1 ? (1 - p) : -p;  // d/dz log p(a|s)
+
+      for (var j = 0; j < 4; j++) {
+        gradW[j] += dlogp * s[j] * adv;
+      }
+      gradB += dlogp * adv;
+    }
+
+    var n = trajectory.length;
+    for (var j = 0; j < 4; j++) {
+      weights[j] += lr * gradW[j] / n;
+    }
+    bias += lr * gradB / n;
+
+    totalClipped += batchClipped;
+    totalSamples += n;
+  }
+
+  // Compute KL divergence
+  for (var i = 0; i < trajectory.length; i++) {
+    var oldLp = oldLogprobs[i];
+    var newLp = logProb(trajectory[i].state, trajectory[i].action);
+    klSum += Math.exp(oldLp) * (oldLp - newLp);
+  }
+
+  return {
+    kl: Math.abs(klSum / trajectory.length),
+    clipFrac: totalClipped / totalSamples
+  };
+}
+
+// ── Rendering ──
+var canvas = document.getElementById('cartpole-canvas');
+var ctx = canvas.getContext('2d');
+
+function drawCartPole(state) {
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  // Ground
+  ctx.strokeStyle = '#30363d';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, H * 0.75);
+  ctx.lineTo(W, H * 0.75);
+  ctx.stroke();
+
+  if (!state) return;
+
+  var x = state[0], theta = state[2];
+  var scale = W / 5;
+  var cartX = W / 2 + x * scale;
+  var cartY = H * 0.75;
+  var cartW = 40, cartH = 20;
+  var poleLen = 80;
+
+  // Cart
+  ctx.fillStyle = '#58a6ff';
+  ctx.fillRect(cartX - cartW / 2, cartY - cartH, cartW, cartH);
+
+  // Wheels
+  ctx.fillStyle = '#8b949e';
+  ctx.beginPath(); ctx.arc(cartX - 12, cartY, 5, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cartX + 12, cartY, 5, 0, Math.PI * 2); ctx.fill();
+
+  // Pole
+  var poleEndX = cartX + poleLen * Math.sin(theta);
+  var poleEndY = cartY - cartH - poleLen * Math.cos(theta);
+  ctx.strokeStyle = '#f0883e';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(cartX, cartY - cartH);
+  ctx.lineTo(poleEndX, poleEndY);
+  ctx.stroke();
+
+  // Pole tip
+  ctx.fillStyle = '#f0883e';
+  ctx.beginPath(); ctx.arc(poleEndX, poleEndY, 5, 0, Math.PI * 2); ctx.fill();
+}
+
+// ── Charts ──
+function updateCharts() {
+  var episodes = history.rewards.map(function(_, i) { return i + 1; });
+
+  Plotly.newPlot('chart-reward', [{
+    x: episodes, y: history.rewards, type: 'scatter', mode: 'lines+markers',
+    line: { color: '#3fb950', width: 2 }, marker: { size: 4 },
+  }], {
+    title: { text: 'Episode Reward', font: { color: '#c9d1d9', size: 13 } },
+    template: 'plotly_dark', margin: { t: 40, b: 40, l: 50, r: 20 },
+    xaxis: { title: 'Episode' }, yaxis: { title: 'Total Reward', range: [0, 210] },
+    paper_bgcolor: '#161b22', plot_bgcolor: '#0d1117',
+  }, { responsive: true, displayModeBar: false });
+
+  // Policy visualization: P(right) across angle space
+  var angles = [];
+  var probs = [];
+  for (var a = -0.2; a <= 0.2; a += 0.01) {
+    angles.push(a);
+    probs.push(policyProb([0, 0, a, 0]));
+  }
+
+  Plotly.newPlot('chart-policy', [{
+    x: angles, y: probs, type: 'scatter', mode: 'lines',
+    line: { color: '#58a6ff', width: 2 }, fill: 'tozeroy', fillcolor: 'rgba(88,166,255,0.15)',
+  }], {
+    title: { text: 'Policy: P(push right) vs Pole Angle', font: { color: '#c9d1d9', size: 13 } },
+    template: 'plotly_dark', margin: { t: 40, b: 40, l: 50, r: 20 },
+    xaxis: { title: 'Pole Angle (rad)' }, yaxis: { title: 'P(right)', range: [0, 1] },
+    paper_bgcolor: '#161b22', plot_bgcolor: '#0d1117',
+    shapes: [{ type: 'line', x0: 0, x1: 0, y0: 0, y1: 1, line: { color: '#30363d', dash: 'dot' } }],
+  }, { responsive: true, displayModeBar: false });
+
+  Plotly.newPlot('chart-kl', [{
+    x: episodes, y: history.kls, type: 'scatter', mode: 'lines+markers',
+    line: { color: '#d2a8ff', width: 2 }, marker: { size: 4 },
+  }], {
+    title: { text: 'KL Divergence per Update', font: { color: '#c9d1d9', size: 13 } },
+    template: 'plotly_dark', margin: { t: 40, b: 40, l: 50, r: 20 },
+    xaxis: { title: 'Episode' }, yaxis: { title: 'KL Divergence' },
+    paper_bgcolor: '#161b22', plot_bgcolor: '#0d1117',
+  }, { responsive: true, displayModeBar: false });
+
+  Plotly.newPlot('chart-clip', [{
+    x: episodes, y: history.clipfracs.map(function(x) { return x * 100; }),
+    type: 'bar', marker: { color: '#f0883e', opacity: 0.7 },
+  }], {
+    title: { text: 'Clip Fraction (%)', font: { color: '#c9d1d9', size: 13 } },
+    template: 'plotly_dark', margin: { t: 40, b: 40, l: 50, r: 20 },
+    xaxis: { title: 'Episode' }, yaxis: { title: '%', range: [0, 100] },
+    paper_bgcolor: '#161b22', plot_bgcolor: '#0d1117',
+  }, { responsive: true, displayModeBar: false });
+}
+
+// ── Event Handlers ──
+var lastTrajectory = null;
+
+document.getElementById('btn-episode').addEventListener('click', function() {
+  var result = collectEpisode();
+  lastTrajectory = result.trajectory;
+  episode++;
+  history.rewards.push(result.totalReward);
+  history.kls.push(0);
+  history.clipfracs.push(0);
+
+  document.getElementById('stat-ep').textContent = episode;
+  document.getElementById('stat-reward').textContent = result.totalReward.toFixed(0);
+
+  // Animate the trajectory
+  var step = 0;
+  var anim = setInterval(function() {
+    if (step >= lastTrajectory.length) { clearInterval(anim); return; }
+    drawCartPole(lastTrajectory[step].state);
+    step++;
+  }, 20);
+
+  updateCharts();
+});
+
+document.getElementById('btn-update').addEventListener('click', function() {
+  if (!lastTrajectory) { alert('Run an episode first!'); return; }
+  var result = ppoUpdate(lastTrajectory, 4);
+
+  if (history.kls.length > 0) history.kls[history.kls.length - 1] = result.kl;
+  if (history.clipfracs.length > 0) history.clipfracs[history.clipfracs.length - 1] = result.clipFrac;
+
+  document.getElementById('stat-kl').textContent = result.kl.toFixed(4);
+  document.getElementById('stat-clip').textContent = (result.clipFrac * 100).toFixed(1) + '%';
+
+  updateCharts();
+});
+
+document.getElementById('btn-reset').addEventListener('click', function() {
+  weights = [0, 0, 0, 0]; bias = 0;
+  history = { rewards: [], kls: [], clipfracs: [] };
+  episode = 0; lastTrajectory = null;
+  document.getElementById('stat-ep').textContent = '0';
+  document.getElementById('stat-reward').textContent = '0';
+  document.getElementById('stat-kl').textContent = '0.000';
+  document.getElementById('stat-clip').textContent = '0%';
+  drawCartPole(null);
+  updateCharts();
+});
+
+// Initial render
+drawCartPole(null);
+updateCharts();
+
+})();
+</script>
+</body>
+</html>
