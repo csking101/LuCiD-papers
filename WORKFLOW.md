@@ -1,6 +1,7 @@
 # LCD Workflow Reference
 
 > Repeatable process for each new paper. AI reads this at session start.
+> For technical implementation details, see `DESIGN_GUIDE.md`.
 > Master reading list: `~/Desktop/everything/Information/AI/Reading List.md`
 
 ## Directory Template
@@ -124,7 +125,7 @@ Only if the paper warrants a runnable implementation (e.g., RLHF cat grid-world)
 
 ## Conventions
 
-**Manim**: Use `Text()` not `MathTex()` — no LaTeX installed.
+**Manim**: Use `MathTex()` for all mathematical expressions (LaTeX is installed). Use `Text(font="Latin Modern Roman")` for descriptive text. See `DESIGN_GUIDE.md` for full conventions.
 
 **PyTorch**: Force `DEVICE = "cpu"` for small-scale implementations. CUDA kernel-launch overhead on tiny tensors causes catastrophic slowdowns (~240x on the grid-world).
 
