@@ -11,7 +11,7 @@ A collection of visualizations, animations, and interactive demos for AI/ML rese
 | # | Paper | Title | Track | Status | Static | Interactive | Animated |
 |---|-------|-------|-------|--------|--------|-------------|----------|
 | 1 | [1706.03741](papers/1706.03741/) | Deep RL from Human Preferences | Alignment | Done | 5 PNGs | 4 HTMLs | 4 MP4s |
-| 2 | [1707.06347](https://arxiv.org/abs/1707.06347) | Proximal Policy Optimization (PPO) | Alignment | Learning | -- | -- | -- |
+| 2 | [1707.06347](papers/1707.06347/) | Proximal Policy Optimization (PPO) | Alignment | Done | 5 PNGs | 6 HTMLs | 5 MP4s |
 | 3 | [2009.01325](https://arxiv.org/abs/2009.01325) | Learning to Summarize from Human Feedback | Alignment | Upcoming | -- | -- | -- |
 | 4 | [2203.02155](https://arxiv.org/abs/2203.02155) | InstructGPT | Alignment | Upcoming | -- | -- | -- |
 | 5 | [2305.18290](https://arxiv.org/abs/2305.18290) | Direct Preference Optimization (DPO) | Alignment | Upcoming | -- | -- | -- |
