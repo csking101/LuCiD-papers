@@ -192,8 +192,7 @@ def plot_interactive():
         )],
         title="RLHF Training Dynamics (beta=0.10)",
         template="plotly_dark",
-        height=500,
-        margin=dict(t=80, b=100),
+        margin=dict(t=60, b=80, l=50, r=30),
     )
 
     fig.update_xaxes(title_text="Training Steps", row=1, col=1)

@@ -185,8 +185,7 @@ def plot_interactive():
         annotations=annotations_per_step[20],  # Default annotations
         title="Advantage vs Raw Reward: Effect of Baseline",
         template="plotly_dark",
-        height=500,
-        margin=dict(t=100, b=100),
+        margin=dict(t=60, b=80, l=50, r=30),
     )
 
     output_path = OUTPUT_DIR_INTERACTIVE / "04_advantage_vs_raw_reward.html"

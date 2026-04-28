@@ -7,7 +7,17 @@ Usage:
     save_plotly_html(fig, output_path)
 """
 
+from pathlib import Path
+
 PLOTLY_CDN_VERSION = "2.35.2"
+
+# Injected into every Plotly HTML to eliminate default browser margins
+# and make the chart fill the full iframe / viewport.
+_RESET_CSS = (
+    '<style>html,body{margin:0;padding:0;overflow:hidden;'
+    'background:#0d1117;width:100%;height:100%}'
+    '.plotly-graph-div{width:100%!important;height:100%!important}</style>'
+)
 
 
 def save_plotly_html(fig, output_path):
@@ -15,6 +25,9 @@ def save_plotly_html(fig, output_path):
 
     This produces ~50KB files instead of ~4.7MB when plotly.js is embedded.
     Requires internet access to view the resulting HTML.
+
+    The output HTML has zero body margin and a dark background so it
+    renders cleanly inside iframes without whitespace borders.
 
     Args:
         fig: A plotly.graph_objects.Figure instance.
@@ -24,5 +37,11 @@ def save_plotly_html(fig, output_path):
         str(output_path),
         include_plotlyjs='cdn',
         default_width='100%',
+        default_height='100%',
     )
+    # Post-process: inject reset CSS right after <head>
+    path = Path(output_path)
+    html = path.read_text()
+    html = html.replace('<head>', f'<head>{_RESET_CSS}', 1)
+    path.write_text(html)
     print(f"Saved: {output_path}")

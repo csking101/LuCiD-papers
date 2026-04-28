@@ -137,10 +137,9 @@ def plot_interactive():
         )],
         title="GAE Advantages (lambda=0.95, PPO default)",
         template="plotly_dark",
-        height=500,
         xaxis_title="Timestep",
         yaxis_title="Advantage Estimate",
-        margin=dict(t=80, b=100),
+        margin=dict(t=60, b=80, l=50, r=30),
     )
 
     output_path = OUTPUT_DIR_INTERACTIVE / "05_gae_lambda_tradeoff.html"
