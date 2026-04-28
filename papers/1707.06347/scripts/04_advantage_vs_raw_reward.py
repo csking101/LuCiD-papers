@@ -105,28 +105,70 @@ def plot_interactive():
 
     # Precompute for multiple baseline values
     baselines = np.linspace(0, 80, 41)
+    raw_signal = q_values * grad_noise  # Raw is constant (no baseline)
+    raw_var = float(np.var(raw_signal))
+
+    # Precompute per-baseline annotations
+    annotations_per_step = []
 
     for i, bl in enumerate(baselines):
-        raw = q_values * grad_noise
+        raw = raw_signal
         adv = (q_values - bl) * grad_noise
+        adv_var = float(np.var(adv))
+
         colors_raw = ['#27AE60' if r > np.mean(raw) else '#2E86C1' for r in raw]
         colors_adv = ['#27AE60' if a > 0 else '#E74C3C' for a in adv]
 
         visible = (i == 20)  # Default: baseline = mean
 
-        fig.add_trace(go.Bar(x=list(range(n)), y=raw, marker_color=colors_raw,
+        fig.add_trace(go.Bar(x=list(range(n)), y=raw.tolist(), marker_color=colors_raw,
                               name='Raw', showlegend=False, visible=visible),
                       row=1, col=1)
         fig.add_trace(go.Bar(x=list(range(n)), y=adv.tolist(), marker_color=colors_adv,
                               name='Advantage', showlegend=False, visible=visible),
                       row=1, col=2)
 
-    # Create slider steps
+        # Variance annotations for this baseline step
+        # (Plotly subplot x-domains: col1 ~ x[0,0.47], col2 ~ x[0.53,1.0])
+        variance_reduction = (1 - adv_var / raw_var) * 100 if raw_var > 0 else 0
+        step_annotations = [
+            # Subplot titles (recreated so they persist across slider steps)
+            dict(text="Raw Reward (no baseline)", x=0.225, y=1.0,
+                 xref="paper", yref="paper", showarrow=False,
+                 font=dict(size=14, color="white"), xanchor="center"),
+            dict(text="With Baseline Subtracted", x=0.775, y=1.0,
+                 xref="paper", yref="paper", showarrow=False,
+                 font=dict(size=14, color="white"), xanchor="center"),
+            # Raw variance (left panel)
+            dict(text=f"Variance: {raw_var:.0f}",
+                 x=0.02, y=0.95, xref="paper", yref="paper",
+                 showarrow=False, font=dict(size=13, color="#E74C3C", family="monospace"),
+                 xanchor="left", yanchor="top"),
+            # Advantage variance (right panel)
+            dict(text=f"Variance: {adv_var:.0f}",
+                 x=0.55, y=0.95, xref="paper", yref="paper",
+                 showarrow=False, font=dict(size=13, color="#27AE60", family="monospace"),
+                 xanchor="left", yanchor="top"),
+            # Variance reduction percentage (right panel)
+            dict(text=f"Reduction: {variance_reduction:+.0f}%",
+                 x=0.55, y=0.88, xref="paper", yref="paper",
+                 showarrow=False,
+                 font=dict(size=12,
+                           color="#27AE60" if variance_reduction > 0 else "#E74C3C",
+                           family="monospace"),
+                 xanchor="left", yanchor="top"),
+        ]
+        annotations_per_step.append(step_annotations)
+
+    # Create slider steps — update both visibility AND annotations
     steps = []
     for i, bl in enumerate(baselines):
         step = dict(
             method="update",
-            args=[{"visible": [False] * len(fig.data)}],
+            args=[
+                {"visible": [False] * len(fig.data)},
+                {"annotations": annotations_per_step[i]},
+            ],
             label=f"{bl:.0f}"
         )
         step["args"][0]["visible"][i * 2] = True
@@ -140,10 +182,11 @@ def plot_interactive():
             pad={"t": 50},
             steps=steps,
         )],
+        annotations=annotations_per_step[20],  # Default annotations
         title="Advantage vs Raw Reward: Effect of Baseline",
         template="plotly_dark",
         height=500,
-        margin=dict(t=80, b=100),
+        margin=dict(t=100, b=100),
     )
 
     output_path = OUTPUT_DIR_INTERACTIVE / "04_advantage_vs_raw_reward.html"

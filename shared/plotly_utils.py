@@ -23,5 +23,6 @@ def save_plotly_html(fig, output_path):
     fig.write_html(
         str(output_path),
         include_plotlyjs='cdn',
+        default_width='100%',
     )
     print(f"Saved: {output_path}")

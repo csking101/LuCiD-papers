@@ -193,11 +193,11 @@ def plot_interactive():
         title="KL Divergence Trust Region",
         template="plotly_dark",
         height=600,
-        width=700,
+        autosize=True,
         xaxis_title="theta_1",
         yaxis_title="theta_2",
         xaxis=dict(scaleanchor="y"),
-        margin=dict(t=80, b=100),
+        margin=dict(t=80, b=100, l=60, r=60),
     )
 
     output_path = OUTPUT_DIR_INTERACTIVE / "07_kl_trust_region.html"

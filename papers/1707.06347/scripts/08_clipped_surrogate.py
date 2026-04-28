@@ -161,7 +161,8 @@ def plot_interactive():
         title="PPO Clipped Surrogate Objective (Figure 1 from paper)",
         template="plotly_dark",
         height=500,
-        margin=dict(t=80, b=100),
+        autosize=True,
+        margin=dict(t=80, b=100, l=60, r=60),
     )
 
     fig.update_xaxes(title_text="r_t(theta)", row=1, col=1)
