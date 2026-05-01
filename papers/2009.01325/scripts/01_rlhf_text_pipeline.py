@@ -55,7 +55,7 @@ def _arrow_between(a, b, color=WHITE):
     )
 
 
-def _small_label(text, color=_SUB, size=16):
+def _small_label(text, color=_SUB, size=18):
     return Text(text, font_size=size, color=color, font=_FONT)
 
 
@@ -92,9 +92,9 @@ class RLHFTextPipeline(Scene):
         a2 = _arrow_between(gpt_box, sft_box, "#d2a8ff")
 
         lbl1 = _small_label("fine-tune on\nhuman summaries")
-        lbl1.next_to(a1, UP, buff=0.15).scale(0.9)
+        lbl1.next_to(a1, UP, buff=0.15)
         lbl2 = _small_label("next-token\nprediction loss")
-        lbl2.next_to(a2, UP, buff=0.15).scale(0.9)
+        lbl2.next_to(a2, UP, buff=0.15)
 
         self.play(
             FadeIn(data_box, shift=UP * 0.3),
@@ -130,9 +130,9 @@ class RLHFTextPipeline(Scene):
         a4 = _arrow_between(human_box, rm_box, "#f0883e")
 
         lbl3 = _small_label("which is better?")
-        lbl3.next_to(a3, UP, buff=0.15).scale(0.9)
+        lbl3.next_to(a3, UP, buff=0.15)
         lbl4 = _small_label("Bradley-Terry\ncross-entropy")
-        lbl4.next_to(a4, UP, buff=0.15).scale(0.9)
+        lbl4.next_to(a4, UP, buff=0.15)
 
         self.play(FadeIn(sum_box, shift=UP * 0.3), run_time=0.6)
         self.play(Create(a3), FadeIn(lbl3), FadeIn(human_box, shift=UP * 0.3), run_time=0.8)
@@ -179,9 +179,9 @@ class RLHFTextPipeline(Scene):
                     color="#d2a8ff", stroke_width=2, max_tip_length_to_length_ratio=0.12)
 
         lbl5 = _small_label("reward\nsignal", "#f0883e")
-        lbl5.next_to(a5, UP, buff=0.15).scale(0.9)
+        lbl5.next_to(a5, UP, buff=0.15)
         lbl6 = _small_label("KL\npenalty", "#d2a8ff")
-        lbl6.next_to(a6, UP, buff=0.15).scale(0.9)
+        lbl6.next_to(a6, UP, buff=0.15)
 
         self.play(Create(a5), FadeIn(lbl5), Create(a6), FadeIn(lbl6), run_time=0.8)
 
