@@ -22,7 +22,7 @@ _FONT = "Latin Modern Roman"
 
 
 def _copy_to_docs():
-    src = _PAPER_DIR / "output/animations/videos/10_alignment_timeline/480p15/AlignmentTimeline.mp4"
+    src = _PAPER_DIR / "output/animations/videos/10_alignment_timeline/720p30/AlignmentTimeline.mp4"
     dst = _DOCS_DIR / "AlignmentTimeline.mp4"
     if src.exists():
         dst.parent.mkdir(parents=True, exist_ok=True)

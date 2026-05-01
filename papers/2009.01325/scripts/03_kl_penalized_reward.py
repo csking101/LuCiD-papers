@@ -23,7 +23,7 @@ _FONT = "Latin Modern Roman"
 
 
 def _copy_to_docs():
-    src = _PAPER_DIR / "output/animations/videos/03_kl_penalized_reward/480p15/KLPenalizedReward.mp4"
+    src = _PAPER_DIR / "output/animations/videos/03_kl_penalized_reward/720p30/KLPenalizedReward.mp4"
     dst = _DOCS_DIR / "KLPenalizedReward.mp4"
     if src.exists():
         dst.parent.mkdir(parents=True, exist_ok=True)
