@@ -1,0 +1,1563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2009.01325 — Learning to Summarize from Human Feedback | LuCiD-papers</title>
+    <script>
+        MathJax = {
+            tex: { inlineMath: [['$','$']], displayMath: [['$$','$$']] },
+            options: { skipHtmlTags: ['script','noscript','style','textarea','code'] }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+    <style>
+        /* ============================================================
+           RESET & BASE
+           ============================================================ */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            line-height: 1.7;
+            font-size: 16px;
+        }
+        a { color: #58a6ff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        /* ============================================================
+           PROGRESS BAR
+           ============================================================ */
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            width: 0%;
+            background: linear-gradient(90deg, #58a6ff, #d2a8ff, #f0883e);
+            z-index: 9999;
+            transition: width 0.1s linear;
+        }
+
+        /* ============================================================
+           TWO-COLUMN LAYOUT
+           ============================================================ */
+        .page-wrapper {
+            display: flex;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        /* --- Sidebar (ToC) --- */
+        .toc-sidebar {
+            position: sticky;
+            top: 0;
+            align-self: flex-start;
+            width: 240px;
+            min-width: 240px;
+            height: 100vh;
+            overflow-y: auto;
+            padding: 40px 16px 40px 24px;
+            border-right: 1px solid #21262d;
+            background: #0d1117;
+            z-index: 50;
+        }
+        .toc-sidebar::-webkit-scrollbar { width: 4px; }
+        .toc-sidebar::-webkit-scrollbar-track { background: transparent; }
+        .toc-sidebar::-webkit-scrollbar-thumb { background: #30363d; border-radius: 2px; }
+
+        .toc-sidebar .toc-title {
+            font-size: 0.75em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #484f58;
+            margin-bottom: 12px;
+        }
+        .toc-sidebar a {
+            display: block;
+            padding: 5px 10px;
+            margin: 1px 0;
+            font-size: 0.82em;
+            color: #8b949e;
+            border-left: 2px solid transparent;
+            border-radius: 0 4px 4px 0;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        .toc-sidebar a:hover {
+            color: #c9d1d9;
+            background: #161b22;
+            text-decoration: none;
+        }
+        .toc-sidebar a.active {
+            color: #58a6ff;
+            border-left-color: #58a6ff;
+            background: #161b2280;
+            font-weight: 600;
+        }
+        .toc-sidebar a.toc-viz {
+            color: #6e7681;
+            font-size: 0.78em;
+            padding-left: 18px;
+        }
+        .toc-sidebar a.toc-viz.active {
+            color: #f0883e;
+            border-left-color: #f0883e;
+        }
+
+        /* --- Main content --- */
+        .main-content {
+            flex: 1;
+            min-width: 0;
+            max-width: 1200px;
+            padding: 40px 40px 40px 48px;
+        }
+
+        /* ============================================================
+           HEADER
+           ============================================================ */
+        .breadcrumb { font-size: 0.9em; color: #8b949e; margin-bottom: 1em; }
+        .breadcrumb a { color: #8b949e; }
+        .breadcrumb a:hover { color: #58a6ff; }
+        h1 {
+            font-size: 2.1em;
+            color: #e6edf3;
+            margin-bottom: 0.25em;
+            line-height: 1.25;
+        }
+        .meta { color: #8b949e; font-size: 0.95em; margin-bottom: 1.5em; }
+        .meta .arxiv { font-family: monospace; color: #f0883e; }
+
+        /* ============================================================
+           NAVIGATION BAR
+           ============================================================ */
+        .nav-bar {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 2em;
+            position: sticky;
+            top: 3px;
+            z-index: 100;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 4px;
+        }
+        .nav-bar span.label { color: #8b949e; font-size: 0.85em; margin-right: 6px; }
+        .nav-bar a {
+            display: inline-block;
+            padding: 3px 10px;
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            font-size: 0.8em;
+            color: #c9d1d9;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        .nav-bar a:hover { background: #30363d; text-decoration: none; }
+        .nav-bar a.active {
+            background: #58a6ff20;
+            border-color: #58a6ff60;
+            color: #58a6ff;
+        }
+
+        /* ============================================================
+           VISUALIZATION GALLERY
+           ============================================================ */
+        .viz-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+            gap: 10px;
+            margin-bottom: 2.5em;
+        }
+        .viz-gallery-title {
+            font-size: 0.75em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #484f58;
+            margin-bottom: 10px;
+        }
+        .viz-card-mini {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            font-size: 0.78em;
+            color: #c9d1d9;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            border-left: 3px solid transparent;
+        }
+        .viz-card-mini:hover {
+            background: #1c2129;
+            border-color: #484f58;
+            text-decoration: none;
+        }
+        .viz-card-mini .mini-num {
+            font-weight: 700;
+            font-size: 1.1em;
+            min-width: 22px;
+        }
+        .viz-card-mini .mini-title { flex: 1; line-height: 1.3; }
+        .viz-card-mini .mini-tag {
+            font-size: 0.8em;
+            font-weight: 600;
+            padding: 1px 6px;
+            border-radius: 8px;
+        }
+        .viz-card-mini.tool-manim   { border-left-color: #3fb950; }
+        .viz-card-mini.tool-mpl     { border-left-color: #58a6ff; }
+        .viz-card-mini.tool-plotly   { border-left-color: #f0883e; }
+        .viz-card-mini.tool-multi    { border-left-color: #d2a8ff; }
+        .mini-tag-manim  { background: #3fb95020; color: #3fb950; }
+        .mini-tag-mpl    { background: #1f6feb20; color: #58a6ff; }
+        .mini-tag-plotly  { background: #f0883e20; color: #f0883e; }
+        .mini-tag-multi   { background: #d2a8ff20; color: #d2a8ff; }
+
+        /* ============================================================
+           NOTE SECTIONS
+           ============================================================ */
+        .note-section {
+            margin-bottom: 2.5em;
+            scroll-margin-top: 60px;
+        }
+        .note-section h2 {
+            font-size: 1.5em;
+            color: #58a6ff;
+            margin-bottom: 0.6em;
+            padding-bottom: 0.3em;
+            border-bottom: 1px solid #21262d;
+        }
+        .note-section h3 {
+            font-size: 1.2em;
+            color: #d2a8ff;
+            margin: 1.2em 0 0.5em;
+        }
+        .note-section h4 {
+            font-size: 1.05em;
+            color: #f0883e;
+            margin: 1em 0 0.4em;
+        }
+        .note-section p {
+            margin-bottom: 0.7em;
+            color: #c9d1d9;
+        }
+        .note-section ul, .note-section ol {
+            margin: 0.5em 0 1em 1.5em;
+            color: #c9d1d9;
+        }
+        .note-section li {
+            margin-bottom: 0.35em;
+            padding-left: 0.2em;
+        }
+        .note-section li::marker {
+            color: #484f58;
+        }
+        .note-section ol li::marker {
+            color: #58a6ff;
+            font-weight: 600;
+        }
+        .note-section ul ul {
+            margin-top: 0.3em;
+            margin-bottom: 0.3em;
+        }
+        .note-section em {
+            color: #f0883e;
+            font-style: italic;
+        }
+        .note-section strong {
+            color: #e6edf3;
+        }
+        .note-section .math-block {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 16px 20px;
+            margin: 1em 0;
+            overflow-x: auto;
+        }
+
+        /* --- Formal definition blockquote --- */
+        .formal-def {
+            border-left: 3px solid #d2a8ff;
+            background: #d2a8ff08;
+            padding: 16px 20px;
+            margin: 1.2em 0;
+            border-radius: 0 6px 6px 0;
+        }
+        .formal-def p { margin-bottom: 0.5em; }
+        .formal-def .math-block {
+            background: #0d1117;
+            border-color: #30363d;
+        }
+
+        /* --- Callout boxes --- */
+        .callout {
+            border-left: 3px solid #58a6ff;
+            background: #58a6ff08;
+            padding: 14px 18px;
+            margin: 1.2em 0;
+            border-radius: 0 6px 6px 0;
+            font-size: 0.95em;
+        }
+        .callout.callout-key {
+            border-left-color: #f0883e;
+            background: #f0883e08;
+        }
+        .callout.callout-key::before {
+            content: 'Key Idea';
+            display: block;
+            font-size: 0.8em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #f0883e;
+            margin-bottom: 6px;
+        }
+        .callout.callout-insight {
+            border-left-color: #d2a8ff;
+            background: #d2a8ff08;
+        }
+        .callout.callout-insight::before {
+            content: 'Insight';
+            display: block;
+            font-size: 0.8em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #d2a8ff;
+            margin-bottom: 6px;
+        }
+        .callout.callout-note {
+            border-left-color: #58a6ff;
+            background: #58a6ff08;
+        }
+        .callout.callout-note::before {
+            content: 'Note';
+            display: block;
+            font-size: 0.8em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #58a6ff;
+            margin-bottom: 6px;
+        }
+        .callout p { margin-bottom: 0.4em; }
+        .callout p:last-child { margin-bottom: 0; }
+
+        /* --- TL;DR box --- */
+        .tldr {
+            background: linear-gradient(135deg, #161b22, #1c2333);
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 20px 24px;
+            margin-bottom: 2em;
+        }
+        .tldr .tldr-label {
+            font-size: 0.75em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #f0883e;
+            margin-bottom: 8px;
+        }
+        .tldr p {
+            color: #c9d1d9;
+            font-size: 0.95em;
+            line-height: 1.7;
+            margin-bottom: 0;
+        }
+
+        /* --- Section dividers --- */
+        .section-break {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #30363d 20%, #30363d 80%, transparent);
+            margin: 2.5em 0;
+        }
+
+        /* ============================================================
+           VISUALIZATION SECTIONS
+           ============================================================ */
+        .viz-section {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 24px;
+            margin: 1.8em 0;
+            scroll-margin-top: 60px;
+            border-left: 3px solid #30363d;
+            position: relative;
+        }
+        .viz-section.viz-manim   { border-left-color: #3fb950; }
+        .viz-section.viz-mpl     { border-left-color: #58a6ff; }
+        .viz-section.viz-plotly   { border-left-color: #f0883e; }
+        .viz-section.viz-multi    { border-left-color: #d2a8ff; }
+
+        .viz-section h2 {
+            font-size: 1.3em;
+            color: #c9d1d9;
+            margin-bottom: 4px;
+        }
+        .viz-section h2 .num { color: #8b949e; font-weight: normal; }
+        .viz-section .tool-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75em;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .tag-manim { background: #3fb95020; color: #3fb950; }
+        .tag-matplotlib { background: #1f6feb20; color: #58a6ff; }
+        .tag-plotly { background: #f0883e20; color: #f0883e; }
+        .viz-section .desc {
+            color: #8b949e;
+            font-size: 0.9em;
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+        .viz-section video {
+            width: 100%;
+            border-radius: 6px;
+            background: #000;
+        }
+        .viz-section img {
+            width: 100%;
+            border-radius: 6px;
+            background: #0d1117;
+        }
+        .viz-section .iframe-wrapper {
+            position: relative;
+        }
+        .viz-section iframe {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            background: #0d1117;
+        }
+        .viz-section .open-link {
+            display: inline-block;
+            margin-top: 8px;
+            font-size: 0.85em;
+            color: #f0883e;
+        }
+        .viz-section .open-link:hover { color: #f0883e; }
+        .viz-section .section-divider { margin: 14px 0; font-size: 0.85em; color: #484f58; }
+
+        /* --- Fullscreen button --- */
+        .fullscreen-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            color: #8b949e;
+            padding: 5px 8px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: all 0.2s;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .fullscreen-btn:hover {
+            background: #30363d;
+            color: #c9d1d9;
+        }
+        .fullscreen-btn svg {
+            width: 14px;
+            height: 14px;
+            fill: currentColor;
+        }
+
+        /* --- Fullscreen modal --- */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: #0d1117ee;
+            z-index: 10000;
+            padding: 20px;
+            cursor: pointer;
+        }
+        .modal-overlay.visible { display: flex; align-items: center; justify-content: center; }
+        .modal-overlay .modal-content {
+            width: 95vw;
+            height: 90vh;
+            position: relative;
+            cursor: default;
+        }
+        .modal-overlay iframe {
+            width: 100%;
+            height: 100%;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            background: #0d1117;
+        }
+        .modal-close {
+            position: absolute;
+            top: -36px;
+            right: 0;
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            color: #c9d1d9;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: background 0.2s;
+        }
+        .modal-close:hover { background: #30363d; }
+
+        /* ============================================================
+           PROGRESSION TABLE
+           ============================================================ */
+        .progression-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1em 0;
+            font-size: 0.9em;
+        }
+        .progression-table th {
+            text-align: left;
+            padding: 8px 12px;
+            background: #161b22;
+            border: 1px solid #30363d;
+            color: #58a6ff;
+            font-weight: 600;
+        }
+        .progression-table td {
+            padding: 8px 12px;
+            border: 1px solid #30363d;
+            color: #c9d1d9;
+        }
+        .progression-table tr:hover td {
+            background: #161b2260;
+        }
+
+        /* ============================================================
+           FADE-IN ANIMATION
+           ============================================================ */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(16px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ============================================================
+           BACK-TO-TOP BUTTON
+           ============================================================ */
+        .back-to-top {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            width: 42px;
+            height: 42px;
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 50%;
+            color: #8b949e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 200;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px #00000060;
+        }
+        .back-to-top.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .back-to-top:hover {
+            background: #30363d;
+            color: #c9d1d9;
+            transform: translateY(-2px);
+        }
+        .back-to-top svg { width: 18px; height: 18px; fill: currentColor; }
+
+        /* ============================================================
+           FOOTER
+           ============================================================ */
+        footer {
+            margin-top: 3em;
+            padding: 1.5em 0;
+            border-top: 1px solid #21262d;
+            color: #484f58;
+            font-size: 0.85em;
+            text-align: center;
+        }
+        footer a { color: #58a6ff; }
+        footer .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        footer .last-updated {
+            margin-top: 6px;
+            font-size: 0.9em;
+            color: #30363d;
+        }
+
+        /* ============================================================
+           RESPONSIVE / MOBILE
+           ============================================================ */
+        @media (max-width: 1400px) {
+            .toc-sidebar { display: none; }
+            .main-content { padding: 40px 20px; }
+        }
+        @media (min-width: 1401px) {
+            .nav-bar { display: none; }
+        }
+        @media (max-width: 768px) {
+            h1 { font-size: 1.5em; }
+            .note-section h2 { font-size: 1.25em; }
+            .viz-section { padding: 16px; }
+            .viz-section iframe { height: 400px; }
+            .viz-gallery { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
+            .viz-card-mini { padding: 6px 10px; font-size: 0.75em; }
+            .nav-bar { padding: 10px 12px; }
+            .nav-bar a { font-size: 0.75em; padding: 3px 8px; }
+            .callout, .formal-def { padding: 12px 14px; }
+            .back-to-top { bottom: 16px; right: 16px; width: 38px; height: 38px; }
+        }
+        @media (max-width: 480px) {
+            body { font-size: 15px; }
+            h1 { font-size: 1.3em; }
+            .main-content { padding: 24px 14px; }
+            .viz-section iframe { height: 320px; }
+            .viz-gallery { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Progress bar -->
+<div class="progress-bar" id="progress-bar"></div>
+
+<!-- Fullscreen modal -->
+<div class="modal-overlay" id="modal-overlay">
+    <div class="modal-content">
+        <button class="modal-close" id="modal-close">Close (Esc)</button>
+        <iframe id="modal-iframe" src="" title="Fullscreen visualization"></iframe>
+    </div>
+</div>
+
+<div class="page-wrapper">
+
+    <!-- ===================== SIDEBAR (ToC) ===================== -->
+    <aside class="toc-sidebar" id="toc-sidebar">
+        <div class="toc-title">On This Page</div>
+        
+        <a href="#abstract" data-section="abstract">Abstract</a>
+        
+        <a href="#introduction" data-section="introduction">Introduction</a>
+        
+        <a href="#viz-01" data-section="viz-01" class="toc-viz">RLHF Text Pipeline</a>
+        
+        <a href="#method" data-section="method">Method</a>
+        
+        <a href="#reward-model" data-section="reward-model">Reward Model</a>
+        
+        <a href="#viz-02" data-section="viz-02" class="toc-viz">Bradley-Terry RM</a>
+        
+        <a href="#human-feedback" data-section="human-feedback">Human Feedback Policies</a>
+        
+        <a href="#viz-03" data-section="viz-03" class="toc-viz">KL-Penalized Reward</a>
+        
+        <a href="#results-reddit" data-section="results-reddit">Results: Reddit</a>
+        
+        <a href="#viz-04" data-section="viz-04" class="toc-viz">SFT vs RL Quality</a>
+        
+        <a href="#results-news" data-section="results-news">Results: News</a>
+        
+        <a href="#viz-05" data-section="viz-05" class="toc-viz">RM Accuracy Scaling</a>
+        
+        <a href="#reward-understanding" data-section="reward-understanding">Understanding the RM</a>
+        
+        <a href="#viz-06" data-section="viz-06" class="toc-viz">Reward Overoptimization</a>
+        
+        <a href="#viz-07" data-section="viz-07" class="toc-viz">KL Coefficient Effect</a>
+        
+        <a href="#automatic-metrics" data-section="automatic-metrics">Automatic Metrics</a>
+        
+        <a href="#viz-08" data-section="viz-08" class="toc-viz">ROUGE vs Learned RM</a>
+        
+        <a href="#viz-09" data-section="viz-09" class="toc-viz">Transfer: CNN/DM</a>
+        
+        <a href="#discussion" data-section="discussion">Discussion</a>
+        
+        <a href="#viz-10" data-section="viz-10" class="toc-viz">Alignment Timeline</a>
+        
+    </aside>
+
+    <!-- ===================== MAIN CONTENT ===================== -->
+    <main class="main-content">
+
+        <p class="breadcrumb"><a href="../../">LuCiD-papers</a> / papers /</p>
+
+        <h1>Learning to Summarize from Human Feedback</h1>
+        <p class="meta">
+            <span class="arxiv">2009.01325</span> &mdash;
+            Stiennon, Ouyang, Wu, Ziegler, Lowe, Voss, Radford, Amodei, Christiano (2020) &mdash;
+            <a href="https://arxiv.org/abs/2009.01325">arXiv</a> &mdash;
+            <a href="https://github.com/csking101/LuCiD-papers/tree/main/papers/2009.01325">GitHub</a>
+        </p>
+
+        <div class="tldr">
+            <div class="tldr-label">TL;DR</div>
+            <p>This paper demonstrates that optimizing language models for <strong>human preferences via reinforcement learning</strong> produces significantly better summaries than supervised fine-tuning alone. The pipeline: (1) SFT a GPT-3-style model on Reddit TL;DR, (2) train a <strong>reward model</strong> from 65K human comparisons using a Bradley-Terry loss, (3) fine-tune with <strong>PPO</strong> using the learned reward plus a KL penalty against the SFT policy. The resulting 6.7B model generates summaries preferred by humans over the reference TL;DRs and even over much larger supervised models. The approach transfers zero-shot to CNN/DM news summarization. A critical finding: <strong>reward overoptimization</strong> &mdash; past a certain KL budget, the reward model score keeps climbing while true quality degrades.</p>
+        </div>
+
+        <!-- Top nav bar (shown on narrow screens where sidebar is hidden) -->
+        <nav class="nav-bar" id="nav-bar">
+            <span class="label">Sections:</span>
+            
+            <a href="#abstract" data-section="abstract">Abstract</a>
+            
+            <a href="#introduction" data-section="introduction">Intro</a>
+            
+            <a href="#method" data-section="method">Method</a>
+            
+            <a href="#reward-model" data-section="reward-model">Reward Model</a>
+            
+            <a href="#human-feedback" data-section="human-feedback">RL Policy</a>
+            
+            <a href="#results-reddit" data-section="results-reddit">Results</a>
+            
+            <a href="#reward-understanding" data-section="reward-understanding">Understanding RM</a>
+            
+            <a href="#automatic-metrics" data-section="automatic-metrics">Metrics</a>
+            
+            <a href="#discussion" data-section="discussion">Discussion</a>
+            
+        </nav>
+
+        <!-- ===================== VISUALIZATION GALLERY ===================== -->
+        <p class="viz-gallery-title">Visualizations (10)</p>
+        <div class="viz-gallery">
+            
+            <a class="viz-card-mini tool-manim" href="#viz-01">
+                <span class="mini-num">1</span>
+                <span class="mini-title">RLHF Text Pipeline</span>
+                <span class="mini-tag mini-tag-manim">Manim</span>
+            </a>
+            
+            <a class="viz-card-mini tool-manim" href="#viz-02">
+                <span class="mini-num">2</span>
+                <span class="mini-title">Bradley-Terry RM</span>
+                <span class="mini-tag mini-tag-manim">Manim</span>
+            </a>
+            
+            <a class="viz-card-mini tool-manim" href="#viz-03">
+                <span class="mini-num">3</span>
+                <span class="mini-title">KL-Penalized Reward</span>
+                <span class="mini-tag mini-tag-manim">Manim</span>
+            </a>
+            
+            <a class="viz-card-mini tool-multi" href="#viz-04">
+                <span class="mini-num">4</span>
+                <span class="mini-title">SFT vs RL Quality</span>
+                <span class="mini-tag mini-tag-multi">MPL+Plotly</span>
+            </a>
+            
+            <a class="viz-card-mini tool-multi" href="#viz-05">
+                <span class="mini-num">5</span>
+                <span class="mini-title">RM Accuracy Scaling</span>
+                <span class="mini-tag mini-tag-multi">MPL+Plotly</span>
+            </a>
+            
+            <a class="viz-card-mini tool-multi" href="#viz-06">
+                <span class="mini-num">6</span>
+                <span class="mini-title">Reward Overoptimization</span>
+                <span class="mini-tag mini-tag-multi">MPL+Plotly</span>
+            </a>
+            
+            <a class="viz-card-mini tool-multi" href="#viz-07">
+                <span class="mini-num">7</span>
+                <span class="mini-title">KL Coefficient Effect</span>
+                <span class="mini-tag mini-tag-multi">MPL+Plotly</span>
+            </a>
+            
+            <a class="viz-card-mini tool-multi" href="#viz-08">
+                <span class="mini-num">8</span>
+                <span class="mini-title">ROUGE vs Learned RM</span>
+                <span class="mini-tag mini-tag-multi">MPL+Plotly</span>
+            </a>
+            
+            <a class="viz-card-mini tool-mpl" href="#viz-09">
+                <span class="mini-num">9</span>
+                <span class="mini-title">Transfer: CNN/DM</span>
+                <span class="mini-tag mini-tag-mpl">Matplotlib</span>
+            </a>
+            
+            <a class="viz-card-mini tool-manim" href="#viz-10">
+                <span class="mini-num">10</span>
+                <span class="mini-title">Alignment Timeline</span>
+                <span class="mini-tag mini-tag-manim">Manim</span>
+            </a>
+            
+        </div>
+
+        <!-- ===================== CONTENT BLOCKS ===================== -->
+        
+        
+        <!-- ==================== ABSTRACT ==================== -->
+        <div class="note-section fade-in" id="abstract">
+            <h2>Abstract</h2>
+            
+            <p>As language models become more powerful, training and evaluation are increasingly bottlenecked by the data and metrics used for a particular task. In this work, the authors show that it's possible to significantly improve summary quality &mdash; far beyond what metrics like ROUGE capture &mdash; by training a model to <strong>optimize for human preferences</strong>.</p>
+            <ul>
+                <li>A large, high-quality dataset of human preferences is created (65K comparisons).</li>
+                <li>A <strong>reward model</strong> is trained to predict which summary a human would prefer.</li>
+                <li>That reward model is used to fine-tune a summarization policy via <strong>reinforcement learning</strong> (PPO).</li>
+            </ul>
+            <div class="callout callout-key">
+                <p>TL;DR: this paper applies the full RLHF pipeline &mdash; previously demonstrated on Atari and simulated robotics &mdash; to a real NLP task (text summarization) for the first time at scale.</p>
+            </div>
+        
+        </div>
+
+        
+        
+        
+        <!-- ==================== INTRODUCTION ==================== -->
+        <div class="note-section fade-in" id="introduction">
+            <h2>Introduction</h2>
+            
+            <p>Most NLP tasks train models to maximize the log probability of human demonstrations. But there is a fundamental <strong>misalignment</strong>: we want <em>"generating high-quality outputs as determined by humans"</em>, while the model objective is <em>"maximize the likelihood of human-written text"</em>.</p>
+
+            <p>This misalignment has concrete consequences:</p>
+            <ul>
+                <li>The model doesn't distinguish important errors (making up facts) from unimportant ones (choosing a slightly different synonym).</li>
+                <li>Models are incentivized to place probability mass on all human demonstrations, even low-quality ones.</li>
+                <li>Distributional shift during sampling can degrade performance.</li>
+            </ul>
+
+            <p>Metrics like ROUGE, the standard automatic metric for evaluating summary quality, have received criticism for poor correlation with human judgement. The paper's four main contributions:</p>
+            <ol>
+                <li>Training with human feedback <strong>significantly outperforms</strong> very strong baselines on English summarization.</li>
+                <li>Human feedback models <strong>generalize much better</strong> to new domains than supervised models.</li>
+                <li>Extensive empirical analyses of the policy and reward model behavior.</li>
+                <li>Public release of the human feedback dataset for further research.</li>
+            </ol>
+
+            <div class="callout callout-insight">
+                <p>The key realization: we can make models generate text (they know how to output something), and then use RLHF to ensure the policy outputs what we <em>actually want</em>. This captures the essence of human evaluation &mdash; abstract qualities like accuracy, coherence, and coverage &mdash; that log-likelihood training misses.</p>
+            </div>
+        
+        </div>
+
+        
+        
+        
+        <!-- Viz 1: RLHF Text Pipeline -->
+        <div class="viz-section viz-manim fade-in" id="viz-01">
+            <h2><span class="num">#1</span> RLHF Text Pipeline</h2>
+            
+            <span class="tool-tag tag-manim">Manim</span>
+            
+            <p class="desc">Animated walkthrough of the full three-stage pipeline: supervised fine-tuning on TL;DR, reward model training from human comparisons, and PPO optimization with KL penalty.</p>
+            
+            <video controls preload="metadata">
+                <source src="RLHFTextPipeline.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+            
+            
+            
+        </div>
+
+        
+        
+        
+        <div class="section-break"></div>
+
+        
+        
+        
+        <!-- ==================== METHOD ==================== -->
+        <div class="note-section fade-in" id="method">
+            <h2>Method</h2>
+            
+            <h3>High-Level Methodology</h3>
+            <p>Start with an initial policy fine-tuned via SFT on the Reddit TL;DR summarization dataset. Then iterate through three stages:</p>
+            <ol>
+                <li><strong>Collect comparisons</strong> &mdash; For each Reddit post, sample summaries from the current policy, initial policy, original reference summary, and various baselines. Human evaluators choose the best summary from each batch.</li>
+                <li><strong>Learn a reward model</strong> &mdash; Given a post and candidate summary, train a reward model to predict the log odds that this summary is the better one as judged by labelers.</li>
+                <li><strong>Optimize the policy</strong> &mdash; Use the reward model's output as a reward signal, optimized via PPO.</li>
+            </ol>
+
+            <h3>Datasets and Task</h3>
+            <ul>
+                <li>The <strong>TL;DR</strong> summarization dataset has ~3 million posts from Reddit, filtered for quality to 123,169 posts (5% validation).</li>
+                <li>Summaries must be 24&ndash;48 tokens.</li>
+                <li><strong>CNN/DM</strong> is used as a transfer evaluation dataset &mdash; an "easy" dataset where good performance can be achieved readily.</li>
+            </ul>
+
+            <h3>Models</h3>
+            <ul>
+                <li>GPT-3-style decoders with <strong>1.3B</strong> and <strong>6.7B</strong> parameters.</li>
+                <li><strong>Pretrained models</strong>: autoregressive next-token predictors used as zero-shot baselines.</li>
+                <li><strong>Supervised baselines</strong>: fine-tuned via SFT with temperature 0 at evaluation time.</li>
+            </ul>
+        
+        </div>
+
+        
+        
+        
+        <div class="section-break"></div>
+
+        
+        
+        
+        <!-- ==================== REWARD MODEL TRAINING ==================== -->
+        <div class="note-section fade-in" id="reward-model">
+            <h2>Reward Model Training</h2>
+            
+            <p>Starting from the supervised baseline, a randomly initialized linear head is added that outputs a scalar value. The model is trained to predict which summary $y \in \{y_0, y_1\}$ is better as judged by a human, given a post $x$.</p>
+
+            <div class="formal-def">
+                <p><strong>Bradley-Terry Loss</strong></p>
+                <div class="math-block">
+                    $$\text{loss}(r_\theta) = -\mathbb{E}_{(x,y_0,y_1,i) \sim \mathcal{D}}\left[\log\sigma\!\left(r_\theta(x, y_i) - r_\theta(x, y_{1-i})\right)\right]$$
+                </div>
+                <p>where $r_\theta(x, y)$ is the scalar output of the reward model for post $x$ and summary $y$, $y_i$ is the human-preferred summary, and $\sigma$ is the sigmoid function.</p>
+            </div>
+
+            <p>This is the <strong>Bradley-Terry model</strong>, as encountered in the original RLHF paper. It converts differences in reward scores into a probability that one summary is preferred over another. At the end of training, reward model outputs are normalized to have mean 0.</p>
+
+            <div class="callout callout-insight">
+                <p>The reward model doesn't need to produce calibrated scores &mdash; only the <em>relative ordering</em> matters. The sigmoid on the difference $r(x, y_i) - r(x, y_{1-i})$ makes this a binary classification problem: "which summary is better?" The model learns to assign higher scalar rewards to summaries humans prefer.</p>
+            </div>
+        
+        </div>
+
+        
+        
+        
+        <!-- Viz 2: Bradley-Terry Reward Model -->
+        <div class="viz-section viz-manim fade-in" id="viz-02">
+            <h2><span class="num">#2</span> Bradley-Terry Reward Model</h2>
+            
+            <span class="tool-tag tag-manim">Manim</span>
+            
+            <p class="desc">Animated derivation of the Bradley-Terry loss: from pairwise human comparisons to the sigmoid-based training objective that turns scalar reward differences into preference probabilities.</p>
+            
+            <video controls preload="metadata">
+                <source src="BradleyTerryRM.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+            
+            
+            
+        </div>
+
+        
+        
+        
+        <div class="section-break"></div>
+
+        
+        
+        
+        <!-- ==================== HUMAN FEEDBACK POLICIES ==================== -->
+        <div class="note-section fade-in" id="human-feedback">
+            <h2>Human Feedback Policies</h2>
+            
+            <p>The trained reward model is used to fine-tune a policy that generates higher-quality summaries. This is done via RL, treating the reward model output as a reward signal maximized with <strong>PPO</strong>. Each timestep corresponds to a BPE token.</p>
+
+            <h3>KL-Penalized Reward</h3>
+            <p>The full reward includes a KL divergence penalty between the RL policy $\pi_\phi^{\text{RL}}$ and the original SFT model $\pi^{\text{SFT}}$:</p>
+
+            <div class="formal-def">
+                <div class="math-block">
+                    $$R(x, y) = r_\theta(x, y) - \beta \log\!\left[\frac{\pi_\phi^{\text{RL}}(y|x)}{\pi^{\text{SFT}}(y|x)}\right]$$
+                </div>
+                <p>where $\beta$ controls the strength of the KL penalty.</p>
+            </div>
+
+            <p>The KL penalty term serves two purposes:</p>
+            <ul>
+                <li><strong>Entropy bonus</strong> &mdash; encourages the policy to explore and prevents it from collapsing to a single mode.</li>
+                <li><strong>Distribution anchoring</strong> &mdash; ensures the RL policy doesn't produce outputs too far from what the reward model saw during training, preventing reward hacking.</li>
+            </ul>
+
+            <h3>Implementation Details</h3>
+            <ul>
+                <li>The PPO <strong>value function</strong> uses a Transformer with <em>completely separate parameters</em> from the policy. This prevents value function updates from partially destroying the pretrained policy early in training.</li>
+                <li>The value function is initialized from the reward model parameters.</li>
+                <li>The reward model, policy, and value function are all the same size in the experiments.</li>
+            </ul>
+
+            <div class="callout callout-key">
+                <p>The separate value function is a crucial design choice. In standard RL, sharing parameters between policy and value networks is common and efficient. But here, the policy starts as a carefully pretrained language model &mdash; value function gradients flowing into the policy network would corrupt the pretrained representations before the RL signal has time to steer them properly.</p>
+            </div>
+        
+        </div>
+
+        
+        
+        
+        <!-- Viz 3: KL-Penalized Reward -->
+        <div class="viz-section viz-manim fade-in" id="viz-03">
+            <h2><span class="num">#3</span> KL-Penalized Reward</h2>
+            
+            <span class="tool-tag tag-manim">Manim</span>
+            
+            <p class="desc">Animated visualization of the KL-penalized reward objective: how the reward model signal is balanced against the KL divergence penalty to prevent the policy from straying too far from the SFT baseline.</p>
+            
+            <video controls preload="metadata">
+                <source src="KLPenalizedReward.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+            
+            
+            
+        </div>
+
+        
+        
+        
+        <div class="section-break"></div>
+
+        
+        
+        
+        <!-- ==================== RESULTS: SUMMARIZING REDDIT POSTS ==================== -->
+        <div class="note-section fade-in" id="results-reddit">
+            <h2>Results: Summarizing Reddit Posts</h2>
+            
+            <p>Policies trained with human feedback are preferred to much larger supervised policies. The 6.7B human feedback model produces summaries that humans prefer over the reference TL;DRs written by the original post authors.</p>
+
+            <ul>
+                <li>Slightly longer summaries tend to perform better &mdash; length is an implicit objective. When controlling for length explicitly, human feedback model performance drops by ~5% but still reaches 65% preference.</li>
+                <li>Labelers assessed summary quality across four dimensions using a <strong>7-point Likert scale</strong>:
+                    <ul>
+                        <li><strong>Coverage</strong> &mdash; how much important information from the original post is covered</li>
+                        <li><strong>Accuracy</strong> &mdash; to what degree the statements in the summary are supported by the post</li>
+                        <li><strong>Coherence</strong> &mdash; how easy the summary is to read on its own</li>
+                        <li><strong>Overall quality</strong></li>
+                    </ul>
+                </li>
+            </ul>
+
+            <div class="callout callout-key">
+                <p>The RL-trained models improve on <em>all four dimensions</em> compared to supervised baselines, with the largest gains on coverage and overall quality. This confirms that the reward model captures more than just surface-level text features.</p>
+            </div>
+        
+        </div>
+
+        
+        
+        
+        <!-- Viz 4: SFT vs RL Quality -->
+        <div class="viz-section viz-multi fade-in" id="viz-04">
+            <h2><span class="num">#4</span> SFT vs RL Quality</h2>
+            
+            <span class="tool-tag tag-matplotlib">Matplotlib</span>
+            <span class="tool-tag tag-plotly">Plotly</span>
+            
+            <p class="desc">Comparison of supervised fine-tuning vs RL-trained model quality across evaluation dimensions, showing the consistent advantage of optimizing for human preferences.</p>
+            
+            
+            
+            <p class="section-divider">Static figure</p>
+            
+            <img src="https://raw.githubusercontent.com/csking101/LuCiD-papers/main/papers/2009.01325/output/static/04_sft_vs_rl_quality.png" alt="SFT vs RL Quality" loading="lazy">
+            
+            
+            <p class="section-divider">Interactive demo &mdash; <a class="open-link" href="04_sft_vs_rl_quality.html" target="_blank">Open in new tab &rarr;</a></p>
+            <div class="iframe-wrapper">
+                <button class="fullscreen-btn" data-src="04_sft_vs_rl_quality.html" title="View fullscreen">
+                    <svg viewBox="0 0 16 16"><path d="M1.5 1h4a.5.5 0 010 1H2v3.5a.5.5 0 01-1 0v-4a.5.5 0 01.5-.5zm13 0a.5.5 0 01.5.5v4a.5.5 0 01-1 0V2h-3.5a.5.5 0 010-1h4zM1 10.5a.5.5 0 011 0V14h3.5a.5.5 0 010 1h-4a.5.5 0 01-.5-.5v-4zm14 0a.5.5 0 01-1 0V14h-3.5a.5.5 0 010 1h4a.5.5 0 00.5-.5v-4z"/></svg>
+                    Fullscreen
+                </button>
+                <iframe src="04_sft_vs_rl_quality.html" loading="lazy" title="SFT vs RL Quality interactive"></iframe>
+            </div>
+            
+        </div>
+
+        
+        
+        
+        <div class="section-break"></div>
+
+        
+        
+        
+        <!-- ==================== RESULTS: SUMMARIZING NEWS ARTICLES ==================== -->
+        <div class="note-section fade-in" id="results-news">
+            <h2>Results: Summarizing News Articles</h2>
+            
+            <p>Without any further training, the TL;DR-trained model generates excellent summaries of <strong>CNN/DM news articles</strong>. The summaries are consistently fluent and reasonable representations of the articles.</p>
+
+            <div class="callout callout-insight">
+                <p>This zero-shot transfer is remarkable: the model was trained exclusively on informal Reddit posts, yet it generalizes to formal news articles. Human feedback models transfer much better than supervised models, suggesting that learning <em>what humans value in a summary</em> generalizes across domains, while learning <em>the surface statistics of Reddit text</em> does not.</p>
+            </div>
+        
+        </div>
+
+        
+        
+        
+        <!-- Viz 5: RM Accuracy Scaling -->
+        <div class="viz-section viz-multi fade-in" id="viz-05">
+            <h2><span class="num">#5</span> RM Accuracy Scaling</h2>
+            
+            <span class="tool-tag tag-matplotlib">Matplotlib</span>
+            <span class="tool-tag tag-plotly">Plotly</span>
+            
+            <p class="desc">How reward model accuracy scales with the amount of comparison data and model size, showing diminishing but consistent returns.</p>
+            
+            
+            
+            <p class="section-divider">Static figure</p>
+            
+            <img src="https://raw.githubusercontent.com/csking101/LuCiD-papers/main/papers/2009.01325/output/static/05_rm_accuracy_scaling.png" alt="RM Accuracy Scaling" loading="lazy">
+            
+            
+            <p class="section-divider">Interactive demo &mdash; <a class="open-link" href="05_rm_accuracy_scaling.html" target="_blank">Open in new tab &rarr;</a></p>
+            <div class="iframe-wrapper">
+                <button class="fullscreen-btn" data-src="05_rm_accuracy_scaling.html" title="View fullscreen">
+                    <svg viewBox="0 0 16 16"><path d="M1.5 1h4a.5.5 0 010 1H2v3.5a.5.5 0 01-1 0v-4a.5.5 0 01.5-.5zm13 0a.5.5 0 01.5.5v4a.5.5 0 01-1 0V2h-3.5a.5.5 0 010-1h4zM1 10.5a.5.5 0 011 0V14h3.5a.5.5 0 010 1h-4a.5.5 0 01-.5-.5v-4zm14 0a.5.5 0 01-1 0V14h-3.5a.5.5 0 010 1h4a.5.5 0 00.5-.5v-4z"/></svg>
+                    Fullscreen
+                </button>
+                <iframe src="05_rm_accuracy_scaling.html" loading="lazy" title="RM Accuracy Scaling interactive"></iframe>
+            </div>
+            
+        </div>
+
+        
+        
+        
+        <div class="section-break"></div>
+
+        
+        
+        
+        <!-- ==================== UNDERSTANDING THE REWARD MODEL ==================== -->
+        <div class="note-section fade-in" id="reward-understanding">
+            <h2>Understanding the Reward Model</h2>
+            
+            <p>A reward model isn't a perfect representation of labeler preferences &mdash; it has limited capacity and only sees a small amount of comparison data from a relatively narrow distribution. The critical question: <em>how much can you optimize against the reward model before it starts giving useless evaluations?</em></p>
+
+            <h3>Reward Overoptimization</h3>
+            <p>The authors created a range of policies optimized against an earlier version of the reward model with varying degrees of optimization strength, then asked labelers to compare them.</p>
+            <ul>
+                <li>Under <strong>light optimization</strong>, the models genuinely improve.</li>
+                <li>Under <strong>heavy optimization</strong>, the predicted reward keeps climbing but true human preferences fall off &mdash; eventually the reward model becomes <em>anti-correlated</em> with human preferences.</li>
+            </ul>
+
+            <div class="callout callout-key">
+                <p>This is <strong>reward overoptimization</strong> (also called "reward hacking" or "Goodhart's Law in RL"). The policy learns to exploit quirks of the reward model rather than producing genuinely better summaries. This finding became foundational for alignment research &mdash; it demonstrates that proxy objectives break under heavy optimization, even when the proxy was trained on real human judgments.</p>
+            </div>
+
+            <h3>Reward Model Performance</h3>
+            <ul>
+                <li>The reward model agrees with labeler preferences around <strong>62&ndash;66%</strong> of the time.</li>
+                <li>Inter-labeler agreement is <strong>66.9%</strong>, meaning the RM performs close to human-level consistency.</li>
+                <li>The RM is sensitive to small but semantically important details in summaries.</li>
+                <li>More data and larger model size yield marginal but consistent returns.</li>
+            </ul>
+        
+        </div>
+
+        
+        
+        
+        <!-- Viz 6: Reward Overoptimization -->
+        <div class="viz-section viz-multi fade-in" id="viz-06">
+            <h2><span class="num">#6</span> Reward Overoptimization</h2>
+            
+            <span class="tool-tag tag-matplotlib">Matplotlib</span>
+            <span class="tool-tag tag-plotly">Plotly</span>
+            
+            <p class="desc">The critical reward overoptimization phenomenon: as KL divergence from the SFT policy increases, the reward model score keeps climbing but true human preference quality peaks and then degrades.</p>
+            
+            
+            
+            <p class="section-divider">Static figure</p>
+            
+            <img src="https://raw.githubusercontent.com/csking101/LuCiD-papers/main/papers/2009.01325/output/static/06_reward_overoptimization.png" alt="Reward Overoptimization" loading="lazy">
+            
+            
+            <p class="section-divider">Interactive demo &mdash; <a class="open-link" href="06_reward_overoptimization.html" target="_blank">Open in new tab &rarr;</a></p>
+            <div class="iframe-wrapper">
+                <button class="fullscreen-btn" data-src="06_reward_overoptimization.html" title="View fullscreen">
+                    <svg viewBox="0 0 16 16"><path d="M1.5 1h4a.5.5 0 010 1H2v3.5a.5.5 0 01-1 0v-4a.5.5 0 01.5-.5zm13 0a.5.5 0 01.5.5v4a.5.5 0 01-1 0V2h-3.5a.5.5 0 010-1h4zM1 10.5a.5.5 0 011 0V14h3.5a.5.5 0 010 1h-4a.5.5 0 01-.5-.5v-4zm14 0a.5.5 0 01-1 0V14h-3.5a.5.5 0 010 1h4a.5.5 0 00.5-.5v-4z"/></svg>
+                    Fullscreen
+                </button>
+                <iframe src="06_reward_overoptimization.html" loading="lazy" title="Reward Overoptimization interactive"></iframe>
+            </div>
+            
+        </div>
+
+        
+        
+        
+        <!-- Viz 7: KL Coefficient Effect -->
+        <div class="viz-section viz-multi fade-in" id="viz-07">
+            <h2><span class="num">#7</span> KL Coefficient Effect</h2>
+            
+            <span class="tool-tag tag-matplotlib">Matplotlib</span>
+            <span class="tool-tag tag-plotly">Plotly</span>
+            
+            <p class="desc">How the KL penalty coefficient beta controls the tradeoff between reward maximization and staying close to the SFT policy, with different beta values producing different quality profiles.</p>
+            
+            
+            
+            <p class="section-divider">Static figure</p>
+            
+            <img src="https://raw.githubusercontent.com/csking101/LuCiD-papers/main/papers/2009.01325/output/static/07_kl_coefficient_effect.png" alt="KL Coefficient Effect" loading="lazy">
+            
+            
+            <p class="section-divider">Interactive demo &mdash; <a class="open-link" href="07_kl_coefficient_effect.html" target="_blank">Open in new tab &rarr;</a></p>
+            <div class="iframe-wrapper">
+                <button class="fullscreen-btn" data-src="07_kl_coefficient_effect.html" title="View fullscreen">
+                    <svg viewBox="0 0 16 16"><path d="M1.5 1h4a.5.5 0 010 1H2v3.5a.5.5 0 01-1 0v-4a.5.5 0 01.5-.5zm13 0a.5.5 0 01.5.5v4a.5.5 0 01-1 0V2h-3.5a.5.5 0 010-1h4zM1 10.5a.5.5 0 011 0V14h3.5a.5.5 0 010 1h-4a.5.5 0 01-.5-.5v-4zm14 0a.5.5 0 01-1 0V14h-3.5a.5.5 0 010 1h4a.5.5 0 00.5-.5v-4z"/></svg>
+                    Fullscreen
+                </button>
+                <iframe src="07_kl_coefficient_effect.html" loading="lazy" title="KL Coefficient Effect interactive"></iframe>
+            </div>
+            
+        </div>
+
+        
+        
+        
+        <div class="section-break"></div>
+
+        
+        
+        
+        <!-- ==================== ANALYZING AUTOMATIC METRICS ==================== -->
+        <div class="note-section fade-in" id="automatic-metrics">
+            <h2>Analyzing Automatic Metrics</h2>
+            
+            <p>The paper provides a thorough comparison of automatic metrics against human judgment:</p>
+
+            <ul>
+                <li><strong>Learned reward models</strong> consistently outperform other metrics, even on the CNN/DM dataset on which they were never trained.</li>
+                <li><strong>ROUGE</strong> can't track sample quality as the model improves &mdash; it has low agreement with human evaluators.</li>
+                <li>Optimizing ROUGE directly using a simple scheme doesn't actually increase summary quality as judged by humans.</li>
+            </ul>
+
+            <div class="callout callout-insight">
+                <p>This is a strong indictment of ROUGE as an evaluation metric. The learned reward model, despite being trained on a relatively small dataset from one domain (Reddit), provides a better signal of summary quality than ROUGE even on out-of-distribution data (CNN/DM). The implication: <em>learning what humans value</em> gives you a more robust evaluation signal than hand-designed metrics.</p>
+            </div>
+        
+        </div>
+
+        
+        
+        
+        <!-- Viz 8: ROUGE vs Learned RM -->
+        <div class="viz-section viz-multi fade-in" id="viz-08">
+            <h2><span class="num">#8</span> ROUGE vs Learned RM</h2>
+            
+            <span class="tool-tag tag-matplotlib">Matplotlib</span>
+            <span class="tool-tag tag-plotly">Plotly</span>
+            
+            <p class="desc">Head-to-head comparison of ROUGE scores and learned reward model scores as predictors of human preference, demonstrating the superiority of learned evaluation.</p>
+            
+            
+            
+            <p class="section-divider">Static figure</p>
+            
+            <img src="https://raw.githubusercontent.com/csking101/LuCiD-papers/main/papers/2009.01325/output/static/08_rouge_vs_learned_rm.png" alt="ROUGE vs Learned RM" loading="lazy">
+            
+            
+            <p class="section-divider">Interactive demo &mdash; <a class="open-link" href="08_rouge_vs_learned_rm.html" target="_blank">Open in new tab &rarr;</a></p>
+            <div class="iframe-wrapper">
+                <button class="fullscreen-btn" data-src="08_rouge_vs_learned_rm.html" title="View fullscreen">
+                    <svg viewBox="0 0 16 16"><path d="M1.5 1h4a.5.5 0 010 1H2v3.5a.5.5 0 01-1 0v-4a.5.5 0 01.5-.5zm13 0a.5.5 0 01.5.5v4a.5.5 0 01-1 0V2h-3.5a.5.5 0 010-1h4zM1 10.5a.5.5 0 011 0V14h3.5a.5.5 0 010 1h-4a.5.5 0 01-.5-.5v-4zm14 0a.5.5 0 01-1 0V14h-3.5a.5.5 0 010 1h4a.5.5 0 00.5-.5v-4z"/></svg>
+                    Fullscreen
+                </button>
+                <iframe src="08_rouge_vs_learned_rm.html" loading="lazy" title="ROUGE vs Learned RM interactive"></iframe>
+            </div>
+            
+        </div>
+
+        
+        
+        
+        <!-- Viz 9: Transfer: CNN/DM -->
+        <div class="viz-section viz-mpl fade-in" id="viz-09">
+            <h2><span class="num">#9</span> Transfer: CNN/DM</h2>
+            
+            <span class="tool-tag tag-matplotlib">Matplotlib</span>
+            
+            <p class="desc">Zero-shot transfer performance from the Reddit TL;DR-trained model to CNN/DM news summarization, showing that human feedback models generalize better than supervised baselines.</p>
+            
+            
+            
+            <img src="https://raw.githubusercontent.com/csking101/LuCiD-papers/main/papers/2009.01325/output/static/09_transfer_cnn_dm.png" alt="Transfer: CNN/DM" loading="lazy">
+            
+            
+        </div>
+
+        
+        
+        
+        <div class="section-break"></div>
+
+        
+        
+        
+        <!-- ==================== DISCUSSION ==================== -->
+        <div class="note-section fade-in" id="discussion">
+            <h2>Discussion</h2>
+            
+            <h3>Limitations</h3>
+            <ul>
+                <li>The time and cost required to produce the final models was substantial.</li>
+                <li>Collecting human feedback is an expensive, long process that's hard to scale.</li>
+                <li>The reward model is an imperfect proxy &mdash; reward overoptimization is a real concern.</li>
+            </ul>
+
+            <h3>Future Directions</h3>
+            <ul>
+                <li>The methods can be applied to <strong>any task where humans can compare samples</strong>: dialogue, machine translation, question answering, speech synthesis, music generation.</li>
+                <li>Particularly important for <strong>long-form generation</strong> where distributional shift and degeneracy of maximum-likelihood samples are most problematic.</li>
+                <li>Scaling human feedback to tasks where humans <em>can't easily evaluate</em> the quality of model outputs remains an open challenge.</li>
+            </ul>
+
+            <h3>Broader Impacts</h3>
+            <ul>
+                <li>The implications for <strong>aligning ML algorithms with designer preferences</strong> are broad.</li>
+                <li>As models become more capable, it will be harder to spot mistakes and the consequences of errors become more severe.</li>
+                <li>Large-scale models trained with human feedback could have significant societal impact, including job automation and potential for misuse.</li>
+            </ul>
+
+            <div class="callout callout-key">
+                <p>This paper sits at a pivotal point in the alignment timeline: it proved that RLHF works for real NLP tasks, directly enabling <strong>InstructGPT</strong> (2022) and <strong>ChatGPT</strong>. The same pipeline &mdash; SFT &rarr; reward model &rarr; PPO &mdash; would become the standard recipe for aligning large language models. The reward overoptimization finding also seeded a major research direction: how to build robust reward signals that don't break under optimization pressure.</p>
+            </div>
+        
+        </div>
+
+        
+        
+        
+        <!-- Viz 10: Alignment Timeline -->
+        <div class="viz-section viz-manim fade-in" id="viz-10">
+            <h2><span class="num">#10</span> Alignment Timeline</h2>
+            
+            <span class="tool-tag tag-manim">Manim</span>
+            
+            <p class="desc">Animated timeline of the alignment research lineage: from the original RLHF paper (2017) through PPO (2017) to this paper (2020), and forward to InstructGPT (2022) and DPO (2023).</p>
+            
+            <video controls preload="metadata">
+                <source src="AlignmentTimeline.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+            
+            
+            
+        </div>
+
+        
+        
+
+        <footer>
+            <div class="footer-links">
+                <a href="../../">Back to LuCiD-papers</a>
+                <a href="https://github.com/csking101/LuCiD-papers/tree/main/papers/2009.01325">View source on GitHub</a>
+                <a href="https://arxiv.org/abs/2009.01325">Read on arXiv</a>
+            </div>
+            <p class="last-updated">Last updated: May 2026</p>
+            <p class="last-updated">Notes by Chinmaya Sahu. Content polish, code, visualizations, and web design by AI.</p>
+        </footer>
+
+    </main>
+</div>
+
+<!-- Back to top button -->
+<button class="back-to-top" id="back-to-top" title="Back to top">
+    <svg viewBox="0 0 16 16"><path d="M8 2.5l5.5 5.5H10v5.5H6V8H2.5L8 2.5z"/></svg>
+</button>
+
+<script>
+(function() {
+    'use strict';
+
+    // =============================================
+    // SCROLL PROGRESS BAR
+    // =============================================
+    const progressBar = document.getElementById('progress-bar');
+    function updateProgress() {
+        const scrollTop = window.scrollY;
+        const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+        const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+        progressBar.style.width = progress + '%';
+    }
+
+    // =============================================
+    // BACK-TO-TOP BUTTON
+    // =============================================
+    const backToTop = document.getElementById('back-to-top');
+    function updateBackToTop() {
+        if (window.scrollY > 400) {
+            backToTop.classList.add('visible');
+        } else {
+            backToTop.classList.remove('visible');
+        }
+    }
+    backToTop.addEventListener('click', function() {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    // Combined scroll handler (throttled via rAF)
+    let ticking = false;
+    window.addEventListener('scroll', function() {
+        if (!ticking) {
+            requestAnimationFrame(function() {
+                updateProgress();
+                updateBackToTop();
+                ticking = false;
+            });
+            ticking = true;
+        }
+    });
+
+    // =============================================
+    // ACTIVE SECTION HIGHLIGHTING (IntersectionObserver)
+    // =============================================
+    const sections = document.querySelectorAll('[id]');
+    const tocLinks = document.querySelectorAll('.toc-sidebar a[data-section]');
+    const navLinks = document.querySelectorAll('.nav-bar a[data-section]');
+
+    const sectionObserver = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+                const id = entry.target.id;
+                tocLinks.forEach(function(link) {
+                    if (link.getAttribute('data-section') === id) {
+                        link.classList.add('active');
+                    } else {
+                        link.classList.remove('active');
+                    }
+                });
+                navLinks.forEach(function(link) {
+                    if (link.getAttribute('data-section') === id) {
+                        link.classList.add('active');
+                    } else {
+                        link.classList.remove('active');
+                    }
+                });
+            }
+        });
+    }, {
+        rootMargin: '-10% 0px -75% 0px',
+        threshold: 0
+    });
+
+    sections.forEach(function(section) {
+        if (section.id) {
+            sectionObserver.observe(section);
+        }
+    });
+
+    // =============================================
+    // FADE-IN ON SCROLL (IntersectionObserver)
+    // =============================================
+    const fadeElements = document.querySelectorAll('.fade-in');
+    const fadeObserver = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+                fadeObserver.unobserve(entry.target);
+            }
+        });
+    }, {
+        rootMargin: '0px 0px -60px 0px',
+        threshold: 0.05
+    });
+
+    fadeElements.forEach(function(el) {
+        fadeObserver.observe(el);
+    });
+
+    // =============================================
+    // FULLSCREEN MODAL FOR IFRAMES
+    // =============================================
+    const modalOverlay = document.getElementById('modal-overlay');
+    const modalIframe = document.getElementById('modal-iframe');
+    const modalClose = document.getElementById('modal-close');
+
+    document.querySelectorAll('.fullscreen-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var src = btn.getAttribute('data-src');
+            modalIframe.src = src;
+            modalOverlay.classList.add('visible');
+            document.body.style.overflow = 'hidden';
+        });
+    });
+
+    function closeModal() {
+        modalOverlay.classList.remove('visible');
+        modalIframe.src = '';
+        document.body.style.overflow = '';
+    }
+
+    modalClose.addEventListener('click', closeModal);
+    modalOverlay.addEventListener('click', function(e) {
+        if (e.target === modalOverlay) closeModal();
+    });
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && modalOverlay.classList.contains('visible')) {
+            closeModal();
+        }
+    });
+
+    // =============================================
+    // LAZY VIDEO LOADING (IntersectionObserver)
+    // =============================================
+    const videos = document.querySelectorAll('video[preload="metadata"]');
+    const videoObserver = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+                var video = entry.target;
+                video.preload = 'auto';
+                videoObserver.unobserve(video);
+            }
+        });
+    }, {
+        rootMargin: '200px 0px',
+        threshold: 0
+    });
+
+    videos.forEach(function(video) {
+        videoObserver.observe(video);
+    });
+
+    // Initial state
+    updateProgress();
+    updateBackToTop();
+})();
+</script>
+
+</body>
+</html>
