@@ -77,15 +77,41 @@ atexit.register(_copy_to_docs)
 
 ### Color palette (matches docs dark theme)
 
-| Role        | Hex       | Usage                         |
-|-------------|-----------|-------------------------------|
-| Blue        | `#58a6ff` | Section headers, highlights   |
-| Green       | `#3fb950` | Positive / good / survives    |
-| Orange      | `#f0883e` | Key insights, PPO connection  |
-| Red         | `#E74C3C` | Negative / bad / vanishes     |
-| Purple      | `#d2a8ff` | Neural net, secondary concept |
-| Grey        | `GREY`    | Subtitles, context            |
-| Background  | `#0d1117` | Always set camera background  |
+| Role        | Hex         | Usage                         |
+|-------------|-------------|-------------------------------|
+| Blue        | `#58a6ff`   | Section headers, highlights   |
+| Green       | `#3fb950`   | Positive / good / survives    |
+| Orange      | `#f0883e`   | Key insights, PPO connection  |
+| Red         | `#E74C3C`   | Negative / bad / vanishes     |
+| Purple      | `#d2a8ff`   | Neural net, secondary concept |
+| Light text  | `#c9d1d9`   | Subtitles, secondary text, annotations |
+| Background  | `#0d1117`   | Always set camera background  |
+
+**Never use Manim's `GREY` or dark hex values like `#8b949e` / `#484f58`** — they have
+insufficient contrast against `#0d1117`. Use `"#c9d1d9"` (contrast ratio ~10.7:1, AAA).
+
+### Font size minimums
+
+All text must be legible at 720p. Use these minimums:
+
+| Element type        | Minimum `font_size` |
+|---------------------|---------------------|
+| Titles              | 36                  |
+| Section / step headers | 26               |
+| Body text / bullets | 20                  |
+| Labels inside boxes | 20                  |
+| Small annotations   | 16                  |
+
+### Spacing guidelines
+
+Use generous buffers between elements for breathing room:
+
+| Context                        | Minimum `buff` |
+|--------------------------------|----------------|
+| Arrow labels to arrows         | 0.15           |
+| Stacked text elements          | 0.2            |
+| Content below section headers  | 0.4            |
+| `SurroundingRectangle` padding | 0.15           |
 
 ### Scene setup
 

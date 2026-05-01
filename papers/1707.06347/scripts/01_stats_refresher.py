@@ -10,7 +10,7 @@
 # 4. KL Divergence (measuring distance between distributions)
 #
 # Run:
-#   manim -ql --media_dir ../output/animations 01_stats_refresher.py StatsRefresher
+#   manim -qm --media_dir ../output/animations 01_stats_refresher.py StatsRefresher
 
 from manim import *
 import atexit
@@ -23,10 +23,11 @@ _DOCS_DIR = _PAPER_DIR.parent.parent / "docs" / "papers" / "1707.06347"
 
 # Font for descriptive text — matches LaTeX aesthetic
 _FONT = "Latin Modern Roman"
+_SUB = "#c9d1d9"  # high-contrast secondary text
 
 
 def _copy_to_docs():
-    src = _PAPER_DIR / "output/animations/videos/01_stats_refresher/480p15/StatsRefresher.mp4"
+    src = _PAPER_DIR / "output/animations/videos/01_stats_refresher/720p30/StatsRefresher.mp4"
     dst = _DOCS_DIR / "StatsRefresher.mp4"
     if src.exists():
         dst.parent.mkdir(parents=True, exist_ok=True)
@@ -44,7 +45,7 @@ class StatsRefresher(Scene):
         # ── Title ──
         title = Text("Statistics Refresher for PPO", font_size=36, weight=BOLD,
                       color=WHITE, font=_FONT)
-        subtitle = Text("Four key concepts you need", font_size=22, color=GREY, font=_FONT)
+        subtitle = Text("Four key concepts you need", font_size=22, color=_SUB, font=_FONT)
         subtitle.next_to(title, DOWN, buff=0.3)
         self.play(Write(title), run_time=1)
         self.play(FadeIn(subtitle, shift=UP * 0.2), run_time=0.6)
@@ -58,7 +59,7 @@ class StatsRefresher(Scene):
         sec1.to_edge(UP, buff=0.5)
         self.play(Write(sec1), run_time=0.7)
 
-        eq_title = Text("The weighted average of outcomes", font_size=20, color=GREY, font=_FONT)
+        eq_title = Text("The weighted average of outcomes", font_size=22, color=_SUB, font=_FONT)
         eq_title.next_to(sec1, DOWN, buff=0.4)
         self.play(FadeIn(eq_title))
 
@@ -81,15 +82,15 @@ class StatsRefresher(Scene):
         self.wait(0.5)
 
         # Key insight
-        key1 = Text("In RL: we can't compute the integral,", font_size=18, color="#f0883e", font=_FONT)
-        key1b = Text("so we estimate by sampling trajectories", font_size=18, color="#f0883e", font=_FONT)
+        key1 = Text("In RL: we can't compute the integral,", font_size=20, color="#f0883e", font=_FONT)
+        key1b = Text("so we estimate by sampling trajectories", font_size=20, color="#f0883e", font=_FONT)
         key1.next_to(cont, DOWN, buff=0.5)
-        key1b.next_to(key1, DOWN, buff=0.15)
+        key1b.next_to(key1, DOWN, buff=0.2)
         self.play(FadeIn(key1), FadeIn(key1b))
 
         # Sample average
         sample_label = Text("Sample average approximates expectation:",
-                            font_size=18, color=GREY, font=_FONT)
+                            font_size=20, color=_SUB, font=_FONT)
         sample_label.next_to(key1b, DOWN, buff=0.4)
         self.play(FadeIn(sample_label))
 
@@ -118,14 +119,14 @@ class StatsRefresher(Scene):
         var_def.next_to(sec2, DOWN, buff=0.5)
         self.play(Write(var_def), run_time=0.8)
 
-        meaning = Text("How spread out are our estimates?", font_size=20, color=GREY, font=_FONT)
+        meaning = Text("How spread out are our estimates?", font_size=22, color=_SUB, font=_FONT)
         meaning.next_to(var_def, DOWN, buff=0.4)
         self.play(FadeIn(meaning))
         self.wait(0.5)
 
         # Low variance visual
         low_var_label = Text("Low Variance: estimates cluster tightly",
-                             font_size=18, color="#3fb950", font=_FONT)
+                             font_size=20, color="#3fb950", font=_FONT)
         low_var_label.move_to(DOWN * 0.5 + LEFT * 3)
 
         low_dots = VGroup()
@@ -137,7 +138,7 @@ class StatsRefresher(Scene):
 
         # High variance visual
         high_var_label = Text("High Variance: estimates all over",
-                              font_size=18, color="#E74C3C", font=_FONT)
+                              font_size=20, color="#E74C3C", font=_FONT)
         high_var_label.move_to(DOWN * 0.5 + RIGHT * 3)
 
         high_dots = VGroup()
@@ -155,7 +156,7 @@ class StatsRefresher(Scene):
         self.wait(0.5)
 
         rl_note = Text("In RL: high variance gradients = unstable training",
-                        font_size=18, color="#f0883e", font=_FONT)
+                        font_size=20, color="#f0883e", font=_FONT)
         rl_note.to_edge(DOWN, buff=0.5)
         self.play(FadeIn(rl_note))
         self.wait(1.5)
@@ -169,10 +170,10 @@ class StatsRefresher(Scene):
         sec3.to_edge(UP, buff=0.5)
         self.play(Write(sec3), run_time=0.7)
 
-        problem = Text("Problem: we have samples from p(x),", font_size=20, color=WHITE, font=_FONT)
-        problem2 = Text("but want to evaluate E under q(x)", font_size=20, color=WHITE, font=_FONT)
+        problem = Text("Problem: we have samples from p(x),", font_size=22, color=WHITE, font=_FONT)
+        problem2 = Text("but want to evaluate E under q(x)", font_size=22, color=WHITE, font=_FONT)
         problem.next_to(sec3, DOWN, buff=0.5)
-        problem2.next_to(problem, DOWN, buff=0.15)
+        problem2.next_to(problem, DOWN, buff=0.2)
         self.play(Write(problem), run_time=0.6)
         self.play(Write(problem2), run_time=0.6)
         self.wait(0.5)
@@ -195,7 +196,7 @@ class StatsRefresher(Scene):
 
         # PPO connection
         ppo_note = Text("In PPO: data from old policy, evaluate new policy",
-                         font_size=18, color="#f0883e", font=_FONT)
+                         font_size=20, color="#f0883e", font=_FONT)
         ppo_note.next_to(ratio_label, DOWN, buff=0.5)
         self.play(FadeIn(ppo_note), run_time=0.5)
 
@@ -207,7 +208,7 @@ class StatsRefresher(Scene):
         self.play(Write(ppo_ratio), run_time=0.7)
 
         warn = Text("Caveat: if p and q are very different, weights blow up",
-                     font_size=16, color="#E74C3C", font=_FONT)
+                     font_size=18, color="#E74C3C", font=_FONT)
         warn.to_edge(DOWN, buff=0.5)
         self.play(FadeIn(warn))
         self.wait(1.5)
@@ -229,7 +230,7 @@ class StatsRefresher(Scene):
         self.play(Write(kl_def), run_time=0.8)
 
         meaning_kl = Text("Measures how different two distributions are",
-                           font_size=20, color=GREY, font=_FONT)
+                           font_size=22, color=_SUB, font=_FONT)
         meaning_kl.next_to(kl_def, DOWN, buff=0.3)
         self.play(FadeIn(meaning_kl))
         self.wait(0.5)
@@ -248,16 +249,16 @@ class StatsRefresher(Scene):
 
         # Visual: two distributions
         dist_label = Text("Small KL: distributions are similar",
-                           font_size=18, color="#3fb950", font=_FONT)
+                           font_size=20, color="#3fb950", font=_FONT)
         dist_label2 = Text("Large KL: distributions are very different",
-                            font_size=18, color="#E74C3C", font=_FONT)
+                            font_size=20, color="#E74C3C", font=_FONT)
         g = VGroup(dist_label, dist_label2).arrange(DOWN, buff=0.2)
         g.next_to(props, DOWN, buff=0.5)
         self.play(FadeIn(dist_label), run_time=0.4)
         self.play(FadeIn(dist_label2), run_time=0.4)
 
         ppo_kl = Text("In PPO: constrain KL to keep policy updates safe",
-                        font_size=18, color="#f0883e", font=_FONT)
+                        font_size=20, color="#f0883e", font=_FONT)
         ppo_kl.to_edge(DOWN, buff=0.5)
         self.play(FadeIn(ppo_kl))
         self.wait(1.5)
@@ -270,12 +271,12 @@ class StatsRefresher(Scene):
         self.play(Write(summary_title), run_time=0.5)
 
         items = VGroup(
-            Text("1. Expectation  —  estimate via sampling", font_size=20, color=WHITE, font=_FONT),
-            Text("2. Variance  —  lower is better for gradients", font_size=20, color=WHITE, font=_FONT),
+            Text("1. Expectation  —  estimate via sampling", font_size=22, color=WHITE, font=_FONT),
+            Text("2. Variance  —  lower is better for gradients", font_size=22, color=WHITE, font=_FONT),
             Text("3. Importance Sampling  —  reuse old data for new policy",
-                 font_size=20, color=WHITE, font=_FONT),
-            Text("4. KL Divergence  —  measure policy change", font_size=20, color=WHITE, font=_FONT),
-        ).arrange(DOWN, buff=0.3, aligned_edge=LEFT)
+                 font_size=22, color=WHITE, font=_FONT),
+            Text("4. KL Divergence  —  measure policy change", font_size=22, color=WHITE, font=_FONT),
+        ).arrange(DOWN, buff=0.35, aligned_edge=LEFT)
         items.next_to(summary_title, DOWN, buff=0.6)
 
         for item in items:

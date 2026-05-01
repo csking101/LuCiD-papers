@@ -8,7 +8,7 @@
 # → reward received → gradient pushes good actions up, bad actions down.
 #
 # Run:
-#   manim -ql --media_dir ../output/animations 02_policy_gradient_intuition.py PolicyGradientIntuition
+#   manim -qm --media_dir ../output/animations 02_policy_gradient_intuition.py PolicyGradientIntuition
 
 from manim import *
 import atexit
@@ -21,10 +21,11 @@ _DOCS_DIR = _PAPER_DIR.parent.parent / "docs" / "papers" / "1707.06347"
 
 # Font for descriptive text — matches LaTeX aesthetic
 _FONT = "Latin Modern Roman"
+_SUB = "#c9d1d9"  # high-contrast secondary text
 
 
 def _copy_to_docs():
-    src = _PAPER_DIR / "output/animations/videos/02_policy_gradient_intuition/480p15/PolicyGradientIntuition.mp4"
+    src = _PAPER_DIR / "output/animations/videos/02_policy_gradient_intuition/720p30/PolicyGradientIntuition.mp4"
     dst = _DOCS_DIR / "PolicyGradientIntuition.mp4"
     if src.exists():
         dst.parent.mkdir(parents=True, exist_ok=True)
@@ -57,18 +58,18 @@ class PolicyGradientIntuition(Scene):
         # Agent box
         agent_box = RoundedRectangle(width=2.5, height=1.2, corner_radius=0.15,
                                       color="#58a6ff", fill_opacity=0.15)
-        agent_label = Text("Agent", font_size=20, weight=BOLD, color="#58a6ff", font=_FONT)
+        agent_label = Text("Agent", font_size=22, weight=BOLD, color="#58a6ff", font=_FONT)
         agent_label.move_to(agent_box)
         agent = VGroup(agent_box, agent_label).move_to(LEFT * 3)
 
         # Policy inside agent — LaTeX
-        policy_label = MathTex(r"\pi_\theta(a \mid s)", font_size=26, color=GREY)
-        policy_label.next_to(agent_box, DOWN, buff=0.15)
+        policy_label = MathTex(r"\pi_\theta(a \mid s)", font_size=28, color=_SUB)
+        policy_label.next_to(agent_box, DOWN, buff=0.2)
 
         # Environment box
         env_box = RoundedRectangle(width=2.5, height=1.2, corner_radius=0.15,
                                     color="#3fb950", fill_opacity=0.15)
-        env_label = Text("Environment", font_size=20, weight=BOLD, color="#3fb950", font=_FONT)
+        env_label = Text("Environment", font_size=22, weight=BOLD, color="#3fb950", font=_FONT)
         env_label.move_to(env_box)
         env = VGroup(env_box, env_label).move_to(RIGHT * 3)
 
@@ -79,12 +80,12 @@ class PolicyGradientIntuition(Scene):
         state_arrow = Arrow(env_box.get_left() + UP * 0.3, agent_box.get_right() + UP * 0.3,
                             color="#3fb950", buff=0.1, stroke_width=3)
         state_text = MathTex(r"s_t", font_size=28, color="#3fb950")
-        state_text.next_to(state_arrow, UP, buff=0.1)
+        state_text.next_to(state_arrow, UP, buff=0.15)
 
         action_arrow = Arrow(agent_box.get_right() + DOWN * 0.3, env_box.get_left() + DOWN * 0.3,
                               color="#58a6ff", buff=0.1, stroke_width=3)
         action_text = MathTex(r"a_t", font_size=28, color="#58a6ff")
-        action_text.next_to(action_arrow, DOWN, buff=0.1)
+        action_text.next_to(action_arrow, DOWN, buff=0.15)
 
         self.play(GrowArrow(state_arrow), FadeIn(state_text))
         self.wait(0.3)
@@ -119,14 +120,14 @@ class PolicyGradientIntuition(Scene):
         # Neural net
         nn_box = RoundedRectangle(width=2, height=1.5, corner_radius=0.15,
                                    color="#d2a8ff", fill_opacity=0.15)
-        nn_label = Text("Neural Net", font_size=16, weight=BOLD, color="#d2a8ff", font=_FONT)
-        nn_theta = MathTex(r"(\theta)", font_size=26, color=GREY)
-        VGroup(nn_label, nn_theta).arrange(DOWN, buff=0.1).move_to(nn_box)
+        nn_label = Text("Neural Net", font_size=18, weight=BOLD, color="#d2a8ff", font=_FONT)
+        nn_theta = MathTex(r"(\theta)", font_size=28, color=_SUB)
+        VGroup(nn_label, nn_theta).arrange(DOWN, buff=0.15).move_to(nn_box)
         nn = VGroup(nn_box, nn_label, nn_theta).move_to(LEFT * 1)
 
         self.play(FadeIn(state_g), FadeIn(nn))
 
-        arr1 = Arrow(state_box.get_right(), nn_box.get_left(), buff=0.1, color=GREY, stroke_width=2)
+        arr1 = Arrow(state_box.get_right(), nn_box.get_left(), buff=0.1, color=_SUB, stroke_width=2)
         self.play(GrowArrow(arr1))
 
         # Output: bar chart of action probs
@@ -142,23 +143,23 @@ class PolicyGradientIntuition(Scene):
             bar.move_to(RIGHT * (2.5 + i * 1.0) + DOWN * (1.5 - p * 1.5))
             bars.add(bar)
 
-            lab = Text(act, font_size=14, color=c, font=_FONT)
-            lab.next_to(bar, DOWN, buff=0.1)
+            lab = Text(act, font_size=16, color=c, font=_FONT)
+            lab.next_to(bar, DOWN, buff=0.15)
             bar_labels.add(lab)
 
-            plab = Text(f"{p:.0%}", font_size=14, color=WHITE, font=_FONT)
-            plab.next_to(bar, UP, buff=0.1)
+            plab = Text(f"{p:.0%}", font_size=16, color=WHITE, font=_FONT)
+            plab.next_to(bar, UP, buff=0.15)
             prob_labels.add(plab)
 
-        arr2 = Arrow(nn_box.get_right(), RIGHT * 1.8 + DOWN * 0.3, buff=0.1, color=GREY, stroke_width=2)
+        arr2 = Arrow(nn_box.get_right(), RIGHT * 1.8 + DOWN * 0.3, buff=0.1, color=_SUB, stroke_width=2)
         self.play(GrowArrow(arr2))
         self.play(LaggedStart(*[GrowFromEdge(b, DOWN) for b in bars], lag_ratio=0.15))
         self.play(FadeIn(bar_labels), FadeIn(prob_labels))
         self.wait(0.5)
 
         # Highlight "Right" as sampled
-        highlight = SurroundingRectangle(bars[1], color="#3fb950", buff=0.08)
-        sampled = Text("Sampled!", font_size=16, weight=BOLD, color="#3fb950", font=_FONT)
+        highlight = SurroundingRectangle(bars[1], color="#3fb950", buff=0.1)
+        sampled = Text("Sampled!", font_size=18, weight=BOLD, color="#3fb950", font=_FONT)
         sampled.next_to(highlight, UP, buff=0.3)
         self.play(Create(highlight), FadeIn(sampled))
         self.wait(1)
@@ -176,15 +177,15 @@ class PolicyGradientIntuition(Scene):
 
         # Good reward scenario — LaTeX for A > 0
         good_label_parts = VGroup(
-            Text("Good reward ", font_size=20, color="#3fb950", font=_FONT),
+            Text("Good reward ", font_size=22, color="#3fb950", font=_FONT),
             MathTex(r"(\hat{A} > 0)", font_size=28, color="#3fb950"),
-            Text(": increase P(Right)", font_size=20, color="#3fb950", font=_FONT),
+            Text(": increase P(Right)", font_size=22, color="#3fb950", font=_FONT),
         ).arrange(RIGHT, buff=0.1)
         good_label_parts.next_to(step3, DOWN, buff=0.6)
         self.play(FadeIn(good_label_parts))
 
         # Before bars
-        before_label = Text("Before", font_size=16, color=GREY, font=_FONT)
+        before_label = Text("Before", font_size=18, color=_SUB, font=_FONT)
         before_label.move_to(LEFT * 3.5 + UP * 0.3)
 
         probs_before = [0.2, 0.6, 0.2]
@@ -193,12 +194,12 @@ class PolicyGradientIntuition(Scene):
             bar = Rectangle(width=0.5, height=p * 2.5, color=c, fill_opacity=0.5)
             bar.move_to(LEFT * (4.5 - i * 0.8) + DOWN * (0.8 - p * 1.25))
             bars_before.add(bar)
-            lab = Text(f"{p:.0%}", font_size=12, color=WHITE, font=_FONT)
-            lab.next_to(bar, UP, buff=0.05)
+            lab = Text(f"{p:.0%}", font_size=14, color=WHITE, font=_FONT)
+            lab.next_to(bar, UP, buff=0.08)
             bars_before.add(lab)
 
         # After bars (good reward)
-        after_label = Text("After", font_size=16, color=GREY, font=_FONT)
+        after_label = Text("After", font_size=18, color=_SUB, font=_FONT)
         after_label.move_to(RIGHT * 2.5 + UP * 0.3)
 
         probs_after = [0.15, 0.72, 0.13]
@@ -207,14 +208,14 @@ class PolicyGradientIntuition(Scene):
             bar = Rectangle(width=0.5, height=p * 2.5, color=c, fill_opacity=0.8)
             bar.move_to(RIGHT * (1.5 + i * 0.8) + DOWN * (0.8 - p * 1.25))
             bars_after.add(bar)
-            lab = Text(f"{p:.0%}", font_size=12, color=WHITE, font=_FONT)
-            lab.next_to(bar, UP, buff=0.05)
+            lab = Text(f"{p:.0%}", font_size=14, color=WHITE, font=_FONT)
+            lab.next_to(bar, UP, buff=0.08)
             bars_after.add(lab)
 
         update_arrow = Arrow(LEFT * 2.5 + DOWN * 0.5, RIGHT * 0.5 + DOWN * 0.5,
                               color="#3fb950", buff=0.1, stroke_width=3)
-        update_text = Text("gradient ascent", font_size=14, color="#3fb950", font=_FONT)
-        update_text.next_to(update_arrow, DOWN, buff=0.1)
+        update_text = Text("gradient ascent", font_size=16, color="#3fb950", font=_FONT)
+        update_text.next_to(update_arrow, DOWN, buff=0.15)
 
         self.play(FadeIn(before_label), FadeIn(bars_before))
         self.play(GrowArrow(update_arrow), FadeIn(update_text))
@@ -225,9 +226,9 @@ class PolicyGradientIntuition(Scene):
         self.play(*[FadeOut(m) for m in self.mobjects if m not in [step3]])
 
         bad_label_parts = VGroup(
-            Text("Bad reward ", font_size=20, color="#E74C3C", font=_FONT),
+            Text("Bad reward ", font_size=22, color="#E74C3C", font=_FONT),
             MathTex(r"(\hat{A} < 0)", font_size=28, color="#E74C3C"),
-            Text(": decrease P(Right)", font_size=20, color="#E74C3C", font=_FONT),
+            Text(": decrease P(Right)", font_size=22, color="#E74C3C", font=_FONT),
         ).arrange(RIGHT, buff=0.1)
         bad_label_parts.next_to(step3, DOWN, buff=0.6)
         self.play(FadeIn(bad_label_parts))
@@ -238,11 +239,11 @@ class PolicyGradientIntuition(Scene):
             bar = Rectangle(width=0.5, height=p * 2.5, color=c, fill_opacity=0.8)
             bar.move_to(RIGHT * (1.5 + i * 0.8) + DOWN * (0.8 - p * 1.25))
             bars_bad.add(bar)
-            lab = Text(f"{p:.0%}", font_size=12, color=WHITE, font=_FONT)
-            lab.next_to(bar, UP, buff=0.05)
+            lab = Text(f"{p:.0%}", font_size=14, color=WHITE, font=_FONT)
+            lab.next_to(bar, UP, buff=0.08)
             bars_bad.add(lab)
 
-        before_label2 = Text("Before", font_size=16, color=GREY, font=_FONT)
+        before_label2 = Text("Before", font_size=18, color=_SUB, font=_FONT)
         before_label2.move_to(LEFT * 3.5 + UP * 0.3)
 
         bars_before2 = VGroup()
@@ -250,17 +251,17 @@ class PolicyGradientIntuition(Scene):
             bar = Rectangle(width=0.5, height=p * 2.5, color=c, fill_opacity=0.5)
             bar.move_to(LEFT * (4.5 - i * 0.8) + DOWN * (0.8 - p * 1.25))
             bars_before2.add(bar)
-            lab = Text(f"{p:.0%}", font_size=12, color=WHITE, font=_FONT)
-            lab.next_to(bar, UP, buff=0.05)
+            lab = Text(f"{p:.0%}", font_size=14, color=WHITE, font=_FONT)
+            lab.next_to(bar, UP, buff=0.08)
             bars_before2.add(lab)
 
-        after_label2 = Text("After", font_size=16, color=GREY, font=_FONT)
+        after_label2 = Text("After", font_size=18, color=_SUB, font=_FONT)
         after_label2.move_to(RIGHT * 2.5 + UP * 0.3)
 
         update_arrow2 = Arrow(LEFT * 2.5 + DOWN * 0.5, RIGHT * 0.5 + DOWN * 0.5,
                                color="#E74C3C", buff=0.1, stroke_width=3)
-        update_text2 = Text("gradient ascent", font_size=14, color="#E74C3C", font=_FONT)
-        update_text2.next_to(update_arrow2, DOWN, buff=0.1)
+        update_text2 = Text("gradient ascent", font_size=16, color="#E74C3C", font=_FONT)
+        update_text2.next_to(update_arrow2, DOWN, buff=0.15)
 
         self.play(FadeIn(before_label2), FadeIn(bars_before2))
         self.play(GrowArrow(update_arrow2), FadeIn(update_text2))
@@ -284,14 +285,14 @@ class PolicyGradientIntuition(Scene):
         step_group = VGroup()
         for num, text, color in steps:
             row = VGroup(
-                Text(num + ".", font_size=20, weight=BOLD, color=color, font=_FONT),
-                Text(text, font_size=18, color=WHITE, font=_FONT),
+                Text(num + ".", font_size=22, weight=BOLD, color=color, font=_FONT),
+                Text(text, font_size=20, color=WHITE, font=_FONT),
             ).arrange(RIGHT, buff=0.2)
             step_group.add(row)
 
         # Step 3 uses LaTeX for the gradient expression
-        row3_num = Text("3.", font_size=20, weight=BOLD, color="#d2a8ff", font=_FONT)
-        row3_text = Text("Compute gradient: ", font_size=18, color=WHITE, font=_FONT)
+        row3_num = Text("3.", font_size=22, weight=BOLD, color="#d2a8ff", font=_FONT)
+        row3_text = Text("Compute gradient: ", font_size=20, color=WHITE, font=_FONT)
         row3_math = MathTex(r"R \cdot \nabla_\theta \log \pi_\theta(a|s)",
                             font_size=28, color="#d2a8ff")
         row3 = VGroup(row3_num, row3_text, row3_math).arrange(RIGHT, buff=0.15)
@@ -299,16 +300,16 @@ class PolicyGradientIntuition(Scene):
 
         more_steps = [
             ("4", "Update theta in direction of gradient", "#f0883e"),
-            ("5", "Repeat", GREY),
+            ("5", "Repeat", _SUB),
         ]
         for num, text, color in more_steps:
             row = VGroup(
-                Text(num + ".", font_size=20, weight=BOLD, color=color, font=_FONT),
-                Text(text, font_size=18, color=WHITE, font=_FONT),
+                Text(num + ".", font_size=22, weight=BOLD, color=color, font=_FONT),
+                Text(text, font_size=20, color=WHITE, font=_FONT),
             ).arrange(RIGHT, buff=0.2)
             step_group.add(row)
 
-        step_group.arrange(DOWN, buff=0.3, aligned_edge=LEFT)
+        step_group.arrange(DOWN, buff=0.35, aligned_edge=LEFT)
         step_group.next_to(step4, DOWN, buff=0.6)
 
         for row in step_group:
@@ -316,7 +317,7 @@ class PolicyGradientIntuition(Scene):
             self.wait(0.2)
 
         key_insight = Text("Key: good actions get reinforced, bad actions get suppressed",
-                           font_size=18, weight=BOLD, color="#f0883e", font=_FONT)
+                           font_size=20, weight=BOLD, color="#f0883e", font=_FONT)
         key_insight.to_edge(DOWN, buff=0.6)
         box = SurroundingRectangle(key_insight, color="#f0883e", buff=0.15, corner_radius=0.1)
         self.play(FadeIn(key_insight), Create(box))

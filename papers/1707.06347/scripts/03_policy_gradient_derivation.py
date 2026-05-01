@@ -8,7 +8,7 @@
 # → REINFORCE estimator → advantage function
 #
 # Run:
-#   manim -ql --media_dir ../output/animations 03_policy_gradient_derivation.py PolicyGradientDerivation
+#   manim -qm --media_dir ../output/animations 03_policy_gradient_derivation.py PolicyGradientDerivation
 
 from manim import *
 import atexit
@@ -21,10 +21,11 @@ _DOCS_DIR = _PAPER_DIR.parent.parent / "docs" / "papers" / "1707.06347"
 
 # Font for descriptive text — matches LaTeX aesthetic
 _FONT = "Latin Modern Roman"
+_SUB = "#c9d1d9"  # high-contrast secondary text
 
 
 def _copy_to_docs():
-    src = _PAPER_DIR / "output/animations/videos/03_policy_gradient_derivation/480p15/PolicyGradientDerivation.mp4"
+    src = _PAPER_DIR / "output/animations/videos/03_policy_gradient_derivation/720p30/PolicyGradientDerivation.mp4"
     dst = _DOCS_DIR / "PolicyGradientDerivation.mp4"
     if src.exists():
         dst.parent.mkdir(parents=True, exist_ok=True)
@@ -42,8 +43,8 @@ class PolicyGradientDerivation(Scene):
         # ── Title ──
         title = Text("Deriving the Policy Gradient", font_size=36, weight=BOLD,
                       color=WHITE, font=_FONT)
-        subtitle = Text("From objective to estimator, step by step", font_size=20,
-                         color=GREY, font=_FONT)
+        subtitle = Text("From objective to estimator, step by step", font_size=22,
+                         color=_SUB, font=_FONT)
         subtitle.next_to(title, DOWN, buff=0.3)
         self.play(Write(title), run_time=0.8)
         self.play(FadeIn(subtitle))
@@ -53,7 +54,7 @@ class PolicyGradientDerivation(Scene):
         # ════════════════════════════════════════
         # STEP 1: The Objective
         # ════════════════════════════════════════
-        s1_label = Text("Step 1: The Objective", font_size=26, weight=BOLD,
+        s1_label = Text("Step 1: The Objective", font_size=28, weight=BOLD,
                          color="#58a6ff", font=_FONT)
         s1_label.to_edge(UP, buff=0.4)
         self.play(Write(s1_label), run_time=0.5)
@@ -67,7 +68,7 @@ class PolicyGradientDerivation(Scene):
 
         obj_expand = MathTex(
             r"= \int P(\tau \mid \theta) \, R(\tau) \, d\tau",
-            font_size=34, color=GREY,
+            font_size=34, color=_SUB,
         )
         obj_expand.next_to(obj, DOWN, buff=0.3)
         self.play(Write(obj_expand), run_time=0.8)
@@ -80,7 +81,7 @@ class PolicyGradientDerivation(Scene):
         self.play(FadeIn(note1))
 
         problem = Text("Problem: gradient of an integral over trajectories",
-                        font_size=18, color="#E74C3C", font=_FONT)
+                        font_size=20, color="#E74C3C", font=_FONT)
         problem.next_to(note1, DOWN, buff=0.3)
         self.play(FadeIn(problem))
         self.wait(1.5)
@@ -90,7 +91,7 @@ class PolicyGradientDerivation(Scene):
         # ════════════════════════════════════════
         # STEP 2: The Log-Derivative Trick
         # ════════════════════════════════════════
-        s2_label = Text("Step 2: The Log-Derivative Trick", font_size=26, weight=BOLD,
+        s2_label = Text("Step 2: The Log-Derivative Trick", font_size=28, weight=BOLD,
                          color="#58a6ff", font=_FONT)
         s2_label.to_edge(UP, buff=0.4)
         self.play(Write(s2_label), run_time=0.5)
@@ -104,7 +105,7 @@ class PolicyGradientDerivation(Scene):
 
         because = MathTex(
             r"\text{Because } \nabla(\log f) = \frac{\nabla f}{f}",
-            font_size=30, color=GREY,
+            font_size=30, color=_SUB,
         )
         because.next_to(identity, DOWN, buff=0.2)
         self.play(FadeIn(because))
@@ -126,7 +127,7 @@ class PolicyGradientDerivation(Scene):
         self.wait(0.5)
 
         magic = Text("Now the gradient moves INSIDE the expectation!",
-                      font_size=20, weight=BOLD, color="#f0883e", font=_FONT)
+                      font_size=22, weight=BOLD, color="#f0883e", font=_FONT)
         magic.next_to(result, DOWN, buff=0.5)
         self.play(FadeIn(magic))
 
@@ -194,7 +195,7 @@ class PolicyGradientDerivation(Scene):
         self.wait(0.5)
 
         model_free = Text("This is why policy gradients are MODEL-FREE",
-                           font_size=18, color="#d2a8ff", font=_FONT)
+                           font_size=20, color="#d2a8ff", font=_FONT)
         model_free.to_edge(DOWN, buff=0.5)
         self.play(FadeIn(model_free))
         self.wait(1.5)
@@ -204,7 +205,7 @@ class PolicyGradientDerivation(Scene):
         # ════════════════════════════════════════
         # STEP 4: The REINFORCE Estimator
         # ════════════════════════════════════════
-        s4_label = Text("Step 4: The REINFORCE Estimator", font_size=26, weight=BOLD,
+        s4_label = Text("Step 4: The REINFORCE Estimator", font_size=28, weight=BOLD,
                          color="#58a6ff", font=_FONT)
         s4_label.to_edge(UP, buff=0.4)
         self.play(Write(s4_label), run_time=0.5)
@@ -216,24 +217,24 @@ class PolicyGradientDerivation(Scene):
         reinforce.next_to(s4_label, DOWN, buff=0.6)
         self.play(Write(reinforce), run_time=0.8)
 
-        plain = Text("In plain English:", font_size=18, color=GREY, font=_FONT)
+        plain = Text("In plain English:", font_size=20, color=_SUB, font=_FONT)
         plain.next_to(reinforce, DOWN, buff=0.4)
         self.play(FadeIn(plain))
 
         bullets = VGroup(
             VGroup(
                 MathTex(r"\nabla \log \pi", font_size=28, color="#58a6ff"),
-                Text("  =  direction to make action more likely", font_size=16,
+                Text("  =  direction to make action more likely", font_size=18,
                      color="#58a6ff", font=_FONT),
             ).arrange(RIGHT, buff=0.1),
             VGroup(
                 MathTex(r"R(\tau)", font_size=28, color="#3fb950"),
-                Text("  =  how good was this trajectory", font_size=16,
+                Text("  =  how good was this trajectory", font_size=18,
                      color="#3fb950", font=_FONT),
             ).arrange(RIGHT, buff=0.1),
             Text("Product  =  push good actions up, bad actions down",
-                 font_size=16, color="#f0883e", font=_FONT),
-        ).arrange(DOWN, buff=0.2, aligned_edge=LEFT)
+                 font_size=18, color="#f0883e", font=_FONT),
+        ).arrange(DOWN, buff=0.25, aligned_edge=LEFT)
         bullets.next_to(plain, DOWN, buff=0.3)
 
         for b in bullets:
@@ -245,14 +246,14 @@ class PolicyGradientDerivation(Scene):
         # ════════════════════════════════════════
         # STEP 5: Replace R(tau) with Advantage
         # ════════════════════════════════════════
-        s5_label = Text("Step 5: Use Advantage for Lower Variance", font_size=26,
+        s5_label = Text("Step 5: Use Advantage for Lower Variance", font_size=28,
                          weight=BOLD, color="#58a6ff", font=_FONT)
         s5_label.to_edge(UP, buff=0.4)
         self.play(Write(s5_label), run_time=0.5)
 
         before_eq = MathTex(
             r"\text{Before: } \nabla J = \mathbb{E}\!\left[\nabla \log \pi \cdot R(\tau)\right]",
-            font_size=30, color=GREY,
+            font_size=30, color=_SUB,
         )
         before_eq.next_to(s5_label, DOWN, buff=0.5)
         self.play(Write(before_eq), run_time=0.6)
@@ -276,7 +277,7 @@ class PolicyGradientDerivation(Scene):
             r"\hat{A}(s,a) = Q(s,a) - V(s)",
             font_size=36, color=WHITE,
         )
-        adv_label = Text("(advantage)", font_size=18, color=GREY, font=_FONT)
+        adv_label = Text("(advantage)", font_size=20, color=_SUB, font=_FONT)
         adv_label.next_to(adv_def, RIGHT, buff=0.2)
         adv_group = VGroup(adv_def, adv_label)
         adv_group.next_to(solution, DOWN, buff=0.3)
@@ -291,7 +292,7 @@ class PolicyGradientDerivation(Scene):
         self.play(Write(after_eq), run_time=0.8)
 
         same_expect = Text("Same expected gradient, much lower variance!",
-                            font_size=18, color="#f0883e", font=_FONT)
+                            font_size=20, color="#f0883e", font=_FONT)
         same_expect.next_to(after_eq, DOWN, buff=0.4)
         self.play(FadeIn(same_expect))
         self.wait(1.5)
@@ -301,7 +302,7 @@ class PolicyGradientDerivation(Scene):
         # ════════════════════════════════════════
         # FINAL: The Policy Gradient Estimator
         # ════════════════════════════════════════
-        final_label = Text("The Policy Gradient Estimator", font_size=28, weight=BOLD,
+        final_label = Text("The Policy Gradient Estimator", font_size=30, weight=BOLD,
                             color="#58a6ff", font=_FONT)
         final_label.to_edge(UP, buff=0.5)
         self.play(Write(final_label), run_time=0.6)
@@ -317,8 +318,8 @@ class PolicyGradientDerivation(Scene):
         self.play(Write(final_eq), run_time=0.8)
         self.play(Create(box), run_time=0.5)
 
-        footnote = Text("This is Equation 1 in the PPO paper", font_size=16,
-                         color=GREY, font=_FONT)
+        footnote = Text("This is Equation 1 in the PPO paper", font_size=18,
+                         color=_SUB, font=_FONT)
         footnote.next_to(box, DOWN, buff=0.4)
         self.play(FadeIn(footnote))
         self.wait(2)
