@@ -58,9 +58,9 @@ cd scripts
 ../../.venv/bin/python 11_ppo_cartpole_demo.py
 
 # Animations (use venv manim)
-../../.venv/bin/manim -ql --media_dir ../output/animations 01_stats_refresher.py StatsRefresher
-../../.venv/bin/manim -ql --media_dir ../output/animations 02_policy_gradient_intuition.py PolicyGradientIntuition
-../../.venv/bin/manim -ql --media_dir ../output/animations 03_policy_gradient_derivation.py PolicyGradientDerivation
-../../.venv/bin/manim -ql --media_dir ../output/animations 06_trust_region_motivation.py TrustRegionMotivation
-../../.venv/bin/manim -ql --media_dir ../output/animations 09_ppo_vs_trpo_vs_pg.py PPOvsTRPOvsPG
+../../.venv/bin/manim -qm --media_dir ../output/animations 01_stats_refresher.py StatsRefresher
+../../.venv/bin/manim -qm --media_dir ../output/animations 02_policy_gradient_intuition.py PolicyGradientIntuition
+../../.venv/bin/manim -qm --media_dir ../output/animations 03_policy_gradient_derivation.py PolicyGradientDerivation
+../../.venv/bin/manim -qm --media_dir ../output/animations 06_trust_region_motivation.py TrustRegionMotivation
+../../.venv/bin/manim -qm --media_dir ../output/animations 09_ppo_vs_trpo_vs_pg.py PPOvsTRPOvsPG
 ```

@@ -57,8 +57,8 @@ cd scripts
 ../../.venv/bin/python 09_transfer_cnn_dm.py
 
 # Animations (use venv manim)
-../../.venv/bin/manim -ql --media_dir ../output/animations 01_rlhf_text_pipeline.py RLHFTextPipeline
-../../.venv/bin/manim -ql --media_dir ../output/animations 02_bradley_terry_rm.py BradleyTerryRM
-../../.venv/bin/manim -ql --media_dir ../output/animations 03_kl_penalized_reward.py KLPenalizedReward
-../../.venv/bin/manim -ql --media_dir ../output/animations 10_alignment_timeline.py AlignmentTimeline
+../../.venv/bin/manim -qm --media_dir ../output/animations 01_rlhf_text_pipeline.py RLHFTextPipeline
+../../.venv/bin/manim -qm --media_dir ../output/animations 02_bradley_terry_rm.py BradleyTerryRM
+../../.venv/bin/manim -qm --media_dir ../output/animations 03_kl_penalized_reward.py KLPenalizedReward
+../../.venv/bin/manim -qm --media_dir ../output/animations 10_alignment_timeline.py AlignmentTimeline
 ```

@@ -59,7 +59,7 @@ _PAPER_DIR = Path(__file__).resolve().parent.parent
 _DOCS_DIR = _PAPER_DIR.parent.parent / "docs" / "papers" / "ARXIV_ID"
 
 def _copy_to_docs():
-    src = _PAPER_DIR / "output/animations/videos/NN_name/480p15/ClassName.mp4"
+    src = _PAPER_DIR / "output/animations/videos/NN_name/720p30/ClassName.mp4"
     dst = _DOCS_DIR / "ClassName.mp4"
     if src.exists():
         dst.parent.mkdir(parents=True, exist_ok=True)
@@ -72,7 +72,7 @@ atexit.register(_copy_to_docs)
 ### Render command
 
 ```bash
-/path/to/.venv/bin/manim -ql --media_dir ../output/animations NN_name.py ClassName
+/path/to/.venv/bin/manim -qm --media_dir ../output/animations NN_name.py ClassName
 ```
 
 ### Color palette (matches docs dark theme)
