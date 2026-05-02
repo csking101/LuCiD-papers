@@ -235,6 +235,30 @@ All 98 tests run in ~10 seconds on CPU using `sshleifer/tiny-gpt2`.
 
 ---
 
+## Screenshots
+
+Generated via Rich SVG export (`Console(record=True).export_svg()`). Regenerate with `python screenshots.py`.
+
+### Global KL Overview
+![Global KL](../../docs/adventures/02/01_global_kl.svg)
+
+### Token-Level KL Anatomy
+![Token Anatomy](../../docs/adventures/02/02_token_anatomy.svg)
+
+### Category Comparison
+![Categories](../../docs/adventures/02/03_categories.svg)
+
+### KL-Constrained Interpolation
+![Interpolation](../../docs/adventures/02/04_interpolation.svg)
+
+### Interactive Explorer
+![Explorer](../../docs/adventures/02/05_explorer.svg)
+
+### Conclusion Summary
+![Conclusion](../../docs/adventures/02/06_conclusion.svg)
+
+---
+
 ## Paper References
 
 This adventure implements concepts from:

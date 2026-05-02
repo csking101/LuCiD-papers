@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>1707.06347 — Proximal Policy Optimization | LuCiD-papers</title>
+    <title>1707.06347 — Proximal Policy Optimization Algorithms | LuCiD-papers</title>
     <script>
         MathJax = {
             tex: { inlineMath: [['$','$']], displayMath: [['$$','$$']] },
@@ -11,6 +11,7 @@
         };
     </script>
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+    
     <style>
         /* ============================================================
            RESET & BASE
@@ -524,6 +525,32 @@
         .modal-close:hover { background: #30363d; }
 
         /* ============================================================
+           PROGRESSION TABLE
+           ============================================================ */
+        .progression-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1em 0;
+            font-size: 0.9em;
+        }
+        .progression-table th {
+            text-align: left;
+            padding: 8px 12px;
+            background: #161b22;
+            border: 1px solid #30363d;
+            color: #58a6ff;
+            font-weight: 600;
+        }
+        .progression-table td {
+            padding: 8px 12px;
+            border: 1px solid #30363d;
+            color: #c9d1d9;
+        }
+        .progression-table tr:hover td {
+            background: #161b2260;
+        }
+
+        /* ============================================================
            FADE-IN ANIMATION
            ============================================================ */
         .fade-in {
@@ -595,29 +622,98 @@
         }
 
         /* ============================================================
-           PROGRESSION TABLE
+           CODING ADVENTURES SECTION
            ============================================================ */
-        .progression-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 1em 0;
-            font-size: 0.9em;
+        .adventures-section { margin-top: 2em; }
+        .adventures-section > h2 {
+            font-size: 1.5em;
+            color: #58a6ff;
+            margin-bottom: 0.3em;
+            padding-bottom: 0.3em;
+            border-bottom: 1px solid #21262d;
         }
-        .progression-table th {
-            text-align: left;
-            padding: 8px 12px;
+        .adventures-subtitle {
+            color: #8b949e;
+            font-size: 0.9em;
+            margin-bottom: 1.2em;
+        }
+        .adventures-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 16px;
+        }
+        .adventure-card {
             background: #161b22;
             border: 1px solid #30363d;
-            color: #58a6ff;
+            border-radius: 8px;
+            padding: 20px;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.2s;
+            display: block;
+        }
+        .adventure-card:hover {
+            border-color: #58a6ff40;
+            background: #1c2129;
+            text-decoration: none;
+        }
+        .adventure-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        .adventure-num {
+            font-weight: 700;
+            font-size: 1.4em;
+            color: #f0883e;
+            font-family: monospace;
+        }
+        .adventure-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75em;
             font-weight: 600;
+            background: #3fb95033;
+            color: #3fb950;
         }
-        .progression-table td {
-            padding: 8px 12px;
-            border: 1px solid #30363d;
+        .adventure-card h3 {
+            font-size: 1.1em;
             color: #c9d1d9;
+            margin-bottom: 6px;
         }
-        .progression-table tr:hover td {
-            background: #161b2260;
+        .adventure-desc {
+            color: #8b949e;
+            font-size: 0.88em;
+            line-height: 1.5;
+            margin-bottom: 10px;
+        }
+        .adventure-tags {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        .adventure-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.72em;
+            font-weight: 600;
+            background: #21262d;
+            color: #8b949e;
+            border: 1px solid #30363d;
+        }
+        .adventure-thumb {
+            margin-top: 8px;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid #30363d;
+        }
+        .adventure-thumb img {
+            width: 100%;
+            display: block;
         }
 
         /* ============================================================
@@ -648,7 +744,9 @@
             .main-content { padding: 24px 14px; }
             .viz-section iframe { height: 320px; }
             .viz-gallery { grid-template-columns: 1fr 1fr; }
+            .adventures-grid { grid-template-columns: 1fr; }
         }
+        
     </style>
 </head>
 <body>
@@ -669,30 +767,55 @@
     <!-- ===================== SIDEBAR (ToC) ===================== -->
     <aside class="toc-sidebar" id="toc-sidebar">
         <div class="toc-title">On This Page</div>
+        
         <a href="#abstract" data-section="abstract">Abstract</a>
+        
         <a href="#introduction" data-section="introduction">Introduction</a>
+        
         <a href="#policy-gradients" data-section="policy-gradients">Policy Gradient Methods</a>
+        
         <a href="#viz-01" data-section="viz-01" class="toc-viz">Statistics Refresher</a>
+        
         <a href="#viz-02" data-section="viz-02" class="toc-viz">Policy Gradient Intuition</a>
+        
         <a href="#derivation" data-section="derivation">PG Derivation</a>
+        
         <a href="#viz-03" data-section="viz-03" class="toc-viz">PG Derivation Animation</a>
+        
         <a href="#advantage" data-section="advantage">Advantage Function</a>
+        
         <a href="#viz-04" data-section="viz-04" class="toc-viz">Advantage vs Raw Reward</a>
+        
         <a href="#gae" data-section="gae">GAE</a>
+        
         <a href="#viz-05" data-section="viz-05" class="toc-viz">GAE Lambda Tradeoff</a>
+        
         <a href="#trust-regions" data-section="trust-regions">Trust Region Methods</a>
+        
         <a href="#viz-06" data-section="viz-06" class="toc-viz">Trust Region Motivation</a>
-        <a href="#kl-divergence" data-section="kl-divergence">KL &amp; TRPO</a>
+        
+        <a href="#kl-divergence" data-section="kl-divergence">KL & TRPO</a>
+        
         <a href="#viz-07" data-section="viz-07" class="toc-viz">KL Trust Region</a>
+        
         <a href="#clipped-objective" data-section="clipped-objective">Clipped Surrogate</a>
+        
         <a href="#viz-08" data-section="viz-08" class="toc-viz">Clipped Surrogate Viz</a>
+        
         <a href="#algorithm" data-section="algorithm">Algorithm</a>
+        
         <a href="#viz-09" data-section="viz-09" class="toc-viz">PPO vs TRPO vs PG</a>
+        
         <a href="#experiments" data-section="experiments">Experiments</a>
+        
         <a href="#llm-alignment" data-section="llm-alignment">PPO for LLMs</a>
+        
         <a href="#viz-10" data-section="viz-10" class="toc-viz">PPO LLM Alignment</a>
+        
         <a href="#viz-11" data-section="viz-11" class="toc-viz">CartPole Demo</a>
+        
         <a href="#conclusion" data-section="conclusion">Conclusion</a>
+        
     </aside>
 
     <!-- ===================== MAIN CONTENT ===================== -->
@@ -706,6 +829,7 @@
             Schulman, Wolski, Dhariwal, Radford, Klimov (2017) &mdash;
             <a href="https://arxiv.org/abs/1707.06347">arXiv</a> &mdash;
             <a href="https://github.com/csking101/LuCiD-papers/tree/main/papers/1707.06347">GitHub</a>
+            
         </p>
 
         <div class="tldr">
@@ -716,94 +840,128 @@
         <!-- Top nav bar (shown on narrow screens where sidebar is hidden) -->
         <nav class="nav-bar" id="nav-bar">
             <span class="label">Sections:</span>
+            
             <a href="#abstract" data-section="abstract">Abstract</a>
+            
             <a href="#introduction" data-section="introduction">Intro</a>
+            
             <a href="#policy-gradients" data-section="policy-gradients">Policy Gradients</a>
+            
             <a href="#derivation" data-section="derivation">Derivation</a>
+            
             <a href="#advantage" data-section="advantage">Advantage</a>
+            
             <a href="#gae" data-section="gae">GAE</a>
+            
             <a href="#trust-regions" data-section="trust-regions">Trust Regions</a>
+            
             <a href="#clipped-objective" data-section="clipped-objective">Clipping</a>
+            
             <a href="#algorithm" data-section="algorithm">Algorithm</a>
+            
             <a href="#experiments" data-section="experiments">Experiments</a>
+            
             <a href="#llm-alignment" data-section="llm-alignment">LLMs</a>
+            
             <a href="#viz-11" data-section="viz-11">Demo</a>
+            
         </nav>
 
         <!-- ===================== VISUALIZATION GALLERY ===================== -->
         <p class="viz-gallery-title">Visualizations (11)</p>
         <div class="viz-gallery">
+            
             <a class="viz-card-mini tool-manim" href="#viz-01">
                 <span class="mini-num">1</span>
                 <span class="mini-title">Statistics Refresher</span>
                 <span class="mini-tag mini-tag-manim">Manim</span>
             </a>
+            
             <a class="viz-card-mini tool-manim" href="#viz-02">
                 <span class="mini-num">2</span>
                 <span class="mini-title">Policy Gradient Intuition</span>
                 <span class="mini-tag mini-tag-manim">Manim</span>
             </a>
+            
             <a class="viz-card-mini tool-manim" href="#viz-03">
                 <span class="mini-num">3</span>
                 <span class="mini-title">PG Derivation</span>
                 <span class="mini-tag mini-tag-manim">Manim</span>
             </a>
+            
             <a class="viz-card-mini tool-multi" href="#viz-04">
                 <span class="mini-num">4</span>
                 <span class="mini-title">Advantage vs Raw Reward</span>
                 <span class="mini-tag mini-tag-multi">MPL+Plotly</span>
             </a>
+            
             <a class="viz-card-mini tool-multi" href="#viz-05">
                 <span class="mini-num">5</span>
                 <span class="mini-title">GAE Lambda Tradeoff</span>
                 <span class="mini-tag mini-tag-multi">MPL+Plotly</span>
             </a>
+            
             <a class="viz-card-mini tool-manim" href="#viz-06">
                 <span class="mini-num">6</span>
                 <span class="mini-title">Trust Region Motivation</span>
                 <span class="mini-tag mini-tag-manim">Manim</span>
             </a>
+            
             <a class="viz-card-mini tool-multi" href="#viz-07">
                 <span class="mini-num">7</span>
                 <span class="mini-title">KL Trust Region</span>
                 <span class="mini-tag mini-tag-multi">MPL+Plotly</span>
             </a>
+            
             <a class="viz-card-mini tool-multi" href="#viz-08">
                 <span class="mini-num">8</span>
                 <span class="mini-title">Clipped Surrogate</span>
                 <span class="mini-tag mini-tag-multi">MPL+Plotly</span>
             </a>
+            
             <a class="viz-card-mini tool-manim" href="#viz-09">
                 <span class="mini-num">9</span>
                 <span class="mini-title">PPO vs TRPO vs PG</span>
                 <span class="mini-tag mini-tag-manim">Manim</span>
             </a>
+            
             <a class="viz-card-mini tool-multi" href="#viz-10">
                 <span class="mini-num">10</span>
                 <span class="mini-title">PPO for LLM Alignment</span>
                 <span class="mini-tag mini-tag-multi">MPL+Plotly</span>
             </a>
+            
             <a class="viz-card-mini tool-plotly" href="#viz-11">
                 <span class="mini-num">11</span>
                 <span class="mini-title">CartPole Demo</span>
                 <span class="mini-tag mini-tag-plotly">Plotly</span>
             </a>
+            
         </div>
 
+        <!-- ===================== CONTENT BLOCKS ===================== -->
+        
+        
         <!-- ==================== ABSTRACT ==================== -->
         <div class="note-section fade-in" id="abstract">
             <h2>Abstract</h2>
+            
             <p>The paper proposes a new family of policy gradient methods that alternate between <em>sampling data through interaction with the environment</em> and <em>optimizing a "surrogate" objective function using stochastic gradient ascent</em>.</p>
             <ul>
                 <li>Gradient <strong>ascent</strong> is used since we want to maximize the reward (as opposed to gradient descent, which minimizes a loss).</li>
                 <li>In RL, we try to maximize the expected cumulative reward.</li>
                 <li>It's <strong>stochastic</strong> because you can't calculate the cumulative reward over all possible trajectories &mdash; only the sampled ones from the mini-batch.</li>
             </ul>
+        
         </div>
 
+        
+        
+        
         <!-- ==================== INTRODUCTION ==================== -->
         <div class="note-section fade-in" id="introduction">
             <h2>Introduction</h2>
+            
             <p>We want a method that is:</p>
             <ul>
                 <li><strong>Scalable</strong> &mdash; to large models and parallel implementations</li>
@@ -827,13 +985,21 @@
                 <li><strong>Policy gradient</strong>: Parametrize the policy as a neural network that takes the state as input and outputs a probability distribution over actions. Use gradient ascent to adjust parameters so the policy produces actions that lead to higher rewards. Examples: REINFORCE, PPO, TRPO.</li>
             </ol>
             <p>The distinction: <em>"Which action is the best action?"</em> (value function) vs <em>"For this state, what should I do?"</em> (policy gradient). However, policy gradient methods have <strong>high variance</strong> &mdash; you might get lucky, or not.</p>
+        
         </div>
 
+        
+        
+        
         <div class="section-break"></div>
 
-        <!-- ==================== POLICY GRADIENT METHODS ==================== -->
+        
+        
+        
+        <!-- ==================== BACKGROUND: POLICY GRADIENT METHODS ==================== -->
         <div class="note-section fade-in" id="policy-gradients">
             <h2>Background: Policy Gradient Methods</h2>
+            
             <p>Policy gradient methods work by estimating the gradient of expected reward with respect to the policy parameters, then using stochastic gradient ascent to improve.</p>
 
             <p>The most commonly used gradient estimator has the form:</p>
@@ -866,36 +1032,61 @@
                 $$\nabla\bigl(\mathbb{E}[\text{reward}]\bigr) = \mathbb{E}\bigl[\text{reward} \cdot \nabla \log \pi(a|s)\bigr]$$
             </div>
             <p>The process becomes: run policy &rarr; collect trajectories &rarr; for each (state, action) pair compute reward &times; gradient &rarr; average across samples. This is the <strong>REINFORCE</strong> algorithm.</p>
+        
         </div>
 
+        
+        
+        
         <!-- Viz 1: Statistics Refresher -->
         <div class="viz-section viz-manim fade-in" id="viz-01">
             <h2><span class="num">#1</span> Statistics Refresher</h2>
+            
             <span class="tool-tag tag-manim">Manim</span>
+            
             <p class="desc">Animated review of key statistical concepts underpinning policy gradients: expectation, variance, log-derivative trick, and importance sampling.</p>
+            
             <video controls preload="metadata">
                 <source src="StatsRefresher.mp4" type="video/mp4">
                 Your browser does not support the video tag.
             </video>
+            
+            
+            
         </div>
 
+        
+        
+        
         <!-- Viz 2: Policy Gradient Intuition -->
         <div class="viz-section viz-manim fade-in" id="viz-02">
             <h2><span class="num">#2</span> Policy Gradient Intuition</h2>
+            
             <span class="tool-tag tag-manim">Manim</span>
+            
             <p class="desc">Visual walkthrough of the REINFORCE algorithm: how actions with positive advantage get reinforced (probability increased) while actions with negative advantage get suppressed.</p>
+            
             <video controls preload="metadata">
                 <source src="PolicyGradientIntuition.mp4" type="video/mp4">
                 Your browser does not support the video tag.
             </video>
+            
+            
+            
         </div>
 
+        
+        
+        
         <div class="section-break"></div>
 
-        <!-- ==================== DERIVATION ==================== -->
+        
+        
+        
+        <!-- ==================== DERIVATION OF THE POLICY GRADIENT ESTIMATOR ==================== -->
         <div class="note-section fade-in" id="derivation">
             <h2>Derivation of the Policy Gradient Estimator</h2>
-
+            
             <h3>Setup</h3>
             <p>We have a parameterized policy $\pi_{\theta}(a_t|s_t)$ and want to maximize the expected return:</p>
             <div class="math-block">
@@ -952,25 +1143,41 @@
                 </div>
                 <p>where $\widehat{\mathbb{E}}_t$ denotes the empirical average over a finite batch of timesteps, and $\widehat{A}_t$ is an estimator of the advantage function (computed using GAE in PPO's case).</p>
             </div>
+        
         </div>
 
+        
+        
+        
         <!-- Viz 3: Policy Gradient Derivation -->
         <div class="viz-section viz-manim fade-in" id="viz-03">
             <h2><span class="num">#3</span> Policy Gradient Derivation</h2>
+            
             <span class="tool-tag tag-manim">Manim</span>
+            
             <p class="desc">Step-by-step animated derivation of the policy gradient estimator, from trajectory probability through the log-derivative trick to the final REINFORCE formula.</p>
+            
             <video controls preload="metadata">
                 <source src="PolicyGradientDerivation.mp4" type="video/mp4">
                 Your browser does not support the video tag.
             </video>
+            
+            
+            
         </div>
 
+        
+        
+        
         <div class="section-break"></div>
 
-        <!-- ==================== ADVANTAGE FUNCTION ==================== -->
+        
+        
+        
+        <!-- ==================== THE ADVANTAGE FUNCTION ==================== -->
         <div class="note-section fade-in" id="advantage">
             <h2>The Advantage Function</h2>
-
+            
             <h3>Building Blocks</h3>
             <p><strong>Value function</strong> $V(s_t)$ &mdash; "If I'm in state $s_t$ and follow my policy from here, what's my expected total future reward?"</p>
             <div class="math-block">
@@ -1021,16 +1228,28 @@
 
             <h3>Summary</h3>
             <p>By using gradient ascent with the advantage, we push up actions that have higher-than-average returns and push down those with lower-than-average returns. The advantage acts as both a <em>filter</em> and a <em>multiplier</em>.</p>
+        
         </div>
 
+        
+        
+        
         <!-- Viz 4: Advantage vs Raw Reward -->
         <div class="viz-section viz-multi fade-in" id="viz-04">
             <h2><span class="num">#4</span> Advantage vs Raw Reward</h2>
+            
             <span class="tool-tag tag-matplotlib">Matplotlib</span>
             <span class="tool-tag tag-plotly">Plotly</span>
+            
             <p class="desc">Side-by-side comparison of policy gradient updates using raw trajectory rewards vs advantage-based estimation, showing how variance is reduced.</p>
+            
+            
+            
             <p class="section-divider">Static figure</p>
+            
             <img src="https://raw.githubusercontent.com/csking101/LuCiD-papers/main/papers/1707.06347/output/static/04_advantage_vs_raw_reward.png" alt="Advantage vs Raw Reward" loading="lazy">
+            
+            
             <p class="section-divider">Interactive demo &mdash; <a class="open-link" href="04_advantage_vs_raw_reward.html" target="_blank">Open in new tab &rarr;</a></p>
             <div class="iframe-wrapper">
                 <button class="fullscreen-btn" data-src="04_advantage_vs_raw_reward.html" title="View fullscreen">
@@ -1039,13 +1258,21 @@
                 </button>
                 <iframe src="04_advantage_vs_raw_reward.html" loading="lazy" title="Advantage vs Raw Reward interactive"></iframe>
             </div>
+            
         </div>
 
+        
+        
+        
         <div class="section-break"></div>
 
-        <!-- ==================== GAE ==================== -->
+        
+        
+        
+        <!-- ==================== GENERALIZED ADVANTAGE ESTIMATION (GAE) ==================== -->
         <div class="note-section fade-in" id="gae">
             <h2>Generalized Advantage Estimation (GAE)</h2>
+            
             <p>The $\widehat{A}_t$ in the PPO equation means "we don't know the true $A$, so we estimate it." PPO uses <strong>GAE</strong>, which introduces a parameter $\lambda$ that trades off bias and variance.</p>
 
             <h3>TD Residual</h3>
@@ -1083,16 +1310,28 @@
             <div class="callout callout-note">
                 <p><strong>LLM connection:</strong> When PPO is used for LLM fine-tuning, each token generation is an action. Tokens with positive advantage (better than average continuations) get reinforced &mdash; made more likely &mdash; while tokens with negative advantage get suppressed.</p>
             </div>
+        
         </div>
 
+        
+        
+        
         <!-- Viz 5: GAE Lambda Tradeoff -->
         <div class="viz-section viz-multi fade-in" id="viz-05">
             <h2><span class="num">#5</span> GAE Lambda Tradeoff</h2>
+            
             <span class="tool-tag tag-matplotlib">Matplotlib</span>
             <span class="tool-tag tag-plotly">Plotly</span>
+            
             <p class="desc">Interactive visualization of how the GAE lambda parameter controls the bias-variance tradeoff in advantage estimation, with TD weight decay curves for different lambda values.</p>
+            
+            
+            
             <p class="section-divider">Static figure</p>
+            
             <img src="https://raw.githubusercontent.com/csking101/LuCiD-papers/main/papers/1707.06347/output/static/05_gae_lambda_tradeoff.png" alt="GAE Lambda Tradeoff" loading="lazy">
+            
+            
             <p class="section-divider">Interactive demo &mdash; <a class="open-link" href="05_gae_lambda_tradeoff.html" target="_blank">Open in new tab &rarr;</a></p>
             <div class="iframe-wrapper">
                 <button class="fullscreen-btn" data-src="05_gae_lambda_tradeoff.html" title="View fullscreen">
@@ -1101,13 +1340,21 @@
                 </button>
                 <iframe src="05_gae_lambda_tradeoff.html" loading="lazy" title="GAE Lambda Tradeoff interactive"></iframe>
             </div>
+            
         </div>
 
+        
+        
+        
         <div class="section-break"></div>
 
+        
+        
+        
         <!-- ==================== TRUST REGION METHODS ==================== -->
         <div class="note-section fade-in" id="trust-regions">
             <h2>Trust Region Methods</h2>
+            
             <p>In TRPO, the objective function ("surrogate objective") is maximized subject to a constraint on the size of the policy update.</p>
 
             <h3>The Fundamental Problem with Policy Gradients</h3>
@@ -1135,24 +1382,41 @@
             <div class="callout callout-insight">
                 <p><strong>The core insight:</strong> we don't care how much $\theta$ changes in Euclidean space. We care how much the <em>policy distribution</em> changes. A step of size 0.01 in $\theta$ might barely change the policy, or it might completely flip the action probabilities &mdash; depending on the local geometry.</p>
             </div>
+        
         </div>
 
+        
+        
+        
         <!-- Viz 6: Trust Region Motivation -->
         <div class="viz-section viz-manim fade-in" id="viz-06">
             <h2><span class="num">#6</span> Trust Region Motivation</h2>
+            
             <span class="tool-tag tag-manim">Manim</span>
+            
             <p class="desc">Animated comparison of parameter-space vs policy-space distances, showing how a small parameter change can cause a large policy shift and why KL-based trust regions are needed.</p>
+            
             <video controls preload="metadata">
                 <source src="TrustRegionMotivation.mp4" type="video/mp4">
                 Your browser does not support the video tag.
             </video>
+            
+            
+            
         </div>
 
+        
+        
+        
         <div class="section-break"></div>
 
-        <!-- ==================== KL DIVERGENCE & TRPO ==================== -->
+        
+        
+        
+        <!-- ==================== FROM PARAMETER SPACE TO DISTRIBUTION SPACE ==================== -->
         <div class="note-section fade-in" id="kl-divergence">
             <h2>From Parameter Space to Distribution Space</h2>
+            
             <p>We need a measure of distance between <em>policies</em>, not between parameter vectors. This is where <strong>KL divergence</strong> comes in:</p>
             <div class="formal-def">
                 <div class="math-block">
@@ -1186,16 +1450,28 @@
                 <li>A <strong>line search</strong> to find the largest step satisfying the KL constraint</li>
             </ol>
             <p>This is doable but expensive and complex. This complexity is precisely what motivates PPO.</p>
+        
         </div>
 
+        
+        
+        
         <!-- Viz 7: KL Trust Region -->
         <div class="viz-section viz-multi fade-in" id="viz-07">
             <h2><span class="num">#7</span> KL Trust Region</h2>
+            
             <span class="tool-tag tag-matplotlib">Matplotlib</span>
             <span class="tool-tag tag-plotly">Plotly</span>
+            
             <p class="desc">Visualization of the KL divergence constraint defining the trust region in policy space, showing how different constraint radii affect the allowed policy updates.</p>
+            
+            
+            
             <p class="section-divider">Static figure</p>
+            
             <img src="https://raw.githubusercontent.com/csking101/LuCiD-papers/main/papers/1707.06347/output/static/07_kl_trust_region.png" alt="KL Trust Region" loading="lazy">
+            
+            
             <p class="section-divider">Interactive demo &mdash; <a class="open-link" href="07_kl_trust_region.html" target="_blank">Open in new tab &rarr;</a></p>
             <div class="iframe-wrapper">
                 <button class="fullscreen-btn" data-src="07_kl_trust_region.html" title="View fullscreen">
@@ -1204,14 +1480,21 @@
                 </button>
                 <iframe src="07_kl_trust_region.html" loading="lazy" title="KL Trust Region interactive"></iframe>
             </div>
+            
         </div>
 
+        
+        
+        
         <div class="section-break"></div>
 
+        
+        
+        
         <!-- ==================== CLIPPED SURROGATE OBJECTIVE ==================== -->
         <div class="note-section fade-in" id="clipped-objective">
             <h2>Clipped Surrogate Objective</h2>
-
+            
             <p>Define the probability ratio:</p>
             <div class="math-block">
                 $$r_t(\theta) = \frac{\pi_\theta(a_t|s_t)}{\pi_{\theta_{\text{old}}}(a_t|s_t)} \qquad \text{so } r_t(\theta_{\text{old}}) = 1$$
@@ -1266,32 +1549,51 @@
             <div class="callout callout-insight">
                 <p>The narrative arc: gradient direction is easy, step size is hard &rarr; step size in parameter space is the wrong thing to control &rarr; control distance in policy space instead (KL) &rarr; TRPO does this exactly but is complex &rarr; <strong>PPO approximates it simply</strong>.</p>
             </div>
+        
         </div>
 
-        <!-- Viz 8: Clipped Surrogate -->
+        
+        
+        
+        <!-- Viz 8: Clipped Surrogate Objective -->
         <div class="viz-section viz-multi fade-in" id="viz-08">
             <h2><span class="num">#8</span> Clipped Surrogate Objective</h2>
+            
             <span class="tool-tag tag-matplotlib">Matplotlib</span>
             <span class="tool-tag tag-plotly">Plotly</span>
+            
             <p class="desc">Visualization of the PPO clipping mechanism: how the surrogate objective is clipped for both positive and negative advantages, with the effective loss landscape.</p>
+            
+            
+            
             <p class="section-divider">Static figure</p>
+            
             <img src="https://raw.githubusercontent.com/csking101/LuCiD-papers/main/papers/1707.06347/output/static/08_clipped_surrogate.png" alt="Clipped Surrogate Objective" loading="lazy">
+            
+            
             <p class="section-divider">Interactive demo &mdash; <a class="open-link" href="08_clipped_surrogate.html" target="_blank">Open in new tab &rarr;</a></p>
             <div class="iframe-wrapper">
                 <button class="fullscreen-btn" data-src="08_clipped_surrogate.html" title="View fullscreen">
                     <svg viewBox="0 0 16 16"><path d="M1.5 1h4a.5.5 0 010 1H2v3.5a.5.5 0 01-1 0v-4a.5.5 0 01.5-.5zm13 0a.5.5 0 01.5.5v4a.5.5 0 01-1 0V2h-3.5a.5.5 0 010-1h4zM1 10.5a.5.5 0 011 0V14h3.5a.5.5 0 010 1h-4a.5.5 0 01-.5-.5v-4zm14 0a.5.5 0 01-1 0V14h-3.5a.5.5 0 010 1h4a.5.5 0 00.5-.5v-4z"/></svg>
                     Fullscreen
                 </button>
-                <iframe src="08_clipped_surrogate.html" loading="lazy" title="Clipped Surrogate interactive"></iframe>
+                <iframe src="08_clipped_surrogate.html" loading="lazy" title="Clipped Surrogate Objective interactive"></iframe>
             </div>
+            
         </div>
 
+        
+        
+        
         <div class="section-break"></div>
 
+        
+        
+        
         <!-- ==================== ALGORITHM ==================== -->
         <div class="note-section fade-in" id="algorithm">
             <h2>Algorithm</h2>
-
+            
             <h3>Combined Loss</h3>
             <p>If the policy and value function share parameters (common in practice), the loss function combines the policy surrogate, a value function error term, and an entropy bonus:</p>
             <div class="formal-def">
@@ -1324,25 +1626,41 @@
             <div class="callout callout-insight">
                 <p>The algorithm is simple: collect a batch of experience with the current policy across $N$ parallel workers ($NT$ total timesteps). Compute advantages using GAE. Do $K$ passes of minibatch gradient ascent on the clipped surrogate. Snapshot the updated policy, throw away the batch, collect fresh data, and repeat. <strong>The clipping is what makes the $K$ epochs of reuse safe</strong> &mdash; without it, multiple passes over the same data would push the policy too far from where the data was collected.</p>
             </div>
+        
         </div>
 
+        
+        
+        
         <!-- Viz 9: PPO vs TRPO vs PG -->
         <div class="viz-section viz-manim fade-in" id="viz-09">
             <h2><span class="num">#9</span> PPO vs TRPO vs PG</h2>
+            
             <span class="tool-tag tag-manim">Manim</span>
+            
             <p class="desc">Animated comparison of vanilla policy gradient, TRPO, and PPO: showing how each method handles the step-size problem differently, with PPO achieving TRPO's stability via simple clipping.</p>
+            
             <video controls preload="metadata">
                 <source src="PPOvsTRPOvsPG.mp4" type="video/mp4">
                 Your browser does not support the video tag.
             </video>
+            
+            
+            
         </div>
 
+        
+        
+        
         <div class="section-break"></div>
 
+        
+        
+        
         <!-- ==================== EXPERIMENTS ==================== -->
         <div class="note-section fade-in" id="experiments">
             <h2>Experiments</h2>
-
+            
             <h3>Comparison of Surrogate Objectives</h3>
             <ul>
                 <li>Tested clipping in log space &mdash; not much improvement.</li>
@@ -1360,13 +1678,21 @@
             <div class="callout callout-note">
                 <p>The experiments confirmed that the clipped surrogate objective ($L^{CLIP}$) with $\epsilon = 0.2$ consistently matched or exceeded the performance of TRPO's constrained optimization &mdash; while being far simpler to implement and tune.</p>
             </div>
+        
         </div>
 
+        
+        
+        
         <div class="section-break"></div>
 
+        
+        
+        
         <!-- ==================== PPO FOR LLM ALIGNMENT ==================== -->
         <div class="note-section fade-in" id="llm-alignment">
             <h2>PPO for LLM Alignment</h2>
+            
             <p>PPO became the standard RL algorithm for aligning language models via RLHF (Reinforcement Learning from Human Feedback). The connection:</p>
             <ol>
                 <li><strong>Policy</strong> = the language model. Given a prompt (state), it generates tokens (actions).</li>
@@ -1379,62 +1705,136 @@
             </div>
 
             <p>This pipeline &mdash; pretrain LM, train reward model from preferences, fine-tune with PPO &mdash; powered <strong>InstructGPT</strong> (Ouyang et al., 2022) and <strong>ChatGPT</strong>. PPO's simplicity and stability made it the practical choice over TRPO for this application.</p>
+        
         </div>
 
+        
+        
+        
         <!-- Viz 10: PPO for LLM Alignment -->
         <div class="viz-section viz-multi fade-in" id="viz-10">
             <h2><span class="num">#10</span> PPO for LLM Alignment</h2>
+            
             <span class="tool-tag tag-matplotlib">Matplotlib</span>
             <span class="tool-tag tag-plotly">Plotly</span>
+            
             <p class="desc">Visualization of how PPO is applied in the RLHF pipeline for language model alignment: the three-stage process from pretraining through reward modeling to PPO fine-tuning.</p>
+            
+            
+            
             <p class="section-divider">Static figure</p>
+            
             <img src="https://raw.githubusercontent.com/csking101/LuCiD-papers/main/papers/1707.06347/output/static/10_ppo_llm_alignment.png" alt="PPO for LLM Alignment" loading="lazy">
+            
+            
             <p class="section-divider">Interactive demo &mdash; <a class="open-link" href="10_ppo_llm_alignment.html" target="_blank">Open in new tab &rarr;</a></p>
             <div class="iframe-wrapper">
                 <button class="fullscreen-btn" data-src="10_ppo_llm_alignment.html" title="View fullscreen">
                     <svg viewBox="0 0 16 16"><path d="M1.5 1h4a.5.5 0 010 1H2v3.5a.5.5 0 01-1 0v-4a.5.5 0 01.5-.5zm13 0a.5.5 0 01.5.5v4a.5.5 0 01-1 0V2h-3.5a.5.5 0 010-1h4zM1 10.5a.5.5 0 011 0V14h3.5a.5.5 0 010 1h-4a.5.5 0 01-.5-.5v-4zm14 0a.5.5 0 01-1 0V14h-3.5a.5.5 0 010 1h4a.5.5 0 00.5-.5v-4z"/></svg>
                     Fullscreen
                 </button>
-                <iframe src="10_ppo_llm_alignment.html" loading="lazy" title="PPO LLM Alignment interactive"></iframe>
+                <iframe src="10_ppo_llm_alignment.html" loading="lazy" title="PPO for LLM Alignment interactive"></iframe>
             </div>
+            
         </div>
 
+        
+        
+        
         <div class="section-break"></div>
 
-        <!-- ==================== INTERACTIVE DEMO ==================== -->
+        
+        
+        
+        <!-- Viz 11: Interactive CartPole Demo -->
         <div class="viz-section viz-plotly fade-in" id="viz-11">
             <h2><span class="num">#11</span> Interactive CartPole Demo</h2>
-            <span class="tool-tag tag-plotly">Plotly/JS</span>
+            
+            <span class="tool-tag tag-plotly">Plotly</span>
+            
             <p class="desc">Self-contained PPO implementation running in your browser: watch a simulated CartPole agent learn to balance a pole through clipped surrogate optimization. Adjust hyperparameters ($\epsilon$, $\gamma$, $\lambda$) and observe their effects in real time.</p>
+            
+            
+            
             <p class="section-divider">Interactive demo &mdash; <a class="open-link" href="11_ppo_cartpole_demo.html" target="_blank">Open in new tab &rarr;</a></p>
             <div class="iframe-wrapper">
                 <button class="fullscreen-btn" data-src="11_ppo_cartpole_demo.html" title="View fullscreen">
                     <svg viewBox="0 0 16 16"><path d="M1.5 1h4a.5.5 0 010 1H2v3.5a.5.5 0 01-1 0v-4a.5.5 0 01.5-.5zm13 0a.5.5 0 01.5.5v4a.5.5 0 01-1 0V2h-3.5a.5.5 0 010-1h4zM1 10.5a.5.5 0 011 0V14h3.5a.5.5 0 010 1h-4a.5.5 0 01-.5-.5v-4zm14 0a.5.5 0 01-1 0V14h-3.5a.5.5 0 010 1h4a.5.5 0 00.5-.5v-4z"/></svg>
                     Fullscreen
                 </button>
-                <iframe src="11_ppo_cartpole_demo.html" loading="lazy" style="height: 750px;" title="PPO CartPole Demo interactive"></iframe>
+                <iframe src="11_ppo_cartpole_demo.html" loading="lazy" title="Interactive CartPole Demo interactive" style="height: 750px;"></iframe>
             </div>
+            
         </div>
 
+        
+        
+        
         <div class="section-break"></div>
 
+        
+        
+        
         <!-- ==================== CONCLUSION ==================== -->
         <div class="note-section fade-in" id="conclusion">
             <h2>Conclusion</h2>
+            
             <p>Proximal Policy Optimization introduces a set of <strong>policy optimization methods</strong> that use <strong>stochastic gradient ascent</strong> to perform each policy update. These methods are as stable and <strong>reliable</strong> as trust-region methods, but <strong>simpler</strong> to implement, requiring only first-order optimization. Better overall performance across both continuous control and discrete action domains.</p>
 
             <div class="callout callout-key">
                 <p>PPO's lasting impact goes beyond its original benchmarks. By making trust-region-quality RL optimization accessible to any practitioner with a standard deep learning toolkit, PPO became the backbone of LLM alignment &mdash; the algorithm that fine-tuned the models behind ChatGPT, Claude, and other instruction-following AI systems.</p>
             </div>
+        
         </div>
+
+        
+        
+
+        
+        <!-- ===================== CODING ADVENTURES ===================== -->
+        <div class="section-break"></div>
+        <div class="adventures-section fade-in" id="adventures">
+            <h2>Coding Adventures</h2>
+            <p class="adventures-subtitle">Hands-on interactive demos that bring this paper's concepts to life.</p>
+            <div class="adventures-grid">
+                
+                <a class="adventure-card" href="https://github.com/csking101/LuCiD-papers/tree/main/coding-adventures/01-pathfinding-preference-game">
+                    <div class="adventure-header">
+                        <span class="adventure-num">01</span>
+                        <span class="adventure-badge">Done</span>
+                    </div>
+                    <h3>Path-Finding Preference Game</h3>
+                    <p class="adventure-desc">Full RLHF pipeline in a grid world using PPO as the RL optimizer — you are the human annotator. Implements the clipped surrogate objective and GAE from this paper. 201 tests.</p>
+                    <div class="adventure-tags">
+                        
+                        <span class="adventure-tag">PyTorch</span>
+                        
+                        <span class="adventure-tag">Rich CLI</span>
+                        
+                        <span class="adventure-tag">PPO</span>
+                        
+                        <span class="adventure-tag">GAE</span>
+                        
+                    </div>
+                    
+                    <div class="adventure-thumb">
+                        <img src="../../adventures/01/04_ppo_training.svg" alt="Path-Finding Preference Game preview" loading="lazy">
+                    </div>
+                    
+                </a>
+                
+            </div>
+        </div>
+        
 
         <footer>
             <div class="footer-links">
                 <a href="../../">Back to LuCiD-papers</a>
                 <a href="https://github.com/csking101/LuCiD-papers/tree/main/papers/1707.06347">View source on GitHub</a>
+                
                 <a href="https://arxiv.org/abs/1707.06347">Read on arXiv</a>
             </div>
-            <p class="last-updated">Last updated: April 2026</p>
+            <p class="last-updated">Last updated: May 2026</p>
             <p class="last-updated">Notes by Chinmaya Sahu. Content polish, code, visualizations, and web design by AI.</p>
         </footer>
 
@@ -1605,6 +2005,8 @@
     updateBackToTop();
 })();
 </script>
+
+
 
 </body>
 </html>

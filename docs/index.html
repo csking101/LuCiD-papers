@@ -129,6 +129,20 @@
         .badge-done { background: #3fb95033; color: #3fb950; }
         .badge-learning { background: #1f6feb33; color: #58a6ff; }
         .badge-upcoming { background: #21262d; color: #8b949e; }
+        .adventure-thumb {
+            margin-top: 12px;
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 6px;
+        }
+        .adventure-thumb img {
+            height: 120px;
+            border-radius: 6px;
+            border: 1px solid #30363d;
+            background: #0d1117;
+            flex-shrink: 0;
+        }
         footer {
             margin-top: 3em;
             padding-top: 1em;
@@ -254,6 +268,11 @@
                 <span class="tag tag-mp4">Interactive CLI</span>
                 <span class="tag tag-png">201 Tests</span>
             </div>
+            <div class="adventure-thumb">
+                <img src="adventures/01/01_grid_world.svg" alt="Grid World" title="Grid World Environment">
+                <img src="adventures/01/03_reward_model.svg" alt="Reward Model" title="Reward Model Training">
+                <img src="adventures/01/05_comparison.svg" alt="Policy Comparison" title="Pre-trained vs RLHF Policy">
+            </div>
             <p style="margin-top: 10px;">
                 <a href="https://github.com/csking101/LuCiD-papers/tree/main/coding-adventures/01-pathfinding-preference-game">View on GitHub</a>
             </p>
@@ -274,6 +293,11 @@
                 <span class="tag tag-html">Qwen2.5-1.5B</span>
                 <span class="tag tag-mp4">Interactive CLI</span>
                 <span class="tag tag-png">98 Tests</span>
+            </div>
+            <div class="adventure-thumb">
+                <img src="adventures/02/01_global_kl.svg" alt="Global KL" title="Global KL Overview">
+                <img src="adventures/02/02_token_anatomy.svg" alt="Token Anatomy" title="Token-Level KL Anatomy">
+                <img src="adventures/02/04_interpolation.svg" alt="Interpolation" title="KL-Constrained Interpolation">
             </div>
             <p style="margin-top: 10px;">
                 <a href="https://github.com/csking101/LuCiD-papers/tree/main/coding-adventures/02-kl-divergence-llm-outputs">View on GitHub</a>

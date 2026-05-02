@@ -258,6 +258,27 @@ All 201 tests run in ~9 seconds on CPU.
 
 ---
 
+## Screenshots
+
+Generated via Rich SVG export (`Console(record=True).export_svg()`). Regenerate with `python screenshots.py`.
+
+### Grid World Environment
+![Grid World](../../docs/adventures/01/01_grid_world.svg)
+
+### Human Preference Collection
+![Preferences](../../docs/adventures/01/02_preferences.svg)
+
+### Reward Model Training
+![Reward Model](../../docs/adventures/01/03_reward_model.svg)
+
+### PPO Fine-Tuning Dashboard
+![PPO Training](../../docs/adventures/01/04_ppo_training.svg)
+
+### Pre-training vs RLHF Policy
+![Comparison](../../docs/adventures/01/05_comparison.svg)
+
+---
+
 ## Paper References
 
 This adventure is a hands-on implementation of concepts from three papers in the LuCiD-papers collection:

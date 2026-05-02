@@ -11,6 +11,7 @@
         };
     </script>
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+    {% if extra_head_html %}{{ extra_head_html }}{% endif %}
     <style>
         /* ============================================================
            RESET & BASE
@@ -621,6 +622,101 @@
         }
 
         /* ============================================================
+           CODING ADVENTURES SECTION
+           ============================================================ */
+        .adventures-section { margin-top: 2em; }
+        .adventures-section > h2 {
+            font-size: 1.5em;
+            color: #58a6ff;
+            margin-bottom: 0.3em;
+            padding-bottom: 0.3em;
+            border-bottom: 1px solid #21262d;
+        }
+        .adventures-subtitle {
+            color: #8b949e;
+            font-size: 0.9em;
+            margin-bottom: 1.2em;
+        }
+        .adventures-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 16px;
+        }
+        .adventure-card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 20px;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.2s;
+            display: block;
+        }
+        .adventure-card:hover {
+            border-color: #58a6ff40;
+            background: #1c2129;
+            text-decoration: none;
+        }
+        .adventure-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        .adventure-num {
+            font-weight: 700;
+            font-size: 1.4em;
+            color: #f0883e;
+            font-family: monospace;
+        }
+        .adventure-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75em;
+            font-weight: 600;
+            background: #3fb95033;
+            color: #3fb950;
+        }
+        .adventure-card h3 {
+            font-size: 1.1em;
+            color: #c9d1d9;
+            margin-bottom: 6px;
+        }
+        .adventure-desc {
+            color: #8b949e;
+            font-size: 0.88em;
+            line-height: 1.5;
+            margin-bottom: 10px;
+        }
+        .adventure-tags {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        .adventure-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.72em;
+            font-weight: 600;
+            background: #21262d;
+            color: #8b949e;
+            border: 1px solid #30363d;
+        }
+        .adventure-thumb {
+            margin-top: 8px;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid #30363d;
+        }
+        .adventure-thumb img {
+            width: 100%;
+            display: block;
+        }
+
+        /* ============================================================
            RESPONSIVE / MOBILE
            ============================================================ */
         @media (max-width: 1400px) {
@@ -648,7 +744,9 @@
             .main-content { padding: 24px 14px; }
             .viz-section iframe { height: 320px; }
             .viz-gallery { grid-template-columns: 1fr 1fr; }
+            .adventures-grid { grid-template-columns: 1fr; }
         }
+        {% if extra_css %}{{ extra_css }}{% endif %}
     </style>
 </head>
 <body>
@@ -685,6 +783,7 @@
             {{ authors }} ({{ year }}) &mdash;
             <a href="https://arxiv.org/abs/{{ arxiv_id }}">arXiv</a> &mdash;
             <a href="https://github.com/csking101/LuCiD-papers/tree/main/papers/{{ arxiv_id }}">GitHub</a>
+            {% if extra_meta_html %}&mdash; {{ extra_meta_html }}{% endif %}
         </p>
 
         <div class="tldr">
@@ -766,10 +865,44 @@
         {% endif %}
         {% endfor %}
 
+        {% if adventures %}
+        <!-- ===================== CODING ADVENTURES ===================== -->
+        <div class="section-break"></div>
+        <div class="adventures-section fade-in" id="adventures">
+            <h2>Coding Adventures</h2>
+            <p class="adventures-subtitle">Hands-on interactive demos that bring this paper's concepts to life.</p>
+            <div class="adventures-grid">
+                {% for adv in adventures %}
+                <a class="adventure-card" href="{{ adv.url }}">
+                    <div class="adventure-header">
+                        <span class="adventure-num">{{ adv.num }}</span>
+                        <span class="adventure-badge">{{ adv.status }}</span>
+                    </div>
+                    <h3>{{ adv.title }}</h3>
+                    <p class="adventure-desc">{{ adv.desc }}</p>
+                    <div class="adventure-tags">
+                        {% for tag in adv.tags %}
+                        <span class="adventure-tag">{{ tag }}</span>
+                        {% endfor %}
+                    </div>
+                    {% if adv.get('svg_thumb') %}
+                    <div class="adventure-thumb">
+                        <img src="{{ adv.svg_thumb }}" alt="{{ adv.title }} preview" loading="lazy">
+                    </div>
+                    {% endif %}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
         <footer>
             <div class="footer-links">
                 <a href="../../">Back to LuCiD-papers</a>
                 <a href="https://github.com/csking101/LuCiD-papers/tree/main/papers/{{ arxiv_id }}">View source on GitHub</a>
+                {% for link in extra_footer_links %}
+                <a href="{{ link.url }}">{{ link.label }}</a>
+                {% endfor %}
                 <a href="https://arxiv.org/abs/{{ arxiv_id }}">Read on arXiv</a>
             </div>
             <p class="last-updated">Last updated: {{ last_updated }}</p>
@@ -943,6 +1076,8 @@
     updateBackToTop();
 })();
 </script>
+
+{% if extra_body_html %}{{ extra_body_html }}{% endif %}
 
 </body>
 </html>

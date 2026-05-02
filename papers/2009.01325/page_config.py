@@ -375,4 +375,17 @@ PAGE_DATA = {
          "video": "AlignmentTimeline.mp4"},
 
     ],  # end content
+
+    # ─── Coding Adventures ───
+    "adventures": [
+        {
+            "num": "02",
+            "title": "KL Divergence: Implication on LLM Outputs",
+            "status": "Done",
+            "desc": "Load Qwen2.5-1.5B base + instruct side-by-side and see how KL divergence manifests in real token distributions. Per-token KL analysis, category comparison, and KL-constrained generation. 98 tests.",
+            "url": "https://github.com/csking101/LuCiD-papers/tree/main/coding-adventures/02-kl-divergence-llm-outputs",
+            "tags": ["Qwen2.5-1.5B", "Rich CLI", "KL Divergence", "Transformers"],
+            "svg_thumb": "../../adventures/02/01_global_kl.svg",
+        },
+    ],
 }
