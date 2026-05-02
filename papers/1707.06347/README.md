@@ -64,3 +64,9 @@ cd scripts
 ../../.venv/bin/manim -qm --media_dir ../output/animations 06_trust_region_motivation.py TrustRegionMotivation
 ../../.venv/bin/manim -qm --media_dir ../output/animations 09_ppo_vs_trpo_vs_pg.py PPOvsTRPOvsPG
 ```
+
+## Coding Adventures
+
+Hands-on interactive projects that implement concepts from this paper:
+
+- [**Path-Finding Preference Game**](../../coding-adventures/01-pathfinding-preference-game/) -- Uses PPO with clipped surrogate, GAE, and KL divergence penalty for both pre-training and RLHF fine-tuning. Watch PPO metrics (policy loss, clip fraction, entropy) evolve in real time.

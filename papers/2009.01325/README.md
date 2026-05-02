@@ -62,3 +62,9 @@ cd scripts
 ../../.venv/bin/manim -qm --media_dir ../output/animations 03_kl_penalized_reward.py KLPenalizedReward
 ../../.venv/bin/manim -qm --media_dir ../output/animations 10_alignment_timeline.py AlignmentTimeline
 ```
+
+## Coding Adventures
+
+Hands-on interactive projects that implement concepts from this paper:
+
+- [**Path-Finding Preference Game**](../../coding-adventures/01-pathfinding-preference-game/) -- Implements the full SFT -> RM -> PPO pipeline from this paper in a grid world. Features Bradley-Terry reward model training, KL-penalised PPO, and observable reward overoptimisation when the KL constraint is removed.

@@ -1,0 +1,6 @@
+# Path-Finding Preference Game — Dependencies
+# Tested with Python 3.12
+
+rich>=13.0
+torch>=2.0
+numpy>=1.24

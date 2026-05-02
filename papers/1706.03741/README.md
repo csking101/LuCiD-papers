@@ -60,3 +60,9 @@ manim -ql --media_dir ../output/animations 02_rl_vs_rlhf_pipeline.py RLvsRLHF
 manim -ql --media_dir ../output/animations 03_preference_elicitation.py PreferenceElicitation
 manim -ql --media_dir ../output/animations 06_reward_convergence.py RewardConvergence
 ```
+
+## Coding Adventures
+
+Hands-on interactive projects that implement concepts from this paper:
+
+- [**Path-Finding Preference Game**](../../coding-adventures/01-pathfinding-preference-game/) -- Full RLHF pipeline in a grid world. You rate trajectory pairs, train a Bradley-Terry reward model on your preferences, and PPO fine-tune an agent -- the same pipeline described in this paper, made tangible.

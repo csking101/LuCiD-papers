@@ -40,6 +40,16 @@ Each paper is studied through three phases:
 
 Paper notes live in a separate Obsidian vault. This repo holds the visualization code and outputs.
 
+## Coding Adventures
+
+Interactive demos that bring paper concepts to life. Each adventure ties together ideas from multiple papers into a runnable, hands-on program.
+
+| # | Adventure | Papers | Description |
+|---|-----------|--------|-------------|
+| 1 | [Path-Finding Preference Game](coding-adventures/01-pathfinding-preference-game/) | 1706, 1707, 2009 | Full RLHF pipeline in a grid world -- you are the human annotator. Pre-train, rate paths, train a reward model, and PPO fine-tune. 201 tests, ~2 min runtime. |
+
+See [`coding-adventures/`](coding-adventures/) for the full index.
+
 ## Repository Structure
 
 ```
@@ -55,6 +65,13 @@ LuCiD-papers/
 │           ├── static/         # PNG figures
 │           ├── interactive/    # HTML (Plotly CDN-based, ~50KB each)
 │           └── animations/     # Manim MP4 videos
+├── coding-adventures/
+│   └── {nn}-{name}/
+│       ├── README.md           # Usage guide + architecture docs
+│       ├── app.py              # Interactive terminal application
+│       ├── *.py                # Source modules
+│       ├── tests/              # Comprehensive test suite
+│       └── requirements.txt
 ├── docs/
 │   └── index.html             # GitHub Pages landing page
 └── requirements.txt
