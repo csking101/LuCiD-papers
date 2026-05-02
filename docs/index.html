@@ -39,6 +39,17 @@
             padding: 20px;
             margin: 15px 0;
         }
+        a.paper-card-link {
+            display: block;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.2s;
+        }
+        a.paper-card-link:hover { text-decoration: none; }
+        a.paper-card-link:hover .paper-card {
+            border-color: #58a6ff40;
+            background: #1c2129;
+        }
         .paper-card h3 {
             font-size: 1.2em;
             color: #c9d1d9;
@@ -129,26 +140,44 @@
         .badge-done { background: #3fb95033; color: #3fb950; }
         .badge-learning { background: #1f6feb33; color: #58a6ff; }
         .badge-upcoming { background: #21262d; color: #8b949e; }
-        .adventure-gallery {
-            margin-top: 16px;
+        .adventure-cards {
             display: grid;
-            grid-template-columns: 1fr;
-            gap: 12px;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 16px;
+            margin-top: 15px;
         }
-        .adventure-gallery img {
-            width: 100%;
-            border-radius: 6px;
+        .adventure-tile {
+            background: #161b22;
             border: 1px solid #30363d;
-            background: #0d1117;
+            border-radius: 8px;
+            padding: 20px;
+            text-decoration: none;
+            color: inherit;
             display: block;
+            transition: all 0.2s;
         }
-        .adventure-gallery .gallery-label {
-            font-size: 0.75em;
-            color: #484f58;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            margin-bottom: 4px;
+        .adventure-tile:hover {
+            border-color: #58a6ff40;
+            background: #1c2129;
+            text-decoration: none;
+        }
+        .adventure-tile .tile-num {
+            font-weight: 700;
+            font-size: 1.4em;
+            color: #f0883e;
+            font-family: monospace;
+            margin-right: 8px;
+        }
+        .adventure-tile h3 {
+            font-size: 1.1em;
+            color: #c9d1d9;
+            margin: 6px 0;
+        }
+        .adventure-tile .tile-desc {
+            color: #8b949e;
+            font-size: 0.88em;
+            line-height: 1.5;
+            margin-bottom: 10px;
         }
         footer {
             margin-top: 3em;
@@ -186,6 +215,7 @@
 
         <h2>Papers</h2>
 
+        <a class="paper-card-link" href="papers/1706.03741/">
         <div class="paper-card">
             <span class="arxiv">1706.03741</span>
             <span class="badge-status badge-done">Done</span>
@@ -201,14 +231,10 @@
                 <span class="tag tag-html">4 Interactive HTMLs</span>
                 <span class="tag tag-mp4">4 Animations</span>
             </div>
-            <div class="demos">
-                <a href="papers/1706.03741/">View Notes &amp; Visualizations &rarr;</a>
-            </div>
-            <p style="margin-top: 10px;">
-                <a href="https://github.com/csking101/LuCiD-papers/tree/main/papers/1706.03741">View on GitHub</a>
-            </p>
         </div>
+        </a>
 
+        <a class="paper-card-link" href="papers/1707.06347/">
         <div class="paper-card">
             <span class="arxiv">1707.06347</span>
             <span class="badge-status badge-done">Done</span>
@@ -224,14 +250,10 @@
                 <span class="tag tag-html">6 Interactive HTMLs</span>
                 <span class="tag tag-mp4">5 Animations</span>
             </div>
-            <div class="demos">
-                <a href="papers/1707.06347/">View Notes &amp; Visualizations &rarr;</a>
-            </div>
-            <p style="margin-top: 10px;">
-                <a href="https://github.com/csking101/LuCiD-papers/tree/main/papers/1707.06347">View on GitHub</a>
-            </p>
         </div>
+        </a>
 
+        <a class="paper-card-link" href="papers/2009.01325/">
         <div class="paper-card">
             <span class="arxiv">2009.01325</span>
             <span class="badge-status badge-done">Done</span>
@@ -246,13 +268,8 @@
                 <span class="tag tag-html">5 Interactive HTMLs</span>
                 <span class="tag tag-mp4">4 Animations</span>
             </div>
-            <div class="demos">
-                <a href="papers/2009.01325/">View Notes &amp; Visualizations &rarr;</a>
-            </div>
-            <p style="margin-top: 10px;">
-                <a href="https://github.com/csking101/LuCiD-papers/tree/main/papers/2009.01325">View on GitHub</a>
-            </p>
         </div>
+        </a>
 
         <h2>Coding Adventures</h2>
         <p style="color: #8b949e; margin-bottom: 15px;">
@@ -260,93 +277,47 @@
             Each adventure ties together ideas from multiple papers into a single runnable project.
         </p>
 
-        <div class="paper-card">
-            <span class="badge-status badge-done">Done</span>
-            <span class="track-label track-alignment">Alignment</span>
-            <h3>01 &mdash; Path-Finding Preference Game</h3>
-            <p class="desc">
-                Full RLHF pipeline in a grid world &mdash; you are the human annotator.
-                Pre-train an agent, rate trajectory pairs, train a Bradley-Terry reward model,
-                and PPO fine-tune with KL penalty. Covers concepts from papers 1706.03741,
-                1707.06347, and 2009.01325. Terminal-based UI with Rich. 201 tests. ~2 min runtime.
-            </p>
-            <div class="tags">
-                <span class="tag tag-html">PyTorch</span>
-                <span class="tag tag-mp4">Interactive CLI</span>
-                <span class="tag tag-png">201 Tests</span>
-            </div>
-            <div class="adventure-gallery">
-                <div>
-                    <p class="gallery-label">Phase 1 &mdash; Grid World &amp; Pre-training</p>
-                    <img src="adventures/01/01_grid_world.svg" alt="Grid World" title="Grid World Environment">
+        <div class="adventure-cards">
+            <a class="adventure-tile" href="adventures/01/">
+                <span class="badge-status badge-done">Done</span>
+                <span class="track-label track-alignment">Alignment</span>
+                <div style="margin-top: 8px;">
+                    <span class="tile-num">01</span>
                 </div>
-                <div>
-                    <p class="gallery-label">Phase 2 &mdash; Human Preference Collection</p>
-                    <img src="adventures/01/02_preferences.svg" alt="Preferences" title="Human Preference Collection">
+                <h3>Path-Finding Preference Game</h3>
+                <p class="tile-desc">
+                    Full RLHF pipeline in a grid world &mdash; you are the human annotator.
+                    Pre-train an agent, rate trajectory pairs, train a Bradley-Terry reward model,
+                    and PPO fine-tune with KL penalty. Covers concepts from papers 1706.03741,
+                    1707.06347, and 2009.01325. Terminal-based UI with Rich. 201 tests. ~2 min runtime.
+                </p>
+                <div class="tags">
+                    <span class="tag tag-html">PyTorch</span>
+                    <span class="tag tag-mp4">Interactive CLI</span>
+                    <span class="tag tag-png">201 Tests</span>
                 </div>
-                <div>
-                    <p class="gallery-label">Phase 3 &mdash; Reward Model Training</p>
-                    <img src="adventures/01/03_reward_model.svg" alt="Reward Model" title="Reward Model Training">
-                </div>
-                <div>
-                    <p class="gallery-label">Phase 4 &mdash; PPO Fine-Tuning with KL Penalty</p>
-                    <img src="adventures/01/04_ppo_training.svg" alt="PPO Training" title="PPO Fine-Tuning">
-                </div>
-                <div>
-                    <p class="gallery-label">Conclusion &mdash; Pre-trained vs RLHF Policy</p>
-                    <img src="adventures/01/05_comparison.svg" alt="Policy Comparison" title="Pre-trained vs RLHF Policy">
-                </div>
-            </div>
-            <p style="margin-top: 10px;">
-                <a href="https://github.com/csking101/LuCiD-papers/tree/main/coding-adventures/01-pathfinding-preference-game">View on GitHub</a>
-            </p>
-        </div>
+            </a>
 
-        <div class="paper-card">
-            <span class="badge-status badge-done">Done</span>
-            <span class="track-label track-alignment">Alignment</span>
-            <h3>02 &mdash; KL Divergence: Implication on LLM Outputs</h3>
-            <p class="desc">
-                Load Qwen2.5-1.5B base + instruct side-by-side and see how KL divergence
-                manifests in real token distributions. Per-token KL analysis, category comparison
-                (safety vs style vs helpfulness), and KL-constrained generation at different
-                beta values. Covers concepts from papers 1707.06347, 1706.03741, and 2009.01325.
-                98 tests. Requires 8GB VRAM.
-            </p>
-            <div class="tags">
-                <span class="tag tag-html">Qwen2.5-1.5B</span>
-                <span class="tag tag-mp4">Interactive CLI</span>
-                <span class="tag tag-png">98 Tests</span>
-            </div>
-            <div class="adventure-gallery">
-                <div>
-                    <p class="gallery-label">Phase 1 &mdash; Global KL Overview</p>
-                    <img src="adventures/02/01_global_kl.svg" alt="Global KL" title="Global KL Overview">
+            <a class="adventure-tile" href="adventures/02/">
+                <span class="badge-status badge-done">Done</span>
+                <span class="track-label track-alignment">Alignment</span>
+                <div style="margin-top: 8px;">
+                    <span class="tile-num">02</span>
                 </div>
-                <div>
-                    <p class="gallery-label">Phase 2 &mdash; Token-Level KL Anatomy</p>
-                    <img src="adventures/02/02_token_anatomy.svg" alt="Token Anatomy" title="Token-Level KL Anatomy">
+                <h3>KL Divergence: Implication on LLM Outputs</h3>
+                <p class="tile-desc">
+                    Load Qwen2.5-1.5B base + instruct side-by-side and see how KL divergence
+                    manifests in real token distributions. Per-token KL analysis, category comparison
+                    (safety vs style vs helpfulness), and KL-constrained generation at different
+                    beta values. Covers concepts from papers 1707.06347, 1706.03741, and 2009.01325.
+                    98 tests. Requires 8GB VRAM.
+                </p>
+                <div class="tags">
+                    <span class="tag tag-html">Qwen2.5-1.5B</span>
+                    <span class="tag tag-mp4">Interactive CLI</span>
+                    <span class="tag tag-png">98 Tests</span>
                 </div>
-                <div>
-                    <p class="gallery-label">Phase 3 &mdash; Category-Specific Divergence</p>
-                    <img src="adventures/02/03_categories.svg" alt="Categories" title="Category-Specific Divergence">
-                </div>
-                <div>
-                    <p class="gallery-label">Phase 4 &mdash; KL-Constrained Interpolated Generation</p>
-                    <img src="adventures/02/04_interpolation.svg" alt="Interpolation" title="KL-Constrained Interpolation">
-                </div>
-                <div>
-                    <p class="gallery-label">Phase 5 &mdash; Token Distribution Explorer</p>
-                    <img src="adventures/02/05_explorer.svg" alt="Explorer" title="Token Distribution Explorer">
-                </div>
-                <div>
-                    <p class="gallery-label">Conclusion &mdash; Session Summary</p>
-                    <img src="adventures/02/06_conclusion.svg" alt="Conclusion" title="Session Summary">
-                </div>
-            </div>
-            <p style="margin-top: 10px;">
-                <a href="https://github.com/csking101/LuCiD-papers/tree/main/coding-adventures/02-kl-divergence-llm-outputs">View on GitHub</a>
-            </p>
+            </a>
         </div>
 
         <h2>Upcoming</h2>

@@ -638,12 +638,8 @@ PAGE_DATA = {
             "title": "Path-Finding Preference Game",
             "status": "Done",
             "desc": "Full RLHF pipeline in a grid world using PPO as the RL optimizer \u2014 you are the human annotator. Implements the clipped surrogate objective and GAE from this paper. 201 tests.",
-            "url": "https://github.com/csking101/LuCiD-papers/tree/main/coding-adventures/01-pathfinding-preference-game",
+            "url": "../../adventures/01/",
             "tags": ["PyTorch", "Rich CLI", "PPO", "GAE"],
-            "svg_thumbs": [
-                {"src": "../../adventures/01/04_ppo_training.svg", "label": "PPO Fine-Tuning with KL Penalty"},
-                {"src": "../../adventures/01/05_comparison.svg", "label": "Pre-trained vs RLHF Policy"},
-            ],
         },
     ],
 }

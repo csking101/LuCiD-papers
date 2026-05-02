@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adventure 01 — Path-Finding Preference Game | LuCiD-papers</title>
+    <style>
+        /* ============================================================
+           RESET & BASE
+           ============================================================ */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            line-height: 1.7;
+            font-size: 16px;
+        }
+        a { color: #58a6ff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        /* ============================================================
+           PROGRESS BAR
+           ============================================================ */
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            width: 0%;
+            background: linear-gradient(90deg, #f0883e, #d2a8ff, #58a6ff);
+            z-index: 9999;
+            transition: width 0.1s linear;
+        }
+
+        /* ============================================================
+           TWO-COLUMN LAYOUT
+           ============================================================ */
+        .page-wrapper {
+            display: flex;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        /* --- Sidebar (ToC) --- */
+        .toc-sidebar {
+            position: sticky;
+            top: 0;
+            align-self: flex-start;
+            width: 240px;
+            min-width: 240px;
+            height: 100vh;
+            overflow-y: auto;
+            padding: 40px 16px 40px 24px;
+            border-right: 1px solid #21262d;
+            background: #0d1117;
+            z-index: 50;
+        }
+        .toc-sidebar::-webkit-scrollbar { width: 4px; }
+        .toc-sidebar::-webkit-scrollbar-track { background: transparent; }
+        .toc-sidebar::-webkit-scrollbar-thumb { background: #30363d; border-radius: 2px; }
+
+        .toc-sidebar .toc-title {
+            font-size: 0.75em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #484f58;
+            margin-bottom: 12px;
+        }
+        .toc-sidebar a {
+            display: block;
+            padding: 5px 10px;
+            margin: 1px 0;
+            font-size: 0.82em;
+            color: #8b949e;
+            border-left: 2px solid transparent;
+            border-radius: 0 4px 4px 0;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        .toc-sidebar a:hover {
+            color: #c9d1d9;
+            background: #161b22;
+            text-decoration: none;
+        }
+        .toc-sidebar a.active {
+            color: #58a6ff;
+            border-left-color: #58a6ff;
+            background: #161b2280;
+            font-weight: 600;
+        }
+        .toc-sidebar a.toc-screenshot {
+            color: #6e7681;
+            font-size: 0.78em;
+            padding-left: 18px;
+        }
+        .toc-sidebar a.toc-screenshot.active {
+            color: #f0883e;
+            border-left-color: #f0883e;
+        }
+
+        /* --- Main content --- */
+        .main-content {
+            flex: 1;
+            min-width: 0;
+            max-width: 1200px;
+            padding: 40px 40px 40px 48px;
+        }
+
+        /* ============================================================
+           HEADER
+           ============================================================ */
+        .breadcrumb { font-size: 0.9em; color: #8b949e; margin-bottom: 1em; }
+        .breadcrumb a { color: #8b949e; }
+        .breadcrumb a:hover { color: #58a6ff; }
+        h1 {
+            font-size: 2.1em;
+            color: #e6edf3;
+            margin-bottom: 0.25em;
+            line-height: 1.25;
+        }
+        h1 .adventure-num {
+            color: #f0883e;
+            font-family: monospace;
+        }
+        .meta { color: #8b949e; font-size: 0.95em; margin-bottom: 1.5em; }
+        .meta .badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 10px;
+            font-size: 0.85em;
+            font-weight: 600;
+            background: #3fb95033;
+            color: #3fb950;
+            margin-right: 6px;
+        }
+
+        /* ============================================================
+           NAVIGATION BAR
+           ============================================================ */
+        .nav-bar {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 2em;
+            position: sticky;
+            top: 3px;
+            z-index: 100;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 4px;
+        }
+        .nav-bar span.label { color: #8b949e; font-size: 0.85em; margin-right: 6px; }
+        .nav-bar a {
+            display: inline-block;
+            padding: 3px 10px;
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            font-size: 0.8em;
+            color: #c9d1d9;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        .nav-bar a:hover { background: #30363d; text-decoration: none; }
+        .nav-bar a.active {
+            background: #58a6ff20;
+            border-color: #58a6ff60;
+            color: #58a6ff;
+        }
+
+        /* ============================================================
+           TAGS
+           ============================================================ */
+        .tags { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1.5em; }
+        .tag {
+            display: inline-block;
+            padding: 3px 12px;
+            border-radius: 12px;
+            font-size: 0.82em;
+            font-weight: 600;
+            background: #21262d;
+            color: #8b949e;
+            border: 1px solid #30363d;
+        }
+
+        /* ============================================================
+           TL;DR
+           ============================================================ */
+        .tldr {
+            background: linear-gradient(135deg, #161b22, #1c2333);
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 20px 24px;
+            margin-bottom: 2em;
+        }
+        .tldr .tldr-label {
+            font-size: 0.75em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #f0883e;
+            margin-bottom: 8px;
+        }
+        .tldr p {
+            color: #c9d1d9;
+            font-size: 0.95em;
+            line-height: 1.7;
+            margin-bottom: 0;
+        }
+
+        /* ============================================================
+           NOTE SECTIONS
+           ============================================================ */
+        .note-section {
+            margin-bottom: 2.5em;
+            scroll-margin-top: 60px;
+        }
+        .note-section h2 {
+            font-size: 1.5em;
+            color: #58a6ff;
+            margin-bottom: 0.6em;
+            padding-bottom: 0.3em;
+            border-bottom: 1px solid #21262d;
+        }
+        .note-section h3 {
+            font-size: 1.2em;
+            color: #d2a8ff;
+            margin: 1.2em 0 0.5em;
+        }
+        .note-section h4 {
+            font-size: 1.05em;
+            color: #f0883e;
+            margin: 1em 0 0.4em;
+        }
+        .note-section p {
+            margin-bottom: 0.7em;
+            color: #c9d1d9;
+        }
+        .note-section ul, .note-section ol {
+            margin: 0.5em 0 1em 1.5em;
+            color: #c9d1d9;
+        }
+        .note-section li {
+            margin-bottom: 0.35em;
+            padding-left: 0.2em;
+        }
+        .note-section li::marker { color: #484f58; }
+        .note-section ol li::marker { color: #58a6ff; font-weight: 600; }
+        .note-section ul ul { margin-top: 0.3em; margin-bottom: 0.3em; }
+        .note-section em { color: #f0883e; font-style: italic; }
+        .note-section strong { color: #e6edf3; }
+        .note-section code {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 4px;
+            padding: 1px 6px;
+            font-size: 0.9em;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            color: #f0883e;
+        }
+        .note-section pre {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 16px 20px;
+            margin: 1em 0;
+            overflow-x: auto;
+            font-size: 0.88em;
+            line-height: 1.5;
+        }
+        .note-section pre code {
+            background: none;
+            border: none;
+            padding: 0;
+            color: #c9d1d9;
+        }
+
+        /* --- Callout boxes --- */
+        .callout {
+            border-left: 3px solid #58a6ff;
+            background: #58a6ff08;
+            padding: 14px 18px;
+            margin: 1.2em 0;
+            border-radius: 0 6px 6px 0;
+            font-size: 0.95em;
+        }
+        .callout.callout-key {
+            border-left-color: #f0883e;
+            background: #f0883e08;
+        }
+        .callout.callout-key::before {
+            content: 'Key Idea';
+            display: block;
+            font-size: 0.8em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #f0883e;
+            margin-bottom: 6px;
+        }
+
+        /* --- Tables --- */
+        .note-section table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1em 0;
+            font-size: 0.9em;
+        }
+        .note-section th {
+            text-align: left;
+            padding: 8px 12px;
+            background: #161b22;
+            border: 1px solid #30363d;
+            color: #58a6ff;
+            font-weight: 600;
+        }
+        .note-section td {
+            padding: 8px 12px;
+            border: 1px solid #30363d;
+            color: #c9d1d9;
+        }
+        .note-section tr:hover td { background: #161b2260; }
+
+        /* ============================================================
+           SCREENSHOT SECTIONS
+           ============================================================ */
+        .screenshot-section {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 24px;
+            margin: 1.8em 0;
+            scroll-margin-top: 60px;
+            border-left: 3px solid #f0883e;
+        }
+        .screenshot-section h2 {
+            font-size: 1.3em;
+            color: #c9d1d9;
+            margin-bottom: 4px;
+        }
+        .screenshot-section h2 .num { color: #8b949e; font-weight: normal; }
+        .screenshot-section .desc {
+            color: #8b949e;
+            font-size: 0.9em;
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+        .screenshot-section img {
+            width: 100%;
+            border-radius: 6px;
+            background: #0d1117;
+        }
+
+        /* ============================================================
+           SECTION DIVIDERS
+           ============================================================ */
+        .section-break {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #30363d 20%, #30363d 80%, transparent);
+            margin: 2.5em 0;
+        }
+
+        /* ============================================================
+           RELATED PAPERS SECTION
+           ============================================================ */
+        .related-section { margin-top: 2em; }
+        .related-section > h2 {
+            font-size: 1.5em;
+            color: #58a6ff;
+            margin-bottom: 0.3em;
+            padding-bottom: 0.3em;
+            border-bottom: 1px solid #21262d;
+        }
+        .related-subtitle {
+            color: #8b949e;
+            font-size: 0.9em;
+            margin-bottom: 1.2em;
+        }
+        .related-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 16px;
+        }
+        .related-card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 20px;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.2s;
+            display: block;
+        }
+        .related-card:hover {
+            border-color: #58a6ff40;
+            background: #1c2129;
+            text-decoration: none;
+        }
+        .related-card .arxiv {
+            font-family: monospace;
+            color: #f0883e;
+            font-size: 0.85em;
+        }
+        .related-card h3 {
+            font-size: 1.05em;
+            color: #c9d1d9;
+            margin: 4px 0 6px;
+        }
+        .related-card .desc {
+            color: #8b949e;
+            font-size: 0.88em;
+            line-height: 1.5;
+        }
+
+        /* ============================================================
+           FADE-IN ANIMATION
+           ============================================================ */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(16px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ============================================================
+           BACK-TO-TOP BUTTON
+           ============================================================ */
+        .back-to-top {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            width: 42px;
+            height: 42px;
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 50%;
+            color: #8b949e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 200;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px #00000060;
+        }
+        .back-to-top.visible { opacity: 1; pointer-events: auto; }
+        .back-to-top:hover {
+            background: #30363d;
+            color: #c9d1d9;
+            transform: translateY(-2px);
+        }
+        .back-to-top svg { width: 18px; height: 18px; fill: currentColor; }
+
+        /* ============================================================
+           FOOTER
+           ============================================================ */
+        footer {
+            margin-top: 3em;
+            padding: 1.5em 0;
+            border-top: 1px solid #21262d;
+            color: #484f58;
+            font-size: 0.85em;
+            text-align: center;
+        }
+        footer a { color: #58a6ff; }
+        footer .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        footer .last-updated {
+            margin-top: 6px;
+            font-size: 0.9em;
+            color: #30363d;
+        }
+
+        /* ============================================================
+           RESPONSIVE / MOBILE
+           ============================================================ */
+        @media (max-width: 1400px) {
+            .toc-sidebar { display: none; }
+            .main-content { padding: 40px 20px; }
+        }
+        @media (min-width: 1401px) {
+            .nav-bar { display: none; }
+        }
+        @media (max-width: 768px) {
+            h1 { font-size: 1.5em; }
+            .note-section h2 { font-size: 1.25em; }
+            .screenshot-section { padding: 16px; }
+            .nav-bar { padding: 10px 12px; }
+            .nav-bar a { font-size: 0.75em; padding: 3px 8px; }
+            .callout { padding: 12px 14px; }
+            .back-to-top { bottom: 16px; right: 16px; width: 38px; height: 38px; }
+            .related-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 480px) {
+            body { font-size: 15px; }
+            h1 { font-size: 1.3em; }
+            .main-content { padding: 24px 14px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Progress bar -->
+<div class="progress-bar" id="progress-bar"></div>
+
+<div class="page-wrapper">
+
+    <!-- ===================== SIDEBAR (ToC) ===================== -->
+    <aside class="toc-sidebar" id="toc-sidebar">
+        <div class="toc-title">On This Page</div>
+        
+        <a href="#what-happens" data-section="what-happens">What Happens</a>
+        
+        <a href="#screenshot-01" data-section="screenshot-01" class="toc-screenshot">Grid World</a>
+        
+        <a href="#screenshot-02" data-section="screenshot-02" class="toc-screenshot">Preference Pair</a>
+        
+        <a href="#screenshot-03" data-section="screenshot-03" class="toc-screenshot">Reward Model</a>
+        
+        <a href="#screenshot-04" data-section="screenshot-04" class="toc-screenshot">PPO Training</a>
+        
+        <a href="#screenshot-05" data-section="screenshot-05" class="toc-screenshot">Policy Comparison</a>
+        
+        <a href="#playing-around" data-section="playing-around">Playing Around</a>
+        
+        <a href="#llm-parallel" data-section="llm-parallel">LLM Parallel Mapping</a>
+        
+        <a href="#architecture" data-section="architecture">Architecture</a>
+        
+        <a href="#project-structure" data-section="project-structure">Project Structure</a>
+        
+        <a href="#key-concepts" data-section="key-concepts">Key Concepts</a>
+        
+        <a href="#quick-start" data-section="quick-start">Quick Start</a>
+        
+        <a href="#related-papers" data-section="related-papers">Related Papers</a>
+        
+    </aside>
+
+    <!-- ===================== MAIN CONTENT ===================== -->
+    <main class="main-content">
+
+        <p class="breadcrumb"><a href="../../">LuCiD-papers</a> / adventures /</p>
+
+        <h1><span class="adventure-num">01</span> &mdash; Path-Finding Preference Game</h1>
+        <p class="meta">
+            <span class="badge">Done</span>
+            Full RLHF pipeline in a grid world — 7 source files, 2,843 lines, 201 tests &mdash;
+            <a href="https://github.com/csking101/LuCiD-papers/tree/main/coding-adventures/01-pathfinding-preference-game">GitHub source</a>
+        </p>
+
+        <div class="tags">
+            
+            <span class="tag">PyTorch</span>
+            
+            <span class="tag">Rich CLI</span>
+            
+            <span class="tag">RLHF</span>
+            
+            <span class="tag">PPO</span>
+            
+            <span class="tag">Bradley-Terry</span>
+            
+            <span class="tag">KL Divergence</span>
+            
+            <span class="tag">No GPU Required</span>
+            
+        </div>
+
+        <div class="tldr">
+            <div class="tldr-label">TL;DR</div>
+            <p>An interactive terminal demo of <strong>Reinforcement Learning from Human Feedback (RLHF)</strong> applied to grid-world navigation. Every step mirrors the LLM alignment pipeline &mdash; you are the human annotator. Pre-train an agent, rate trajectory pairs, train a Bradley-Terry reward model, and PPO fine-tune with KL penalty. Built with PyTorch + Rich. No GPU required. Runs in ~2 minutes.</p>
+        </div>
+
+        <!-- Top nav bar (shown on narrow screens where sidebar is hidden) -->
+        <nav class="nav-bar" id="nav-bar">
+            <span class="label">Sections:</span>
+            
+            <a href="#what-happens" data-section="what-happens">What Happens</a>
+            
+            <a href="#playing-around" data-section="playing-around">Playing Around</a>
+            
+            <a href="#llm-parallel" data-section="llm-parallel">LLM Parallel</a>
+            
+            <a href="#architecture" data-section="architecture">Architecture</a>
+            
+            <a href="#quick-start" data-section="quick-start">Quick Start</a>
+            
+        </nav>
+
+        <!-- ===================== CONTENT BLOCKS ===================== -->
+        
+        
+        <div class="note-section fade-in" id="what-happens">
+            <h2>What Happens</h2>
+            
+<p>The game walks you through the four-phase RLHF pipeline, with full visibility into what's happening at every step.</p>
+
+<h3>Phase 1: Pre-training</h3>
+<p>The agent learns basic navigation on an <strong>8&times;8 grid</strong> with a three-corridor obstacle layout using a simple hand-coded reward (+10 for reaching the goal, &minus;0.01 per step). This is <em>analogous to LLM pre-training</em> &mdash; the model learns basic competence before being aligned.</p>
+<p>The grid contains <strong>collectible pickups</strong> scattered along different routes:</p>
+<ul>
+    <li><strong>Coins</strong> (<code>+0.5</code> reward each) &mdash; placed on common paths</li>
+    <li><strong>Gems</strong> (<code>+2.0</code> reward each) &mdash; placed on detour routes, creating exploration tradeoffs</li>
+</ul>
+<p><strong>You'll see:</strong></p>
+<ul>
+    <li>The grid with the agent's evolving path, showing walls, pickups, and collection stats</li>
+    <li>Training metrics with sparkline trends (reward, goal rate, steps, losses, entropy)</li>
+    <li>After training: a policy arrow map (greedy action at every cell), a value heatmap V(s), and a neural network forward pass visualization</li>
+</ul>
+
+        </div>
+
+        
+        
+        
+        <div class="screenshot-section fade-in" id="screenshot-01">
+            <h2><span class="num">#1</span> Grid World Environment</h2>
+            <p class="desc">The 8×8 grid with a demo trajectory after pre-training. Cyan dots show the agent's path from start (S) to goal (G), collecting coins and gems along the way. Stats show steps, turns, unique cells visited, and pickups collected.</p>
+            <img src="01_grid_world.svg" alt="Grid World Environment" loading="lazy">
+        </div>
+
+        
+        
+        
+        <div class="note-section fade-in" id="phase2-note">
+            <h2>Phase 2: Human Preference Collection</h2>
+            
+<p>Two trajectories are shown side-by-side. You pick which path you prefer (or skip). Repeat 30 times. This is <em>exactly what human annotators do</em> when rating LLM responses.</p>
+<p><strong>You'll see:</strong></p>
+<ul>
+    <li>Side-by-side grids with path statistics (steps, turns, unique cells, pickups collected)</li>
+    <li>Your evolving preference patterns (e.g. "you tend to prefer shorter paths, fewer turns")</li>
+    <li>A progress bar and running tallies</li>
+</ul>
+<div class="callout callout-key">
+<p><strong>Your choices matter:</strong> The reward model in Phase 3 learns entirely from your preferences. If you prefer scenic gem-collecting routes, the agent will learn to take detours. If you prefer efficiency, it will learn the shortest path.</p>
+</div>
+
+        </div>
+
+        
+        
+        
+        <div class="screenshot-section fade-in" id="screenshot-02">
+            <h2><span class="num">#2</span> Human Preference Collection</h2>
+            <p class="desc">A preference pair from Phase 2. Two trajectories are displayed side-by-side with full path statistics. The annotator (you) picks which path is better — this is the same interface used to collect human feedback for LLM alignment.</p>
+            <img src="02_preferences.svg" alt="Human Preference Collection" loading="lazy">
+        </div>
+
+        
+        
+        
+        <div class="note-section fade-in" id="phase3-note">
+            <h2>Phase 3: Reward Model Training</h2>
+            
+<p>A neural network (the reward model) learns to predict your preferences using the <strong>Bradley-Terry model</strong>: <code>P(A &succ; B) = &sigma;(R(A) &minus; R(B))</code>. This is the <em>same math used in RLHF reward models</em> for LLMs.</p>
+<p><strong>You'll see:</strong></p>
+<ul>
+    <li>RM architecture diagram</li>
+    <li>Loss/accuracy curves as it learns</li>
+    <li>A learned reward heatmap showing what the RM thinks is valuable at each grid cell</li>
+    <li>Spot-checks of RM predictions against your actual labels</li>
+</ul>
+
+        </div>
+
+        
+        
+        
+        <div class="screenshot-section fade-in" id="screenshot-03">
+            <h2><span class="num">#3</span> Reward Model Training</h2>
+            <p class="desc">The RM architecture, training metrics (loss and accuracy curves with sparklines), a learned reward heatmap r(s) showing which grid cells the RM values most, and a spot-check comparing the RM's preference prediction against the human label.</p>
+            <img src="03_reward_model.svg" alt="Reward Model Training" loading="lazy">
+        </div>
+
+        
+        
+        
+        <div class="note-section fade-in" id="phase4-note">
+            <h2>Phase 4: RLHF / PPO Fine-tuning</h2>
+            
+<p>PPO optimises the agent's policy against the learned reward model, with a <strong>KL penalty</strong> to stay close to the pre-trained behaviour. This is <em>identical to the RLHF step</em> in LLM training (InstructGPT, ChatGPT, Claude, etc.).</p>
+<p><strong>You'll see:</strong></p>
+<ul>
+    <li>Pre-trained vs RLHF paths side-by-side, updating in real time</li>
+    <li>RM score and KL divergence trends</li>
+    <li>After training: neural network forward pass with reference comparison, and a policy diff showing exactly which cells changed</li>
+</ul>
+
+        </div>
+
+        
+        
+        
+        <div class="screenshot-section fade-in" id="screenshot-04">
+            <h2><span class="num">#4</span> PPO Fine-Tuning with KL Penalty</h2>
+            <p class="desc">The PPO fine-tuning dashboard. Training metrics (RM score, goal rate, KL divergence, entropy) with sparkline trends. A value heatmap V(s) from the RLHF policy, and the greedy policy arrow map showing the learned navigation strategy.</p>
+            <img src="04_ppo_training.svg" alt="PPO Fine-Tuning with KL Penalty" loading="lazy">
+        </div>
+
+        
+        
+        
+        <div class="note-section fade-in" id="conclusion-note">
+            <h2>Conclusion</h2>
+            
+<p>Final evaluation comparing pre-trained and RLHF policies across 50 episodes, the <strong>alignment tax</strong> (KL divergence cost), and a table mapping every step to its LLM equivalent.</p>
+
+        </div>
+
+        
+        
+        
+        <div class="screenshot-section fade-in" id="screenshot-05">
+            <h2><span class="num">#5</span> Pre-training vs RLHF Policy</h2>
+            <p class="desc">Three-column policy comparison (pre-trained arrows, RLHF arrows, diff), a results summary table with metrics and percent change, and the full LLM parallel mapping table showing how every game step corresponds to real LLM alignment.</p>
+            <img src="05_comparison.svg" alt="Pre-training vs RLHF Policy" loading="lazy">
+        </div>
+
+        
+        
+        
+        <div class="section-break"></div>
+
+        
+        
+        
+        <div class="note-section fade-in" id="playing-around">
+            <h2>Playing Around</h2>
+            
+<p>Here are ways to experiment and build deeper intuition:</p>
+
+<h3>Changing your preference strategy</h3>
+<p>Run <code>python app.py</code> multiple times with different annotation strategies in Phase 2:</p>
+<ul>
+    <li><strong>Efficiency-only:</strong> Always pick the shorter path. The agent will converge to the BFS-optimal route.</li>
+    <li><strong>Gem hunter:</strong> Always pick whichever path collects more gems. Watch the agent learn to take detours to high-value pickups.</li>
+    <li><strong>Scenic routes:</strong> Pick paths that visit more unique cells. The agent will learn to explore.</li>
+    <li><strong>Random/ties:</strong> Pick randomly or skip everything. The RM will have low accuracy and the RLHF phase will show noisy, unstable behaviour &mdash; a great demonstration of why annotation quality matters.</li>
+</ul>
+
+<h3>Tuning hyperparameters</h3>
+<p>Edit the config block at the top of <code>app.py</code>:</p>
+<pre><code>PRETRAIN_EPISODES = 150      # More episodes = stronger pre-trained baseline
+NUM_PREFERENCE_PAIRS = 30    # More pairs = better RM accuracy
+RM_EPOCHS = 100              # Reward model training epochs
+RLHF_EPISODES = 100          # RLHF fine-tuning episodes
+KL_COEFF = 0.2               # KL penalty coefficient (beta)</code></pre>
+
+<h3>Key experiments</h3>
+<ul>
+    <li>Set <code>KL_COEFF = 0.0</code> &mdash; removes the KL penalty entirely. Watch for <strong>reward hacking</strong>: the agent exploits the RM's blind spots.</li>
+    <li>Set <code>KL_COEFF = 2.0</code> &mdash; very strong KL constraint. The agent barely moves from pre-trained behaviour, demonstrating the alignment tax tradeoff.</li>
+    <li>Set <code>NUM_PREFERENCE_PAIRS = 5</code> &mdash; very few preferences. The RM trains on minimal data, leading to poor generalisation.</li>
+</ul>
+
+<h3>Observing specific phenomena</h3>
+<table>
+    <tr><th>Phenomenon</th><th>How to trigger</th><th>What to look for</th></tr>
+    <tr><td><strong>Reward hacking</strong></td><td>Set <code>KL_COEFF = 0.0</code></td><td>RM score climbs but paths look wrong</td></tr>
+    <tr><td><strong>Alignment tax</strong></td><td>Compare final KL at different <code>KL_COEFF</code> values</td><td>Higher beta = lower KL but less adaptation</td></tr>
+    <tr><td><strong>Mode collapse</strong></td><td><code>KL_COEFF = 0.0</code> + few preferences</td><td>Agent loops or oscillates</td></tr>
+    <tr><td><strong>Exploration failure</strong></td><td><code>PRETRAIN_ENTROPY_COEFF = 0.001</code></td><td>Agent only uses one corridor</td></tr>
+    <tr><td><strong>RM inaccuracy</strong></td><td><code>NUM_PREFERENCE_PAIRS = 3</code></td><td>Low RM accuracy, noisy RLHF</td></tr>
+</table>
+
+        </div>
+
+        
+        
+        
+        <div class="section-break"></div>
+
+        
+        
+        
+        <div class="note-section fade-in" id="llm-parallel">
+            <h2>LLM Parallel Mapping</h2>
+            
+<table>
+    <tr><th>What you do in the game</th><th>What happens in LLM RLHF</th></tr>
+    <tr><td>Pre-train agent on grid rewards</td><td>Pre-train LLM on internet text (next-token prediction)</td></tr>
+    <tr><td>Rate pairs of paths</td><td>Annotators rate pairs of model responses</td></tr>
+    <tr><td>Train reward model on preferences</td><td>Train RM on comparison data (Bradley-Terry)</td></tr>
+    <tr><td>PPO with KL penalty (&beta;)</td><td>PPO fine-tune LLM with KL penalty against SFT policy</td></tr>
+    <tr><td>Agent adopts YOUR path style</td><td>LLM adopts human-preferred response style</td></tr>
+    <tr><td>Reward hacking when &beta; = 0</td><td>LLM gaming metrics when KL constraint removed</td></tr>
+    <tr><td>Gems on detour routes</td><td>High-quality but costly responses (longer, more detailed)</td></tr>
+    <tr><td>Alignment tax (KL cost)</td><td>Quality-diversity tradeoff in aligned models</td></tr>
+</table>
+
+        </div>
+
+        
+        
+        
+        <div class="section-break"></div>
+
+        
+        
+        
+        <div class="note-section fade-in" id="architecture">
+            <h2>Architecture</h2>
+            
+<h3>Grid World (<code>env.py</code>)</h3>
+<ul>
+    <li>8&times;8 grid with start at <code>(0,0)</code> and goal at <code>(7,7)</code></li>
+    <li>Three-corridor wall layout forcing path choices</li>
+    <li>Collectible pickups: 7 coins (+0.5 each) and 3 gems (+2.0 each)</li>
+    <li>Pickups disappear on collection and reset each episode</li>
+    <li>BFS shortest-path computation for reachability checks</li>
+</ul>
+
+<h3>Policy Network (<code>policy.py</code>)</h3>
+<ul>
+    <li>Input: normalised <code>(row/size, col/size)</code> position</li>
+    <li>Architecture: <code>Linear(2, 64) &rarr; ReLU &rarr; Linear(64, 64) &rarr; ReLU &rarr; Linear(64, 5)</code></li>
+    <li>Output: 4 action logits (N/S/E/W) + 1 state value</li>
+    <li>PPO with clipped surrogate, GAE (&lambda;=0.95), entropy bonus</li>
+</ul>
+
+<h3>Reward Model (<code>reward_model.py</code>)</h3>
+<ul>
+    <li>Same input/architecture as policy, but outputs scalar reward per state</li>
+    <li>Bradley-Terry loss: <code>P(A &succ; B) = sigmoid(R_A &minus; R_B)</code></li>
+    <li>Supports tie labels (label = 0.5)</li>
+</ul>
+
+<h3>Preference Database (<code>preferences.py</code>)</h3>
+<ul>
+    <li>Stores <code>(trajectory_A, trajectory_B, label)</code> tuples</li>
+    <li>Analytics: count by preference, pattern detection, summary stats</li>
+</ul>
+
+<h3>Training Orchestrator (<code>train.py</code>)</h3>
+<ul>
+    <li><code>pretrain()</code>: PPO against hand-coded env rewards</li>
+    <li><code>train_rm()</code>: Bradley-Terry RM training loop</li>
+    <li><code>rlhf_train()</code>: PPO against RM scores + KL penalty</li>
+</ul>
+
+<h3>Visualisation (<code>viz.py</code>)</h3>
+<ul>
+    <li>All rendering via Rich (no external display needed)</li>
+    <li>Grid rendering, policy arrows, value/reward heatmaps, sparklines, neural network forward pass diagrams, preference pair display</li>
+</ul>
+
+        </div>
+
+        
+        
+        
+        <div class="section-break"></div>
+
+        
+        
+        
+        <div class="note-section fade-in" id="project-structure">
+            <h2>Project Structure</h2>
+            
+<pre><code>01-pathfinding-preference-game/
+├── app.py              # Main interactive terminal application (544 lines)
+├── env.py              # 8×8 grid world with pickups (385 lines)
+├── policy.py           # MLP policy + value network with PPO (470 lines)
+├── reward_model.py     # Bradley-Terry neural reward model (275 lines)
+├── preferences.py      # Preference database with analytics (194 lines)
+├── train.py            # Training orchestrator — all 4 phases (386 lines)
+├── viz.py              # Rich terminal rendering (589 lines)
+├── requirements.txt    # torch, numpy, rich
+└── tests/
+    ├── test_env.py            # 69 tests
+    ├── test_policy.py         # 33 tests
+    ├── test_preferences.py    # 27 tests
+    ├── test_reward_model.py   # 27 tests
+    ├── test_viz.py            # 37 tests
+    └── test_integration.py    #  8 tests
+                               # 201 tests total</code></pre>
+
+        </div>
+
+        
+        
+        
+        <div class="note-section fade-in" id="key-concepts">
+            <h2>Key Concepts Demonstrated</h2>
+            
+<ul>
+    <li><strong>Bradley-Terry preference model</strong> &mdash; the mathematical foundation of RLHF</li>
+    <li><strong>PPO clipped surrogate</strong> &mdash; the optimisation algorithm used in ChatGPT, Claude, etc.</li>
+    <li><strong>KL divergence penalty</strong> &mdash; prevents reward hacking / mode collapse</li>
+    <li><strong>Reward overoptimisation</strong> &mdash; observable when beta is set to zero</li>
+    <li><strong>Generalised Advantage Estimation (GAE)</strong> &mdash; variance reduction in policy gradients</li>
+    <li><strong>Alignment tax</strong> &mdash; the KL divergence cost of adapting to human preferences</li>
+    <li><strong>Exploration vs exploitation</strong> &mdash; entropy bonus encourages corridor discovery</li>
+</ul>
+
+        </div>
+
+        
+        
+        
+        <div class="section-break"></div>
+
+        
+        
+        
+        <div class="note-section fade-in" id="quick-start">
+            <h2>Quick Start</h2>
+            
+<pre><code># From the repo root
+cd coding-adventures/01-pathfinding-preference-game
+
+# Install dependencies (if not using the repo venv)
+pip install -r requirements.txt
+
+# Run the game
+python app.py</code></pre>
+<p>You'll be guided through all four phases interactively. Press Enter to advance between sections.</p>
+
+<h3>Running Tests</h3>
+<pre><code># All 201 tests (~9 seconds on CPU)
+python -m pytest tests/ -v
+
+# Quick smoke test
+python -m pytest tests/ -x -q</code></pre>
+
+        </div>
+
+        
+        
+
+        
+        <!-- ===================== RELATED PAPERS ===================== -->
+        <div class="section-break"></div>
+        <div class="related-section fade-in" id="related-papers">
+            <h2>Related Papers</h2>
+            <p class="related-subtitle">This adventure implements concepts from these papers in the LuCiD-papers collection.</p>
+            <div class="related-grid">
+                
+                <a class="related-card" href="../../papers/1706.03741/">
+                    <span class="arxiv">1706.03741</span>
+                    <h3>Deep Reinforcement Learning from Human Preferences</h3>
+                    <p class="desc">Christiano et al. (2017) — The foundational RLHF paper. Train RL agents using human preference comparisons.</p>
+                </a>
+                
+                <a class="related-card" href="../../papers/1707.06347/">
+                    <span class="arxiv">1707.06347</span>
+                    <h3>Proximal Policy Optimization Algorithms</h3>
+                    <p class="desc">Schulman et al. (2017) — PPO, the RL optimizer used inside RLHF.</p>
+                </a>
+                
+                <a class="related-card" href="../../papers/2009.01325/">
+                    <span class="arxiv">2009.01325</span>
+                    <h3>Learning to Summarize from Human Feedback</h3>
+                    <p class="desc">Stiennon et al. (2020) — Applies RLHF to text summarization at scale.</p>
+                </a>
+                
+            </div>
+        </div>
+        
+
+        <footer>
+            <div class="footer-links">
+                <a href="../../">Back to LuCiD-papers</a>
+                <a href="https://github.com/csking101/LuCiD-papers/tree/main/coding-adventures/01-pathfinding-preference-game">View source on GitHub</a>
+            </div>
+            <p class="last-updated">Last updated: May 2026</p>
+            <p class="last-updated">Notes by Chinmaya Sahu. Content polish, code, visualizations, and web design by AI.</p>
+        </footer>
+
+    </main>
+</div>
+
+<!-- Back to top button -->
+<button class="back-to-top" id="back-to-top" title="Back to top">
+    <svg viewBox="0 0 16 16"><path d="M8 2.5l5.5 5.5H10v5.5H6V8H2.5L8 2.5z"/></svg>
+</button>
+
+<script>
+(function() {
+    'use strict';
+
+    // Scroll progress bar
+    const progressBar = document.getElementById('progress-bar');
+    function updateProgress() {
+        const scrollTop = window.scrollY;
+        const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+        const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+        progressBar.style.width = progress + '%';
+    }
+
+    // Back-to-top button
+    const backToTop = document.getElementById('back-to-top');
+    function updateBackToTop() {
+        if (window.scrollY > 400) {
+            backToTop.classList.add('visible');
+        } else {
+            backToTop.classList.remove('visible');
+        }
+    }
+    backToTop.addEventListener('click', function() {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    let ticking = false;
+    window.addEventListener('scroll', function() {
+        if (!ticking) {
+            requestAnimationFrame(function() {
+                updateProgress();
+                updateBackToTop();
+                ticking = false;
+            });
+            ticking = true;
+        }
+    });
+
+    // Active section highlighting
+    const tocLinks = document.querySelectorAll('.toc-sidebar a[data-section]');
+    const navLinks = document.querySelectorAll('.nav-bar a[data-section]');
+
+    const sectionObserver = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+                const id = entry.target.id;
+                tocLinks.forEach(function(link) {
+                    if (link.getAttribute('data-section') === id) {
+                        link.classList.add('active');
+                    } else {
+                        link.classList.remove('active');
+                    }
+                });
+                navLinks.forEach(function(link) {
+                    if (link.getAttribute('data-section') === id) {
+                        link.classList.add('active');
+                    } else {
+                        link.classList.remove('active');
+                    }
+                });
+            }
+        });
+    }, {
+        rootMargin: '-10% 0px -75% 0px',
+        threshold: 0
+    });
+
+    document.querySelectorAll('[id]').forEach(function(section) {
+        if (section.id) sectionObserver.observe(section);
+    });
+
+    // Fade-in on scroll
+    const fadeObserver = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+                fadeObserver.unobserve(entry.target);
+            }
+        });
+    }, {
+        rootMargin: '0px 0px -60px 0px',
+        threshold: 0.05
+    });
+
+    document.querySelectorAll('.fade-in').forEach(function(el) {
+        fadeObserver.observe(el);
+    });
+
+    updateProgress();
+    updateBackToTop();
+})();
+</script>
+
+</body>
+</html>
