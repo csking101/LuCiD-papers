@@ -409,5 +409,13 @@ PAGE_DATA = {
             "url": "../../adventures/04/",
             "tags": ["Qwen2.5-1.5B", "Rich CLI", "128 Tests"],
         },
+        {
+            "num": "05",
+            "title": "Intent Hooks",
+            "status": "Done",
+            "desc": "Use PyTorch forward hooks to intercept hidden states and train linear probes to classify user intent. Build a guardrail that blocks harmful prompts before generation. 100% probe accuracy at layer 13/28, 100% jailbreak catch rate. 174 tests.",
+            "url": "../../adventures/05/",
+            "tags": ["Qwen2.5-1.5B", "Rich CLI", "174 Tests"],
+        },
     ],
 }

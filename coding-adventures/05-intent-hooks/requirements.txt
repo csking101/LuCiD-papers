@@ -1,0 +1,5 @@
+rich>=13.0
+torch>=2.0
+numpy>=1.24
+transformers>=4.40
+accelerate>=0.30
