@@ -1,0 +1,1696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2203.02155 — Training Language Models to Follow Instructions with Human Feedback | LuCiD-papers</title>
+    <script>
+        MathJax = {
+            tex: { inlineMath: [['$','$']], displayMath: [['$$','$$']] },
+            options: { skipHtmlTags: ['script','noscript','style','textarea','code'] }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+    
+    <style>
+        /* ============================================================
+           RESET & BASE
+           ============================================================ */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            line-height: 1.7;
+            font-size: 16px;
+        }
+        a { color: #58a6ff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        /* ============================================================
+           PROGRESS BAR
+           ============================================================ */
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            width: 0%;
+            background: linear-gradient(90deg, #58a6ff, #d2a8ff, #f0883e);
+            z-index: 9999;
+            transition: width 0.1s linear;
+        }
+
+        /* ============================================================
+           TWO-COLUMN LAYOUT
+           ============================================================ */
+        .page-wrapper {
+            display: flex;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        /* --- Sidebar (ToC) --- */
+        .toc-sidebar {
+            position: sticky;
+            top: 0;
+            align-self: flex-start;
+            width: 240px;
+            min-width: 240px;
+            height: 100vh;
+            overflow-y: auto;
+            padding: 40px 16px 40px 24px;
+            border-right: 1px solid #21262d;
+            background: #0d1117;
+            z-index: 50;
+        }
+        .toc-sidebar::-webkit-scrollbar { width: 4px; }
+        .toc-sidebar::-webkit-scrollbar-track { background: transparent; }
+        .toc-sidebar::-webkit-scrollbar-thumb { background: #30363d; border-radius: 2px; }
+
+        .toc-sidebar .toc-title {
+            font-size: 0.75em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #484f58;
+            margin-bottom: 12px;
+        }
+        .toc-sidebar a {
+            display: block;
+            padding: 5px 10px;
+            margin: 1px 0;
+            font-size: 0.82em;
+            color: #8b949e;
+            border-left: 2px solid transparent;
+            border-radius: 0 4px 4px 0;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        .toc-sidebar a:hover {
+            color: #c9d1d9;
+            background: #161b22;
+            text-decoration: none;
+        }
+        .toc-sidebar a.active {
+            color: #58a6ff;
+            border-left-color: #58a6ff;
+            background: #161b2280;
+            font-weight: 600;
+        }
+        .toc-sidebar a.toc-viz {
+            color: #6e7681;
+            font-size: 0.78em;
+            padding-left: 18px;
+        }
+        .toc-sidebar a.toc-viz.active {
+            color: #f0883e;
+            border-left-color: #f0883e;
+        }
+
+        /* --- Main content --- */
+        .main-content {
+            flex: 1;
+            min-width: 0;
+            max-width: 1200px;
+            padding: 40px 40px 40px 48px;
+        }
+
+        /* ============================================================
+           HEADER
+           ============================================================ */
+        .breadcrumb { font-size: 0.9em; color: #8b949e; margin-bottom: 1em; }
+        .breadcrumb a { color: #8b949e; }
+        .breadcrumb a:hover { color: #58a6ff; }
+        h1 {
+            font-size: 2.1em;
+            color: #e6edf3;
+            margin-bottom: 0.25em;
+            line-height: 1.25;
+        }
+        .meta { color: #8b949e; font-size: 0.95em; margin-bottom: 1.5em; }
+        .meta .arxiv { font-family: monospace; color: #f0883e; }
+
+        /* ============================================================
+           NAVIGATION BAR
+           ============================================================ */
+        .nav-bar {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 2em;
+            position: sticky;
+            top: 3px;
+            z-index: 100;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 4px;
+        }
+        .nav-bar span.label { color: #8b949e; font-size: 0.85em; margin-right: 6px; }
+        .nav-bar a {
+            display: inline-block;
+            padding: 3px 10px;
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            font-size: 0.8em;
+            color: #c9d1d9;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        .nav-bar a:hover { background: #30363d; text-decoration: none; }
+        .nav-bar a.active {
+            background: #58a6ff20;
+            border-color: #58a6ff60;
+            color: #58a6ff;
+        }
+
+        /* ============================================================
+           VISUALIZATION GALLERY
+           ============================================================ */
+        .viz-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+            gap: 10px;
+            margin-bottom: 2.5em;
+        }
+        .viz-gallery-title {
+            font-size: 0.75em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #484f58;
+            margin-bottom: 10px;
+        }
+        .viz-card-mini {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            font-size: 0.78em;
+            color: #c9d1d9;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            border-left: 3px solid transparent;
+        }
+        .viz-card-mini:hover {
+            background: #1c2129;
+            border-color: #484f58;
+            text-decoration: none;
+        }
+        .viz-card-mini .mini-num {
+            font-weight: 700;
+            font-size: 1.1em;
+            min-width: 22px;
+        }
+        .viz-card-mini .mini-title { flex: 1; line-height: 1.3; }
+        .viz-card-mini .mini-tag {
+            font-size: 0.8em;
+            font-weight: 600;
+            padding: 1px 6px;
+            border-radius: 8px;
+        }
+        .viz-card-mini.tool-manim   { border-left-color: #3fb950; }
+        .viz-card-mini.tool-mpl     { border-left-color: #58a6ff; }
+        .viz-card-mini.tool-plotly   { border-left-color: #f0883e; }
+        .viz-card-mini.tool-multi    { border-left-color: #d2a8ff; }
+        .mini-tag-manim  { background: #3fb95020; color: #3fb950; }
+        .mini-tag-mpl    { background: #1f6feb20; color: #58a6ff; }
+        .mini-tag-plotly  { background: #f0883e20; color: #f0883e; }
+        .mini-tag-multi   { background: #d2a8ff20; color: #d2a8ff; }
+
+        /* ============================================================
+           NOTE SECTIONS
+           ============================================================ */
+        .note-section {
+            margin-bottom: 2.5em;
+            scroll-margin-top: 60px;
+        }
+        .note-section h2 {
+            font-size: 1.5em;
+            color: #58a6ff;
+            margin-bottom: 0.6em;
+            padding-bottom: 0.3em;
+            border-bottom: 1px solid #21262d;
+        }
+        .note-section h3 {
+            font-size: 1.2em;
+            color: #d2a8ff;
+            margin: 1.2em 0 0.5em;
+        }
+        .note-section h4 {
+            font-size: 1.05em;
+            color: #f0883e;
+            margin: 1em 0 0.4em;
+        }
+        .note-section p {
+            margin-bottom: 0.7em;
+            color: #c9d1d9;
+        }
+        .note-section ul, .note-section ol {
+            margin: 0.5em 0 1em 1.5em;
+            color: #c9d1d9;
+        }
+        .note-section li {
+            margin-bottom: 0.35em;
+            padding-left: 0.2em;
+        }
+        .note-section li::marker {
+            color: #484f58;
+        }
+        .note-section ol li::marker {
+            color: #58a6ff;
+            font-weight: 600;
+        }
+        .note-section ul ul {
+            margin-top: 0.3em;
+            margin-bottom: 0.3em;
+        }
+        .note-section em {
+            color: #f0883e;
+            font-style: italic;
+        }
+        .note-section strong {
+            color: #e6edf3;
+        }
+        .note-section .math-block {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 16px 20px;
+            margin: 1em 0;
+            overflow-x: auto;
+        }
+
+        /* --- Formal definition blockquote --- */
+        .formal-def {
+            border-left: 3px solid #d2a8ff;
+            background: #d2a8ff08;
+            padding: 16px 20px;
+            margin: 1.2em 0;
+            border-radius: 0 6px 6px 0;
+        }
+        .formal-def p { margin-bottom: 0.5em; }
+        .formal-def .math-block {
+            background: #0d1117;
+            border-color: #30363d;
+        }
+
+        /* --- Callout boxes --- */
+        .callout {
+            border-left: 3px solid #58a6ff;
+            background: #58a6ff08;
+            padding: 14px 18px;
+            margin: 1.2em 0;
+            border-radius: 0 6px 6px 0;
+            font-size: 0.95em;
+        }
+        .callout.callout-key {
+            border-left-color: #f0883e;
+            background: #f0883e08;
+        }
+        .callout.callout-key::before {
+            content: 'Key Idea';
+            display: block;
+            font-size: 0.8em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #f0883e;
+            margin-bottom: 6px;
+        }
+        .callout.callout-insight {
+            border-left-color: #d2a8ff;
+            background: #d2a8ff08;
+        }
+        .callout.callout-insight::before {
+            content: 'Insight';
+            display: block;
+            font-size: 0.8em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #d2a8ff;
+            margin-bottom: 6px;
+        }
+        .callout.callout-note {
+            border-left-color: #58a6ff;
+            background: #58a6ff08;
+        }
+        .callout.callout-note::before {
+            content: 'Note';
+            display: block;
+            font-size: 0.8em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #58a6ff;
+            margin-bottom: 6px;
+        }
+        .callout p { margin-bottom: 0.4em; }
+        .callout p:last-child { margin-bottom: 0; }
+
+        /* --- TL;DR box --- */
+        .tldr {
+            background: linear-gradient(135deg, #161b22, #1c2333);
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 20px 24px;
+            margin-bottom: 2em;
+        }
+        .tldr .tldr-label {
+            font-size: 0.75em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #f0883e;
+            margin-bottom: 8px;
+        }
+        .tldr p {
+            color: #c9d1d9;
+            font-size: 0.95em;
+            line-height: 1.7;
+            margin-bottom: 0;
+        }
+
+        /* --- Section dividers --- */
+        .section-break {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #30363d 20%, #30363d 80%, transparent);
+            margin: 2.5em 0;
+        }
+
+        /* ============================================================
+           VISUALIZATION SECTIONS
+           ============================================================ */
+        .viz-section {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 24px;
+            margin: 1.8em 0;
+            scroll-margin-top: 60px;
+            border-left: 3px solid #30363d;
+            position: relative;
+        }
+        .viz-section.viz-manim   { border-left-color: #3fb950; }
+        .viz-section.viz-mpl     { border-left-color: #58a6ff; }
+        .viz-section.viz-plotly   { border-left-color: #f0883e; }
+        .viz-section.viz-multi    { border-left-color: #d2a8ff; }
+
+        .viz-section h2 {
+            font-size: 1.3em;
+            color: #c9d1d9;
+            margin-bottom: 4px;
+        }
+        .viz-section h2 .num { color: #8b949e; font-weight: normal; }
+        .viz-section .tool-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75em;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .tag-manim { background: #3fb95020; color: #3fb950; }
+        .tag-matplotlib { background: #1f6feb20; color: #58a6ff; }
+        .tag-plotly { background: #f0883e20; color: #f0883e; }
+        .viz-section .desc {
+            color: #8b949e;
+            font-size: 0.9em;
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+        .viz-section video {
+            width: 100%;
+            border-radius: 6px;
+            background: #000;
+        }
+        .viz-section img {
+            width: 100%;
+            border-radius: 6px;
+            background: #0d1117;
+        }
+        .viz-section .iframe-wrapper {
+            position: relative;
+        }
+        .viz-section iframe {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            background: #0d1117;
+        }
+        .viz-section .open-link {
+            display: inline-block;
+            margin-top: 8px;
+            font-size: 0.85em;
+            color: #f0883e;
+        }
+        .viz-section .open-link:hover { color: #f0883e; }
+        .viz-section .section-divider { margin: 14px 0; font-size: 0.85em; color: #484f58; }
+
+        /* --- Fullscreen button --- */
+        .fullscreen-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            color: #8b949e;
+            padding: 5px 8px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: all 0.2s;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .fullscreen-btn:hover {
+            background: #30363d;
+            color: #c9d1d9;
+        }
+        .fullscreen-btn svg {
+            width: 14px;
+            height: 14px;
+            fill: currentColor;
+        }
+
+        /* --- Fullscreen modal --- */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: #0d1117ee;
+            z-index: 10000;
+            padding: 20px;
+            cursor: pointer;
+        }
+        .modal-overlay.visible { display: flex; align-items: center; justify-content: center; }
+        .modal-overlay .modal-content {
+            width: 95vw;
+            height: 90vh;
+            position: relative;
+            cursor: default;
+        }
+        .modal-overlay iframe {
+            width: 100%;
+            height: 100%;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            background: #0d1117;
+        }
+        .modal-close {
+            position: absolute;
+            top: -36px;
+            right: 0;
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            color: #c9d1d9;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: background 0.2s;
+        }
+        .modal-close:hover { background: #30363d; }
+
+        /* ============================================================
+           PROGRESSION TABLE
+           ============================================================ */
+        .progression-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1em 0;
+            font-size: 0.9em;
+        }
+        .progression-table th {
+            text-align: left;
+            padding: 8px 12px;
+            background: #161b22;
+            border: 1px solid #30363d;
+            color: #58a6ff;
+            font-weight: 600;
+        }
+        .progression-table td {
+            padding: 8px 12px;
+            border: 1px solid #30363d;
+            color: #c9d1d9;
+        }
+        .progression-table tr:hover td {
+            background: #161b2260;
+        }
+
+        /* ============================================================
+           FADE-IN ANIMATION
+           ============================================================ */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(16px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ============================================================
+           BACK-TO-TOP BUTTON
+           ============================================================ */
+        .back-to-top {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            width: 42px;
+            height: 42px;
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 50%;
+            color: #8b949e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 200;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px #00000060;
+        }
+        .back-to-top.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .back-to-top:hover {
+            background: #30363d;
+            color: #c9d1d9;
+            transform: translateY(-2px);
+        }
+        .back-to-top svg { width: 18px; height: 18px; fill: currentColor; }
+
+        /* ============================================================
+           FOOTER
+           ============================================================ */
+        footer {
+            margin-top: 3em;
+            padding: 1.5em 0;
+            border-top: 1px solid #21262d;
+            color: #484f58;
+            font-size: 0.85em;
+            text-align: center;
+        }
+        footer a { color: #58a6ff; }
+        footer .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        footer .last-updated {
+            margin-top: 6px;
+            font-size: 0.9em;
+            color: #30363d;
+        }
+
+        /* ============================================================
+           CODING ADVENTURES SECTION
+           ============================================================ */
+        .adventures-section { margin-top: 2em; }
+        .adventures-section > h2 {
+            font-size: 1.5em;
+            color: #58a6ff;
+            margin-bottom: 0.3em;
+            padding-bottom: 0.3em;
+            border-bottom: 1px solid #21262d;
+        }
+        .adventures-subtitle {
+            color: #8b949e;
+            font-size: 0.9em;
+            margin-bottom: 1.2em;
+        }
+        .adventures-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 16px;
+        }
+        .adventure-card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 20px;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.2s;
+            display: block;
+        }
+        .adventure-card:hover {
+            border-color: #58a6ff40;
+            background: #1c2129;
+            text-decoration: none;
+        }
+        .adventure-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        .adventure-num {
+            font-weight: 700;
+            font-size: 1.4em;
+            color: #f0883e;
+            font-family: monospace;
+        }
+        .adventure-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75em;
+            font-weight: 600;
+            background: #3fb95033;
+            color: #3fb950;
+        }
+        .adventure-card h3 {
+            font-size: 1.1em;
+            color: #c9d1d9;
+            margin-bottom: 6px;
+        }
+        .adventure-desc {
+            color: #8b949e;
+            font-size: 0.88em;
+            line-height: 1.5;
+            margin-bottom: 10px;
+        }
+        .adventure-tags {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        .adventure-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.72em;
+            font-weight: 600;
+            background: #21262d;
+            color: #8b949e;
+            border: 1px solid #30363d;
+        }
+
+        /* ============================================================
+           RESPONSIVE / MOBILE
+           ============================================================ */
+        @media (max-width: 1400px) {
+            .toc-sidebar { display: none; }
+            .main-content { padding: 40px 20px; }
+        }
+        @media (min-width: 1401px) {
+            .nav-bar { display: none; }
+        }
+        @media (max-width: 768px) {
+            h1 { font-size: 1.5em; }
+            .note-section h2 { font-size: 1.25em; }
+            .viz-section { padding: 16px; }
+            .viz-section iframe { height: 400px; }
+            .viz-gallery { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
+            .viz-card-mini { padding: 6px 10px; font-size: 0.75em; }
+            .nav-bar { padding: 10px 12px; }
+            .nav-bar a { font-size: 0.75em; padding: 3px 8px; }
+            .callout, .formal-def { padding: 12px 14px; }
+            .back-to-top { bottom: 16px; right: 16px; width: 38px; height: 38px; }
+        }
+        @media (max-width: 480px) {
+            body { font-size: 15px; }
+            h1 { font-size: 1.3em; }
+            .main-content { padding: 24px 14px; }
+            .viz-section iframe { height: 320px; }
+            .viz-gallery { grid-template-columns: 1fr 1fr; }
+            .adventures-grid { grid-template-columns: 1fr; }
+        }
+        
+    </style>
+</head>
+<body>
+
+<!-- Progress bar -->
+<div class="progress-bar" id="progress-bar"></div>
+
+<!-- Fullscreen modal -->
+<div class="modal-overlay" id="modal-overlay">
+    <div class="modal-content">
+        <button class="modal-close" id="modal-close">Close (Esc)</button>
+        <iframe id="modal-iframe" src="" title="Fullscreen visualization"></iframe>
+    </div>
+</div>
+
+<div class="page-wrapper">
+
+    <!-- ===================== SIDEBAR (ToC) ===================== -->
+    <aside class="toc-sidebar" id="toc-sidebar">
+        <div class="toc-title">On This Page</div>
+        
+        <a href="#abstract" data-section="abstract">Abstract</a>
+        
+        <a href="#introduction" data-section="introduction">Introduction</a>
+        
+        <a href="#viz-01" data-section="viz-01" class="toc-viz">InstructGPT Pipeline</a>
+        
+        <a href="#method" data-section="method">Method</a>
+        
+        <a href="#ppo-ptx" data-section="ppo-ptx">PPO-ptx Objective</a>
+        
+        <a href="#viz-02" data-section="viz-02" class="toc-viz">PPO-ptx Objective</a>
+        
+        <a href="#ranking" data-section="ranking">K-way Ranking</a>
+        
+        <a href="#viz-03" data-section="viz-03" class="toc-viz">K-way Batching</a>
+        
+        <a href="#data" data-section="data">Dataset & Tasks</a>
+        
+        <a href="#viz-04" data-section="viz-04" class="toc-viz">Task Distribution</a>
+        
+        <a href="#results" data-section="results">Results</a>
+        
+        <a href="#viz-05" data-section="viz-05" class="toc-viz">Winrate vs Baselines</a>
+        
+        <a href="#truthfulness" data-section="truthfulness">Truthfulness</a>
+        
+        <a href="#viz-06" data-section="viz-06" class="toc-viz">TruthfulQA Results</a>
+        
+        <a href="#toxicity" data-section="toxicity">Toxicity</a>
+        
+        <a href="#viz-07" data-section="viz-07" class="toc-viz">Toxicity Paradox</a>
+        
+        <a href="#alignment-tax" data-section="alignment-tax">Alignment Tax</a>
+        
+        <a href="#viz-08" data-section="viz-08" class="toc-viz">Alignment Tax Fix</a>
+        
+        <a href="#alignment-hierarchy" data-section="alignment-hierarchy">Who Are We Aligning To?</a>
+        
+        <a href="#viz-09" data-section="viz-09" class="toc-viz">Alignment Hierarchy</a>
+        
+        <a href="#discussion" data-section="discussion">Discussion</a>
+        
+        <a href="#viz-10" data-section="viz-10" class="toc-viz">Alignment Timeline</a>
+        
+    </aside>
+
+    <!-- ===================== MAIN CONTENT ===================== -->
+    <main class="main-content">
+
+        <p class="breadcrumb"><a href="../../">LuCiD-papers</a> / papers /</p>
+
+        <h1>Training Language Models to Follow Instructions with Human Feedback</h1>
+        <p class="meta">
+            <span class="arxiv">2203.02155</span> &mdash;
+            Ouyang, Wu, Jiang, Almeida, Wainwright, Mishkin, Zhang, Agarwal, Slama, Ray, Schulman, Hilton, Kelton, Miller, Simens, Askell, Welinder, Christiano, Leike, Lowe (2022) &mdash;
+            <a href="https://arxiv.org/abs/2203.02155">arXiv</a> &mdash;
+            <a href="https://github.com/csking101/LuCiD-papers/tree/main/papers/2203.02155">GitHub</a>
+            
+        </p>
+
+        <div class="tldr">
+            <div class="tldr-label">TL;DR</div>
+            <p>InstructGPT applies the <strong>RLHF pipeline</strong> from the summarization paper (Stiennon et al. 2020) to the much broader problem of <strong>following arbitrary human instructions</strong>. The same three-step recipe &mdash; SFT on labeler demonstrations, reward model from K-way rankings, PPO fine-tuning &mdash; but with two key innovations: <strong>PPO-ptx</strong> (mixing pretraining gradients to prevent alignment tax) and <strong>batched K-way ranking</strong> (grouping C(K,2) pairs per prompt as a single gradient step to prevent overfitting). The headline result: a <strong>1.3B InstructGPT</strong> model is preferred by humans over the <strong>175B GPT-3</strong> baseline. InstructGPT also hallucinates less (21% vs 41%) and is less toxic under respectful prompts &mdash; though it becomes <em>more</em> toxic when explicitly prompted to be biased.</p>
+        </div>
+
+        <!-- Top nav bar (shown on narrow screens where sidebar is hidden) -->
+        <nav class="nav-bar" id="nav-bar">
+            <span class="label">Sections:</span>
+            
+            <a href="#abstract" data-section="abstract">Abstract</a>
+            
+            <a href="#introduction" data-section="introduction">Intro</a>
+            
+            <a href="#method" data-section="method">Method</a>
+            
+            <a href="#data" data-section="data">Data</a>
+            
+            <a href="#results" data-section="results">Results</a>
+            
+            <a href="#truthfulness" data-section="truthfulness">Truth</a>
+            
+            <a href="#toxicity" data-section="toxicity">Toxicity</a>
+            
+            <a href="#alignment-tax" data-section="alignment-tax">Tax</a>
+            
+            <a href="#discussion" data-section="discussion">Discussion</a>
+            
+        </nav>
+
+        <!-- ===================== VISUALIZATION GALLERY ===================== -->
+        <p class="viz-gallery-title">Visualizations (10)</p>
+        <div class="viz-gallery">
+            
+            <a class="viz-card-mini tool-manim" href="#viz-01">
+                <span class="mini-num">1</span>
+                <span class="mini-title">InstructGPT Pipeline</span>
+                <span class="mini-tag mini-tag-manim">Manim</span>
+            </a>
+            
+            <a class="viz-card-mini tool-manim" href="#viz-02">
+                <span class="mini-num">2</span>
+                <span class="mini-title">PPO-ptx Objective</span>
+                <span class="mini-tag mini-tag-manim">Manim</span>
+            </a>
+            
+            <a class="viz-card-mini tool-manim" href="#viz-03">
+                <span class="mini-num">3</span>
+                <span class="mini-title">K-way Ranking Batching</span>
+                <span class="mini-tag mini-tag-manim">Manim</span>
+            </a>
+            
+            <a class="viz-card-mini tool-multi" href="#viz-04">
+                <span class="mini-num">4</span>
+                <span class="mini-title">Task Distribution</span>
+                <span class="mini-tag mini-tag-multi">MPL+Plotly</span>
+            </a>
+            
+            <a class="viz-card-mini tool-multi" href="#viz-05">
+                <span class="mini-num">5</span>
+                <span class="mini-title">Winrate vs Baselines</span>
+                <span class="mini-tag mini-tag-multi">MPL+Plotly</span>
+            </a>
+            
+            <a class="viz-card-mini tool-multi" href="#viz-06">
+                <span class="mini-num">6</span>
+                <span class="mini-title">TruthfulQA Results</span>
+                <span class="mini-tag mini-tag-multi">MPL+Plotly</span>
+            </a>
+            
+            <a class="viz-card-mini tool-multi" href="#viz-07">
+                <span class="mini-num">7</span>
+                <span class="mini-title">Toxicity Paradox</span>
+                <span class="mini-tag mini-tag-multi">MPL+Plotly</span>
+            </a>
+            
+            <a class="viz-card-mini tool-multi" href="#viz-08">
+                <span class="mini-num">8</span>
+                <span class="mini-title">Alignment Tax & PPO-ptx</span>
+                <span class="mini-tag mini-tag-multi">MPL+Plotly</span>
+            </a>
+            
+            <a class="viz-card-mini tool-mpl" href="#viz-09">
+                <span class="mini-num">9</span>
+                <span class="mini-title">Alignment Hierarchy</span>
+                <span class="mini-tag mini-tag-mpl">Matplotlib</span>
+            </a>
+            
+            <a class="viz-card-mini tool-manim" href="#viz-10">
+                <span class="mini-num">10</span>
+                <span class="mini-title">Alignment Timeline</span>
+                <span class="mini-tag mini-tag-manim">Manim</span>
+            </a>
+            
+        </div>
+
+        <!-- ===================== CONTENT BLOCKS ===================== -->
+        
+        
+        <!-- ==================== ABSTRACT ==================== -->
+        <div class="note-section fade-in" id="abstract">
+            <h2>Abstract</h2>
+            
+            <p>Making language models bigger does not inherently make them better at following user intent. Large models can generate outputs that are <strong>untruthful, toxic, or simply not helpful</strong> to the user. The authors show that by fine-tuning with human feedback, it's possible to align language models with user intent on a wide range of tasks.</p>
+            <ul>
+                <li>Start with a set of labeler-written prompts and prompts submitted through the OpenAI API.</li>
+                <li>Collect a dataset of <strong>labeler demonstrations</strong> of desired behavior &rarr; supervised fine-tuning (SFT).</li>
+                <li>Collect a dataset of <strong>labeler rankings</strong> of model outputs &rarr; train a reward model (RM).</li>
+                <li>Use the reward model as a reward signal to fine-tune the SFT model with <strong>PPO</strong>.</li>
+            </ul>
+            <div class="callout callout-key">
+                <p>The resulting InstructGPT models (1.3B parameters) are preferred to outputs from the 175B GPT-3, despite having 100x fewer parameters. InstructGPT shows improvements in truthfulness and reductions in toxic output generation.</p>
+            </div>
+        
+        </div>
+
+        
+        
+        
+        <!-- ==================== INTRODUCTION ==================== -->
+        <div class="note-section fade-in" id="introduction">
+            <h2>Introduction</h2>
+            
+            <p>Large language models can be "prompted" to perform a wide range of NLP tasks. However, these models often express <strong>unintended behaviors</strong>: making up facts, generating biased or toxic text, or simply not following the user's instruction. This is because the language modeling objective &mdash; predicting the next token &mdash; is <em>different from</em> the objective of "follow the user's instructions helpfully and safely."</p>
+
+            <p>InstructGPT addresses this by training GPT-3 to act as an <strong>instruction-following assistant</strong> using the same RLHF pipeline established in Stiennon et al. (2020) for summarization, but applied to a much broader task distribution:</p>
+            <ul>
+                <li><strong>Generation</strong> (45.6%), <strong>Open QA</strong> (12.4%), <strong>Brainstorming</strong> (11.2%), Chat (8.4%), Rewrite (6.6%), Summarization (4.2%), and more.</li>
+                <li>Prompts come from both hired labelers (who write diverse tasks) and real OpenAI API users.</li>
+            </ul>
+
+            <div class="callout callout-insight">
+                <p>The key scaling insight: the same SFT &rarr; RM &rarr; PPO recipe that worked for summarization also works for the much harder problem of general instruction-following. The innovations are in the details: K-way ranking for more efficient labeling, PPO-ptx for preventing capability regression, and a much broader task distribution.</p>
+            </div>
+        
+        </div>
+
+        
+        
+        
+        <!-- Viz 1: InstructGPT Pipeline -->
+        <div class="viz-section viz-manim fade-in" id="viz-01">
+            <h2><span class="num">#1</span> InstructGPT Pipeline</h2>
+            
+            <span class="tool-tag tag-manim">Manim</span>
+            
+            <p class="desc">Animated walkthrough of the 3-step InstructGPT pipeline: SFT on 13K labeler demonstrations, reward model training from K-way rankings (33K prompts), and PPO-ptx with pretraining gradient mixing.</p>
+            
+            <video controls preload="metadata">
+                <source src="InstructGPTPipeline.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+            
+            
+            
+        </div>
+
+        
+        
+        
+        <div class="section-break"></div>
+
+        
+        
+        
+        <!-- ==================== METHOD ==================== -->
+        <div class="note-section fade-in" id="method">
+            <h2>Method</h2>
+            
+            <h3>Three-Step Pipeline</h3>
+            <p>The methodology follows the same structure as the summarization paper, with important refinements:</p>
+            <ol>
+                <li><strong>Supervised Fine-Tuning (SFT)</strong> &mdash; Fine-tune GPT-3 on ~13K labeler demonstrations of desired assistant behavior. Train for 16 epochs with cosine learning rate decay and dropout of 0.2.</li>
+                <li><strong>Reward Model (RM)</strong> &mdash; Train a 6B model to predict human preferences from ~33K prompts with K-way ranked outputs. Only 6B because 175B RM training was unstable.</li>
+                <li><strong>PPO-ptx</strong> &mdash; Optimize the SFT model against the reward model using PPO, with an added pretraining gradient to prevent capability regression.</li>
+            </ol>
+
+            <h3>Model Sizes</h3>
+            <ul>
+                <li>SFT, RM, and RL models at <strong>1.3B, 6B, and 175B</strong> parameters.</li>
+                <li>The reward model is always <strong>6B</strong> (175B training was unstable).</li>
+                <li>SFT model is initialized from GPT-3 pretrained weights.</li>
+            </ul>
+
+            <div class="callout callout-key">
+                <p>A crucial design choice: the SFT model <strong>overfits on validation loss after 1 epoch</strong> but continues to improve on human preference metrics when trained for 16 epochs. This mirrors a finding in the summarization paper and suggests that pure log-likelihood on demonstrations is a poor proxy for what humans actually want.</p>
+            </div>
+        
+        </div>
+
+        
+        
+        
+        <div class="section-break"></div>
+
+        
+        
+        
+        <!-- ==================== THE PPO-PTX OBJECTIVE ==================== -->
+        <div class="note-section fade-in" id="ppo-ptx">
+            <h2>The PPO-ptx Objective</h2>
+            
+            <p>The standard PPO objective from the summarization paper includes a KL penalty against the SFT policy:</p>
+
+            <div class="formal-def">
+                <p><strong>Standard PPO Objective</strong></p>
+                <div class="math-block">
+                    $$\text{objective}(\phi) = \mathbb{E}_{(x,y) \sim D_{\pi_\phi^{RL}}}\!\left[r_\theta(x,y) - \beta\log\frac{\pi_\phi^{RL}(y|x)}{\pi^{SFT}(y|x)}\right]$$
+                </div>
+            </div>
+
+            <p>InstructGPT adds a <strong>pretraining gradient</strong> to prevent the model from forgetting its general capabilities:</p>
+
+            <div class="formal-def">
+                <p><strong>PPO-ptx Objective</strong></p>
+                <div class="math-block">
+                    $$\text{objective}(\phi) = \mathbb{E}\!\left[r_\theta(x,y) - \beta\log\frac{\pi_\phi^{RL}(y|x)}{\pi^{SFT}(y|x)}\right] + \gamma\,\mathbb{E}_{x \sim D_{\text{pretrain}}}\!\left[\log\pi_\phi^{RL}(x)\right]$$
+                </div>
+                <p>where $\beta = 0.02$ (per-token KL penalty) and $\gamma = 27.8$ (pretraining mix coefficient).</p>
+            </div>
+
+            <div class="callout callout-insight">
+                <p>The pretraining term $\gamma \cdot \mathbb{E}[\log\pi(x)]$ is just the standard language modeling loss on pretraining data, mixed into each PPO update. With $\gamma = 0$ (plain PPO), HellaSwag accuracy drops from 78.6 to 71.4. With $\gamma = 27.8$ (PPO-ptx), it recovers to 78.8. This elegantly solves the alignment tax at the cost of slightly slower RL convergence.</p>
+            </div>
+        
+        </div>
+
+        
+        
+        
+        <!-- Viz 2: PPO-ptx Objective -->
+        <div class="viz-section viz-manim fade-in" id="viz-02">
+            <h2><span class="num">#2</span> PPO-ptx Objective</h2>
+            
+            <span class="tool-tag tag-manim">Manim</span>
+            
+            <p class="desc">Step-by-step animated derivation of the PPO-ptx objective: from standard RL reward to KL-penalized reward (from the summarization paper) to the final pretraining-mixed objective that prevents alignment tax.</p>
+            
+            <video controls preload="metadata">
+                <source src="PPOptxObjective.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+            
+            
+            
+        </div>
+
+        
+        
+        
+        <div class="section-break"></div>
+
+        
+        
+        
+        <!-- ==================== K-WAY RANKING STRATEGY ==================== -->
+        <div class="note-section fade-in" id="ranking">
+            <h2>K-way Ranking Strategy</h2>
+            
+            <p>Instead of collecting pairwise comparisons (as in the summarization paper), InstructGPT has labelers <strong>rank K outputs</strong> (K=4 to 9) from best to worst for each prompt. This produces $\binom{K}{2}$ comparison pairs per prompt.</p>
+
+            <div class="formal-def">
+                <p><strong>Batched RM Loss</strong></p>
+                <div class="math-block">
+                    $$\text{loss}(\theta) = -\frac{1}{\binom{K}{2}}\sum_{(w,l)\,:\,y_w \succ y_l}\log\sigma\!\left(r_\theta(x,y_w) - r_\theta(x,y_l)\right)$$
+                </div>
+                <p>All $\binom{K}{2}$ pairs from a single prompt are treated as <strong>one batch element</strong>, with a single forward pass per completion.</p>
+            </div>
+
+            <p>Why batching matters:</p>
+            <ul>
+                <li><strong>Naive approach</strong>: each pair is a separate data point &rarr; the same completion appears in multiple gradient steps &rarr; overfitting.</li>
+                <li><strong>Batched approach</strong>: all pairs from one prompt grouped together &rarr; one forward pass per completion &rarr; much less overfitting.</li>
+            </ul>
+
+            <div class="callout callout-key">
+                <p>The batched approach is both more <strong>computationally efficient</strong> (fewer forward passes) and <strong>statistically better</strong> (less overfitting). With K=9, you get $\binom{9}{2}=36$ comparison pairs from a single labeler ranking session, making the 33K prompt dataset equivalent to ~660K comparison pairs.</p>
+            </div>
+        
+        </div>
+
+        
+        
+        
+        <!-- Viz 3: K-way Ranking Batching -->
+        <div class="viz-section viz-manim fade-in" id="viz-03">
+            <h2><span class="num">#3</span> K-way Ranking Batching</h2>
+            
+            <span class="tool-tag tag-manim">Manim</span>
+            
+            <p class="desc">Animated demonstration of how K outputs per prompt get ranked by labelers, producing C(K,2) comparison pairs. Contrasts the naive (overfitting) vs batched (efficient) training approaches.</p>
+            
+            <video controls preload="metadata">
+                <source src="KwayRankingBatching.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+            
+            
+            
+        </div>
+
+        
+        
+        
+        <div class="section-break"></div>
+
+        
+        
+        
+        <!-- ==================== DATASET & TASK DISTRIBUTION ==================== -->
+        <div class="note-section fade-in" id="data">
+            <h2>Dataset & Task Distribution</h2>
+            
+            <p>The training data comes from two sources:</p>
+            <ul>
+                <li><strong>Labeler-written prompts</strong>: ~40 contractors write diverse tasks spanning generation, QA, brainstorming, chat, rewriting, summarization, classification, and extraction.</li>
+                <li><strong>Customer API prompts</strong>: real prompts from OpenAI API users (with PII filtering).</li>
+            </ul>
+
+            <h3>Dataset Sizes (Table 6)</h3>
+            <ul>
+                <li><strong>SFT</strong>: ~13K demonstrations (mostly labeler-written)</li>
+                <li><strong>RM</strong>: ~33K prompts with K-way rankings (mostly customer API)</li>
+                <li><strong>PPO</strong>: ~31K prompts used as RL training distribution (all customer API)</li>
+            </ul>
+
+            <p>The task distribution (Table 1) is heavily skewed toward <strong>generation</strong> (45.6%), followed by open QA (12.4%), brainstorming (11.2%), and chat (8.4%).</p>
+
+            <div class="callout callout-insight">
+                <p>The shift from labeler-written to customer API prompts as you move from SFT to RM to PPO is deliberate: SFT needs high-quality demonstrations (labeler expertise), while RM and PPO benefit from covering the <em>real distribution</em> of user queries. This ensures the final model is aligned to what actual users ask, not just what labelers imagine users might ask.</p>
+            </div>
+        
+        </div>
+
+        
+        
+        
+        <!-- Viz 4: Task Distribution & Dataset -->
+        <div class="viz-section viz-multi fade-in" id="viz-04">
+            <h2><span class="num">#4</span> Task Distribution & Dataset</h2>
+            
+            <span class="tool-tag tag-matplotlib">Matplotlib</span>
+            <span class="tool-tag tag-plotly">Plotly</span>
+            
+            <p class="desc">Two-panel visualization: donut chart of API prompt categories (Table 1) and stacked bar chart of dataset sizes by source (Table 6), showing the shift from labeler to customer data across pipeline stages.</p>
+            
+            
+            
+            <p class="section-divider">Static figure</p>
+            
+            <img src="https://raw.githubusercontent.com/csking101/LuCiD-papers/main/papers/2203.02155/output/static/04_task_distribution_dataset.png" alt="Task Distribution & Dataset" loading="lazy">
+            
+            
+            <p class="section-divider">Interactive demo &mdash; <a class="open-link" href="04_task_distribution_dataset.html" target="_blank">Open in new tab &rarr;</a></p>
+            <div class="iframe-wrapper">
+                <button class="fullscreen-btn" data-src="04_task_distribution_dataset.html" title="View fullscreen">
+                    <svg viewBox="0 0 16 16"><path d="M1.5 1h4a.5.5 0 010 1H2v3.5a.5.5 0 01-1 0v-4a.5.5 0 01.5-.5zm13 0a.5.5 0 01.5.5v4a.5.5 0 01-1 0V2h-3.5a.5.5 0 010-1h4zM1 10.5a.5.5 0 011 0V14h3.5a.5.5 0 010 1h-4a.5.5 0 01-.5-.5v-4zm14 0a.5.5 0 01-1 0V14h-3.5a.5.5 0 010 1h4a.5.5 0 00.5-.5v-4z"/></svg>
+                    Fullscreen
+                </button>
+                <iframe src="04_task_distribution_dataset.html" loading="lazy" title="Task Distribution & Dataset interactive"></iframe>
+            </div>
+            
+        </div>
+
+        
+        
+        
+        <div class="section-break"></div>
+
+        
+        
+        
+        <!-- ==================== RESULTS: HUMAN PREFERENCE ==================== -->
+        <div class="note-section fade-in" id="results">
+            <h2>Results: Human Preference</h2>
+            
+            <p>The core evaluation uses human labelers rating model outputs on the API prompt distribution. The headline findings:</p>
+
+            <ul>
+                <li><strong>1.3B InstructGPT is preferred over 175B GPT-3</strong> &mdash; despite having 100x fewer parameters.</li>
+                <li>PPO and PPO-ptx models at all sizes significantly outperform their GPT-3 and SFT counterparts.</li>
+                <li>Labelers find InstructGPT outputs more <strong>helpful, truthful, and harmless</strong>.</li>
+                <li>InstructGPT <strong>hallucinates less</strong>: closed-domain hallucination drops from 41% (GPT-3) to 21% (PPO-ptx).</li>
+            </ul>
+
+            <div class="callout callout-key">
+                <p>The 1.3B &gt; 175B result is the paper's most striking finding. It demonstrates that <strong>alignment is more important than scale</strong> for producing outputs humans actually prefer. A well-aligned small model beats a much larger but misaligned one.</p>
+            </div>
+        
+        </div>
+
+        
+        
+        
+        <!-- Viz 5: Winrate vs Baselines -->
+        <div class="viz-section viz-multi fade-in" id="viz-05">
+            <h2><span class="num">#5</span> Winrate vs Baselines</h2>
+            
+            <span class="tool-tag tag-matplotlib">Matplotlib</span>
+            <span class="tool-tag tag-plotly">Plotly</span>
+            
+            <p class="desc">Grouped bar chart reproducing Figure 1: winrate against 175B SFT for all model variants. The headline: 1.3B PPO-ptx preferred over 175B GPT-3.</p>
+            
+            
+            
+            <p class="section-divider">Static figure</p>
+            
+            <img src="https://raw.githubusercontent.com/csking101/LuCiD-papers/main/papers/2203.02155/output/static/05_winrate_vs_baselines.png" alt="Winrate vs Baselines" loading="lazy">
+            
+            
+            <p class="section-divider">Interactive demo &mdash; <a class="open-link" href="05_winrate_vs_baselines.html" target="_blank">Open in new tab &rarr;</a></p>
+            <div class="iframe-wrapper">
+                <button class="fullscreen-btn" data-src="05_winrate_vs_baselines.html" title="View fullscreen">
+                    <svg viewBox="0 0 16 16"><path d="M1.5 1h4a.5.5 0 010 1H2v3.5a.5.5 0 01-1 0v-4a.5.5 0 01.5-.5zm13 0a.5.5 0 01.5.5v4a.5.5 0 01-1 0V2h-3.5a.5.5 0 010-1h4zM1 10.5a.5.5 0 011 0V14h3.5a.5.5 0 010 1h-4a.5.5 0 01-.5-.5v-4zm14 0a.5.5 0 01-1 0V14h-3.5a.5.5 0 010 1h4a.5.5 0 00.5-.5v-4z"/></svg>
+                    Fullscreen
+                </button>
+                <iframe src="05_winrate_vs_baselines.html" loading="lazy" title="Winrate vs Baselines interactive"></iframe>
+            </div>
+            
+        </div>
+
+        
+        
+        
+        <div class="section-break"></div>
+
+        
+        
+        
+        <!-- ==================== TRUTHFULNESS: TRUTHFULQA ==================== -->
+        <div class="note-section fade-in" id="truthfulness">
+            <h2>Truthfulness: TruthfulQA</h2>
+            
+            <p>InstructGPT shows significant improvements on the <strong>TruthfulQA</strong> benchmark, which tests whether models generate truthful answers to questions that humans might answer incorrectly due to common misconceptions.</p>
+
+            <ul>
+                <li>PPO-ptx 175B is truthful on <strong>50%</strong> of questions vs 22% for GPT-3 175B (&sim;2.3x improvement).</li>
+                <li>For "truthful <em>and</em> informative" (not just declining to answer), PPO-ptx achieves <strong>41%</strong> vs 19% for GPT-3.</li>
+                <li>Interestingly, smaller GPT-3 models are <em>more</em> truthful than larger ones &mdash; the "inverse scaling" phenomenon. InstructGPT reverses this trend.</li>
+            </ul>
+
+            <div class="callout callout-insight">
+                <p>The inverse scaling on truthfulness for GPT-3 suggests that larger models are better at reproducing convincing-sounding but false claims from the training data. RLHF counteracts this by teaching the model that humans prefer honest "I don't know" responses over confident misinformation.</p>
+            </div>
+        
+        </div>
+
+        
+        
+        
+        <!-- Viz 6: TruthfulQA Results -->
+        <div class="viz-section viz-multi fade-in" id="viz-06">
+            <h2><span class="num">#6</span> TruthfulQA Results</h2>
+            
+            <span class="tool-tag tag-matplotlib">Matplotlib</span>
+            <span class="tool-tag tag-plotly">Plotly</span>
+            
+            <p class="desc">Grouped bar chart of truthful and truthful+informative fractions across GPT-3/SFT/PPO/PPO-ptx at all sizes. Toggle between 175B-only and all-sizes views.</p>
+            
+            
+            
+            <p class="section-divider">Static figure</p>
+            
+            <img src="https://raw.githubusercontent.com/csking101/LuCiD-papers/main/papers/2203.02155/output/static/06_truthfulqa_results.png" alt="TruthfulQA Results" loading="lazy">
+            
+            
+            <p class="section-divider">Interactive demo &mdash; <a class="open-link" href="06_truthfulqa_results.html" target="_blank">Open in new tab &rarr;</a></p>
+            <div class="iframe-wrapper">
+                <button class="fullscreen-btn" data-src="06_truthfulqa_results.html" title="View fullscreen">
+                    <svg viewBox="0 0 16 16"><path d="M1.5 1h4a.5.5 0 010 1H2v3.5a.5.5 0 01-1 0v-4a.5.5 0 01.5-.5zm13 0a.5.5 0 01.5.5v4a.5.5 0 01-1 0V2h-3.5a.5.5 0 010-1h4zM1 10.5a.5.5 0 011 0V14h3.5a.5.5 0 010 1h-4a.5.5 0 01-.5-.5v-4zm14 0a.5.5 0 01-1 0V14h-3.5a.5.5 0 010 1h4a.5.5 0 00.5-.5v-4z"/></svg>
+                    Fullscreen
+                </button>
+                <iframe src="06_truthfulqa_results.html" loading="lazy" title="TruthfulQA Results interactive"></iframe>
+            </div>
+            
+        </div>
+
+        
+        
+        
+        <div class="section-break"></div>
+
+        
+        
+        
+        <!-- ==================== TOXICITY: THE PARADOX ==================== -->
+        <div class="note-section fade-in" id="toxicity">
+            <h2>Toxicity: The Paradox</h2>
+            
+            <p>Toxicity evaluation uses the Perspective API on RealToxicityPrompts. The results reveal a <strong>paradox</strong>:</p>
+
+            <ul>
+                <li>With <strong>respectful prompts</strong>: InstructGPT is significantly <em>less</em> toxic than GPT-3.</li>
+                <li>With <strong>standard prompts</strong>: InstructGPT is moderately less toxic.</li>
+                <li>With <strong>biased prompts</strong> (instructing toxicity): InstructGPT is <em>more</em> toxic than GPT-3.</li>
+            </ul>
+
+            <div class="callout callout-key">
+                <p>InstructGPT is better at <strong>following instructions</strong> &mdash; including harmful ones. When told to be biased, it's more effective at it than GPT-3. This highlights a fundamental tension in RLHF alignment: you can't just teach a model to follow instructions; you also need to teach it <em>which instructions to refuse</em>. The paper notes this as a significant limitation and area for future work.</p>
+            </div>
+        
+        </div>
+
+        
+        
+        
+        <!-- Viz 7: Toxicity Paradox -->
+        <div class="viz-section viz-multi fade-in" id="viz-07">
+            <h2><span class="num">#7</span> Toxicity Paradox</h2>
+            
+            <span class="tool-tag tag-matplotlib">Matplotlib</span>
+            <span class="tool-tag tag-plotly">Plotly</span>
+            
+            <p class="desc">Three prompt conditions (respectful/standard/biased) showing the toxicity paradox: InstructGPT less toxic when asked to be respectful, but MORE toxic when prompted to be biased.</p>
+            
+            
+            
+            <p class="section-divider">Static figure</p>
+            
+            <img src="https://raw.githubusercontent.com/csking101/LuCiD-papers/main/papers/2203.02155/output/static/07_toxicity_paradox.png" alt="Toxicity Paradox" loading="lazy">
+            
+            
+            <p class="section-divider">Interactive demo &mdash; <a class="open-link" href="07_toxicity_paradox.html" target="_blank">Open in new tab &rarr;</a></p>
+            <div class="iframe-wrapper">
+                <button class="fullscreen-btn" data-src="07_toxicity_paradox.html" title="View fullscreen">
+                    <svg viewBox="0 0 16 16"><path d="M1.5 1h4a.5.5 0 010 1H2v3.5a.5.5 0 01-1 0v-4a.5.5 0 01.5-.5zm13 0a.5.5 0 01.5.5v4a.5.5 0 01-1 0V2h-3.5a.5.5 0 010-1h4zM1 10.5a.5.5 0 011 0V14h3.5a.5.5 0 010 1h-4a.5.5 0 01-.5-.5v-4zm14 0a.5.5 0 01-1 0V14h-3.5a.5.5 0 010 1h4a.5.5 0 00.5-.5v-4z"/></svg>
+                    Fullscreen
+                </button>
+                <iframe src="07_toxicity_paradox.html" loading="lazy" title="Toxicity Paradox interactive"></iframe>
+            </div>
+            
+        </div>
+
+        
+        
+        
+        <div class="section-break"></div>
+
+        
+        
+        
+        <!-- ==================== THE ALIGNMENT TAX ==================== -->
+        <div class="note-section fade-in" id="alignment-tax">
+            <h2>The Alignment Tax</h2>
+            
+            <p>A major concern with RLHF: does aligning the model to human preferences <strong>degrade its general capabilities</strong>? This "alignment tax" is measured on standard NLP benchmarks:</p>
+
+            <ul>
+                <li><strong>PPO (no pretraining mix)</strong>: significant regression on HellaSwag (78.6&rarr;71.4), SQuAD (69.0&rarr;49.2), DROP (36.7&rarr;24.0), WMT FR&rarr;EN (32.6&rarr;18.4).</li>
+                <li><strong>PPO-ptx (with pretraining mix)</strong>: near-full recovery on all benchmarks &mdash; HellaSwag 78.8, SQuAD 65.8, DROP 36.5, FR&rarr;EN 33.8.</li>
+            </ul>
+
+            <div class="callout callout-key">
+                <p>PPO-ptx essentially eliminates the alignment tax. By mixing pretraining gradients ($\gamma = 27.8$) into each PPO step, the model retains its broad language understanding while still learning to follow instructions. The trade-off is slightly slower RL convergence, but the capability preservation is worth it.</p>
+            </div>
+        
+        </div>
+
+        
+        
+        
+        <!-- Viz 8: Alignment Tax & PPO-ptx Fix -->
+        <div class="viz-section viz-multi fade-in" id="viz-08">
+            <h2><span class="num">#8</span> Alignment Tax & PPO-ptx Fix</h2>
+            
+            <span class="tool-tag tag-matplotlib">Matplotlib</span>
+            <span class="tool-tag tag-plotly">Plotly</span>
+            
+            <p class="desc">Multi-panel comparison of 4 NLP benchmarks (HellaSwag, SQuAD, DROP, FR→EN) across GPT-3/SFT/PPO/PPO-ptx at 175B. PPO regresses on all; PPO-ptx recovers.</p>
+            
+            
+            
+            <p class="section-divider">Static figure</p>
+            
+            <img src="https://raw.githubusercontent.com/csking101/LuCiD-papers/main/papers/2203.02155/output/static/08_alignment_tax_ppoptx.png" alt="Alignment Tax & PPO-ptx Fix" loading="lazy">
+            
+            
+            <p class="section-divider">Interactive demo &mdash; <a class="open-link" href="08_alignment_tax_ppoptx.html" target="_blank">Open in new tab &rarr;</a></p>
+            <div class="iframe-wrapper">
+                <button class="fullscreen-btn" data-src="08_alignment_tax_ppoptx.html" title="View fullscreen">
+                    <svg viewBox="0 0 16 16"><path d="M1.5 1h4a.5.5 0 010 1H2v3.5a.5.5 0 01-1 0v-4a.5.5 0 01.5-.5zm13 0a.5.5 0 01.5.5v4a.5.5 0 01-1 0V2h-3.5a.5.5 0 010-1h4zM1 10.5a.5.5 0 011 0V14h3.5a.5.5 0 010 1h-4a.5.5 0 01-.5-.5v-4zm14 0a.5.5 0 01-1 0V14h-3.5a.5.5 0 010 1h4a.5.5 0 00.5-.5v-4z"/></svg>
+                    Fullscreen
+                </button>
+                <iframe src="08_alignment_tax_ppoptx.html" loading="lazy" title="Alignment Tax & PPO-ptx Fix interactive"></iframe>
+            </div>
+            
+        </div>
+
+        
+        
+        
+        <div class="section-break"></div>
+
+        
+        
+        
+        <!-- ==================== WHO ARE WE ALIGNING TO? ==================== -->
+        <div class="note-section fade-in" id="alignment-hierarchy">
+            <h2>Who Are We Aligning To?</h2>
+            
+            <p>The paper is remarkably honest about a fundamental question: <em>whose preferences are we actually training on?</em> There is a four-layer hierarchy:</p>
+
+            <ol>
+                <li><strong>Labelers</strong> (~40 contractors) &mdash; provide the actual training signal. English-speaking, screened for agreement with researchers, skewed demographics.</li>
+                <li><strong>Researchers</strong> &mdash; define the task, write labeling instructions, choose the labeler pool, design the reward criteria.</li>
+                <li><strong>Customers</strong> &mdash; API users (developers) whose prompts shape the RL training distribution. Business objectives may not align with end user interests.</li>
+                <li><strong>End Users</strong> &mdash; the people actually affected by model outputs. The most diverse group, but they have <strong>no direct voice</strong> in the training process.</li>
+            </ol>
+
+            <div class="callout callout-insight">
+                <p>The training signal flows inward: end users &rarr; customers &rarr; researchers &rarr; labelers &rarr; model. At each layer, preferences are filtered and potentially distorted. The model is ultimately aligned to <em>labeler</em> preferences, not end user preferences. This is a structural limitation that no amount of engineering can fully resolve without broader participation in the alignment process.</p>
+            </div>
+        
+        </div>
+
+        
+        
+        
+        <!-- Viz 9: Alignment Hierarchy -->
+        <div class="viz-section viz-mpl fade-in" id="viz-09">
+            <h2><span class="num">#9</span> Alignment Hierarchy</h2>
+            
+            <span class="tool-tag tag-matplotlib">Matplotlib</span>
+            
+            <p class="desc">Static infographic showing the four-layer alignment hierarchy (labelers → researchers → customers → end users) with annotations about biases and limitations at each layer.</p>
+            
+            
+            
+            <img src="https://raw.githubusercontent.com/csking101/LuCiD-papers/main/papers/2203.02155/output/static/09_who_are_we_aligning_to.png" alt="Alignment Hierarchy" loading="lazy">
+            
+            
+        </div>
+
+        
+        
+        
+        <div class="section-break"></div>
+
+        
+        
+        
+        <!-- ==================== DISCUSSION ==================== -->
+        <div class="note-section fade-in" id="discussion">
+            <h2>Discussion</h2>
+            
+            <h3>Key Contributions</h3>
+            <ul>
+                <li><strong>PPO-ptx</strong>: mixing pretraining gradients into PPO eliminates the alignment tax.</li>
+                <li><strong>K-way batched ranking</strong>: more efficient labeling and less overfitting.</li>
+                <li><strong>Scale validation</strong>: the SFT &rarr; RM &rarr; PPO pipeline works for broad instruction-following, not just summarization.</li>
+                <li><strong>Honest limitations analysis</strong>: the alignment hierarchy, toxicity paradox, and labeler demographics are discussed openly.</li>
+            </ul>
+
+            <h3>Limitations</h3>
+            <ul>
+                <li>The model follows harmful instructions more effectively than GPT-3 (the toxicity paradox).</li>
+                <li>Alignment to ~40 English-speaking labelers, not the global population of users.</li>
+                <li>Reward model can still be overoptimized (same concern as Stiennon et al.).</li>
+                <li>The SFT model overfits on validation loss but improves on human metrics &mdash; we still don't fully understand this phenomenon.</li>
+            </ul>
+
+            <h3>Historical Significance</h3>
+
+            <div class="callout callout-key">
+                <p>InstructGPT is the direct ancestor of <strong>ChatGPT</strong>. The same RLHF methodology, applied to a dialogue-optimized model, produced ChatGPT in November 2022 &mdash; arguably the most impactful AI product launch in history. Every major LLM alignment effort since (Claude, Gemini, Llama-2-Chat) uses a pipeline descended from this paper. The lineage: RLHF (2017) &rarr; PPO (2017) &rarr; Summarize from HF (2020) &rarr; <strong>InstructGPT (2022)</strong> &rarr; ChatGPT &rarr; DPO (2023).</p>
+            </div>
+        
+        </div>
+
+        
+        
+        
+        <!-- Viz 10: Alignment Timeline -->
+        <div class="viz-section viz-manim fade-in" id="viz-10">
+            <h2><span class="num">#10</span> Alignment Timeline</h2>
+            
+            <span class="tool-tag tag-manim">Manim</span>
+            
+            <p class="desc">Animated timeline of the alignment research lineage, centered on InstructGPT's position as the bridge from academic RLHF research to the ChatGPT product launch.</p>
+            
+            <video controls preload="metadata">
+                <source src="AlignmentTimeline.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+            
+            
+            
+        </div>
+
+        
+        
+
+        
+
+        <footer>
+            <div class="footer-links">
+                <a href="../../">Back to LuCiD-papers</a>
+                <a href="https://github.com/csking101/LuCiD-papers/tree/main/papers/2203.02155">View source on GitHub</a>
+                
+                <a href="https://arxiv.org/abs/2203.02155">Read on arXiv</a>
+            </div>
+            <p class="last-updated">Last updated: May 2026</p>
+            <p class="last-updated">Notes by Chinmaya Sahu. Content polish, code, visualizations, and web design by AI.</p>
+        </footer>
+
+    </main>
+</div>
+
+<!-- Back to top button -->
+<button class="back-to-top" id="back-to-top" title="Back to top">
+    <svg viewBox="0 0 16 16"><path d="M8 2.5l5.5 5.5H10v5.5H6V8H2.5L8 2.5z"/></svg>
+</button>
+
+<script>
+(function() {
+    'use strict';
+
+    // =============================================
+    // SCROLL PROGRESS BAR
+    // =============================================
+    const progressBar = document.getElementById('progress-bar');
+    function updateProgress() {
+        const scrollTop = window.scrollY;
+        const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+        const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+        progressBar.style.width = progress + '%';
+    }
+
+    // =============================================
+    // BACK-TO-TOP BUTTON
+    // =============================================
+    const backToTop = document.getElementById('back-to-top');
+    function updateBackToTop() {
+        if (window.scrollY > 400) {
+            backToTop.classList.add('visible');
+        } else {
+            backToTop.classList.remove('visible');
+        }
+    }
+    backToTop.addEventListener('click', function() {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    // Combined scroll handler (throttled via rAF)
+    let ticking = false;
+    window.addEventListener('scroll', function() {
+        if (!ticking) {
+            requestAnimationFrame(function() {
+                updateProgress();
+                updateBackToTop();
+                ticking = false;
+            });
+            ticking = true;
+        }
+    });
+
+    // =============================================
+    // ACTIVE SECTION HIGHLIGHTING (IntersectionObserver)
+    // =============================================
+    const sections = document.querySelectorAll('[id]');
+    const tocLinks = document.querySelectorAll('.toc-sidebar a[data-section]');
+    const navLinks = document.querySelectorAll('.nav-bar a[data-section]');
+
+    const sectionObserver = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+                const id = entry.target.id;
+                tocLinks.forEach(function(link) {
+                    if (link.getAttribute('data-section') === id) {
+                        link.classList.add('active');
+                    } else {
+                        link.classList.remove('active');
+                    }
+                });
+                navLinks.forEach(function(link) {
+                    if (link.getAttribute('data-section') === id) {
+                        link.classList.add('active');
+                    } else {
+                        link.classList.remove('active');
+                    }
+                });
+            }
+        });
+    }, {
+        rootMargin: '-10% 0px -75% 0px',
+        threshold: 0
+    });
+
+    sections.forEach(function(section) {
+        if (section.id) {
+            sectionObserver.observe(section);
+        }
+    });
+
+    // =============================================
+    // FADE-IN ON SCROLL (IntersectionObserver)
+    // =============================================
+    const fadeElements = document.querySelectorAll('.fade-in');
+    const fadeObserver = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+                fadeObserver.unobserve(entry.target);
+            }
+        });
+    }, {
+        rootMargin: '0px 0px -60px 0px',
+        threshold: 0.05
+    });
+
+    fadeElements.forEach(function(el) {
+        fadeObserver.observe(el);
+    });
+
+    // =============================================
+    // FULLSCREEN MODAL FOR IFRAMES
+    // =============================================
+    const modalOverlay = document.getElementById('modal-overlay');
+    const modalIframe = document.getElementById('modal-iframe');
+    const modalClose = document.getElementById('modal-close');
+
+    document.querySelectorAll('.fullscreen-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var src = btn.getAttribute('data-src');
+            modalIframe.src = src;
+            modalOverlay.classList.add('visible');
+            document.body.style.overflow = 'hidden';
+        });
+    });
+
+    function closeModal() {
+        modalOverlay.classList.remove('visible');
+        modalIframe.src = '';
+        document.body.style.overflow = '';
+    }
+
+    modalClose.addEventListener('click', closeModal);
+    modalOverlay.addEventListener('click', function(e) {
+        if (e.target === modalOverlay) closeModal();
+    });
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && modalOverlay.classList.contains('visible')) {
+            closeModal();
+        }
+    });
+
+    // =============================================
+    // LAZY VIDEO LOADING (IntersectionObserver)
+    // =============================================
+    const videos = document.querySelectorAll('video[preload="metadata"]');
+    const videoObserver = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+                var video = entry.target;
+                video.preload = 'auto';
+                videoObserver.unobserve(video);
+            }
+        });
+    }, {
+        rootMargin: '200px 0px',
+        threshold: 0
+    });
+
+    videos.forEach(function(video) {
+        videoObserver.observe(video);
+    });
+
+    // Initial state
+    updateProgress();
+    updateBackToTop();
+})();
+</script>
+
+
+
+</body>
+</html>
