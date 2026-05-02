@@ -1,0 +1,8 @@
+# System Prompt Steering — Dependencies
+# Tested with Python 3.12, CUDA 13.0
+
+rich>=13.0
+torch>=2.0
+numpy>=1.24
+transformers>=4.40
+accelerate>=0.30

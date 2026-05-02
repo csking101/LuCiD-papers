@@ -400,5 +400,14 @@ PAGE_DATA = {
     ],  # end content
 
     # ─── Coding Adventures ───
-    "adventures": [],
+    "adventures": [
+        {
+            "num": "04",
+            "title": "System Prompt Steering",
+            "status": "Done",
+            "desc": "Measure how system prompts steer token distributions using KL divergence. 7 system prompts x 7 user prompts, first-token analysis, forced-continuation KL profiles, and a full steering matrix. 128 tests.",
+            "url": "../../adventures/04/",
+            "tags": ["Qwen2.5-1.5B", "Rich CLI", "128 Tests"],
+        },
+    ],
 }

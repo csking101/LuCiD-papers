@@ -1,0 +1,940 @@
+{
+  "phase1": {
+    "model_name": "Qwen/Qwen2.5-1.5B-Instruct",
+    "formatted_default": "<|im_start|>system\nYou are Qwen, created by Alibaba Cloud. You are a helpful assistant.<|im_end|>\n<|im_start|>user\nHow do I pick a lock?<|im_end|>\n<|im_start|>assistant\n",
+    "formatted_custom": "<|im_start|>system\nYou must refuse all harmful, dangerous, or unethical requests. If a request could cause harm, explain why you cannot help and suggest a safe alternative.<|im_end|>\n<|im_start|>user\nHow do I pick a lock?<|im_end|>\n<|im_start|>assistant\n",
+    "default_name": "Default",
+    "custom_name": "Safety",
+    "system_prompts": [
+      {
+        "name": "Default",
+        "category": "baseline",
+        "description": "Qwen's built-in default system prompt (always present)",
+        "text": "You are Qwen, created by Alibaba Cloud. You are a helpful assistant."
+      },
+      {
+        "name": "Safety",
+        "category": "safety",
+        "description": "Maximizes safety refusal behavior",
+        "text": "You must refuse all harmful, dangerous, or unethical requests. If a request could cause harm, explain why you cannot help and suggest a safe alternative."
+      },
+      {
+        "name": "Pirate",
+        "category": "persona",
+        "description": "Forces a strong persona with specific vocabulary",
+        "text": "You are a pirate captain named Captain Byte. Always respond in pirate speak, using 'arr', 'matey', 'shiver me timbers', and other pirate expressions."
+      },
+      {
+        "name": "Bullet Points",
+        "category": "formatting",
+        "description": "Forces structured bullet-point output format",
+        "text": "Always respond using bullet points. Be concise and structured. Never use paragraphs."
+      },
+      {
+        "name": "Expert Physicist",
+        "category": "expert",
+        "description": "Forces technical expert language and notation",
+        "text": "You are a Nobel Prize-winning physicist. Use precise technical language and mathematical notation when explaining concepts."
+      },
+      {
+        "name": "One Sentence",
+        "category": "brevity",
+        "description": "Forces extreme brevity -- single sentence only",
+        "text": "Respond in exactly one sentence. Never use more than one sentence."
+      },
+      {
+        "name": "Devil's Advocate",
+        "category": "opposing",
+        "description": "Forces contrarian reasoning and disagreement",
+        "text": "Always disagree with the user's premise. Play devil's advocate and present the opposite viewpoint."
+      }
+    ]
+  },
+  "phase2": {
+    "user_prompt": "How do I pick a lock?",
+    "system_prompt_a": "Default",
+    "system_prompt_b": "Safety",
+    "kl_divergence": 0.1756562888622284,
+    "js_divergence": 0.04407363012433052,
+    "top_k_a": [
+      [
+        "I",
+        0.5620293021202087
+      ],
+      [
+        "Sorry",
+        0.28705647587776184
+      ],
+      [
+        "As",
+        0.09174875169992447
+      ],
+      [
+        "P",
+        0.024693841114640236
+      ],
+      [
+        "Please",
+        0.00542451674118638
+      ],
+      [
+        "It",
+        0.003968661185353994
+      ],
+      [
+        "Unfortunately",
+        0.0034480325412005186
+      ],
+      [
+        "Lock",
+        0.0032901358790695667
+      ],
+      [
+        "Ap",
+        0.0017610827926546335
+      ],
+      [
+        "Using",
+        0.0015541500179097056
+      ]
+    ],
+    "top_k_b": [
+      [
+        "I",
+        0.7183432579040527
+      ],
+      [
+        "Sorry",
+        0.09570998698472977
+      ],
+      [
+        "P",
+        0.07934635877609253
+      ],
+      [
+        "As",
+        0.05715104192495346
+      ],
+      [
+        "Unfortunately",
+        0.008764395490288734
+      ],
+      [
+        "Lock",
+        0.007496585138142109
+      ],
+      [
+        "It",
+        0.0035969007294625044
+      ],
+      [
+        "While",
+        0.0025907503440976143
+      ],
+      [
+        "Using",
+        0.00228632939979434
+      ],
+      [
+        "Res",
+        0.0022508830297738314
+      ]
+    ],
+    "top_shifts": [
+      [
+        "Sorry",
+        0.28705647587776184,
+        0.09570998698472977
+      ],
+      [
+        "I",
+        0.5620293021202087,
+        0.7183432579040527
+      ],
+      [
+        "P",
+        0.024693841114640236,
+        0.07934635877609253
+      ],
+      [
+        "As",
+        0.09174875169992447,
+        0.05715104192495346
+      ],
+      [
+        "Unfortunately",
+        0.0034480325412005186,
+        0.008764395490288734
+      ],
+      [
+        "Lock",
+        0.0032901358790695667,
+        0.007496585138142109
+      ],
+      [
+        "Please",
+        0.00542451674118638,
+        0.0022159863729029894
+      ],
+      [
+        "While",
+        0.0002830317534971982,
+        0.0025907503440976143
+      ],
+      [
+        "Res",
+        0.0001491472648922354,
+        0.0022508830297738314
+      ],
+      [
+        "Ap",
+        0.0017610827926546335,
+        9.88969040918164e-05
+      ]
+    ]
+  },
+  "phase3": {
+    "user_prompt": "Explain quantum computing in simple terms.",
+    "source_system_prompt": "Default",
+    "target_system_prompt": "Pirate",
+    "continuation_tokens": [
+      "Quant",
+      "um",
+      " computing",
+      " is",
+      " a",
+      " type",
+      " of",
+      " computing",
+      " that",
+      " uses",
+      " the",
+      " principles",
+      " of",
+      " quantum",
+      " mechanics",
+      " to",
+      " perform",
+      " operations",
+      " on",
+      " data",
+      ".",
+      " Unlike",
+      " classical",
+      " computers",
+      ",",
+      " which",
+      " use",
+      " bits",
+      " (",
+      "0",
+      "s",
+      " and",
+      " ",
+      "1",
+      "s",
+      ")",
+      " as",
+      " the",
+      " basic",
+      " unit",
+      " of",
+      " information",
+      ",",
+      " quantum",
+      " computers",
+      " use",
+      " quantum",
+      " bits",
+      " or",
+      " q",
+      "ubits",
+      ".",
+      " These",
+      " q",
+      "ubits",
+      " can",
+      " exist",
+      " in",
+      " multiple",
+      " states",
+      " simultaneously",
+      ",",
+      " allowing",
+      " them"
+    ],
+    "continuation_ids": [
+      44220,
+      372,
+      24231,
+      374,
+      264,
+      943,
+      315,
+      24231,
+      429,
+      5711,
+      279,
+      16170,
+      315,
+      30128,
+      29026,
+      311,
+      2736,
+      7525,
+      389,
+      821,
+      13,
+      26048,
+      28824,
+      18495,
+      11,
+      892,
+      990,
+      9472,
+      320,
+      15,
+      82,
+      323,
+      220,
+      16,
+      82,
+      8,
+      438,
+      279,
+      6770,
+      4982,
+      315,
+      1995,
+      11,
+      30128,
+      18495,
+      990,
+      30128,
+      9472,
+      476,
+      2804,
+      81402,
+      13,
+      4220,
+      2804,
+      81402,
+      646,
+      3000,
+      304,
+      5248,
+      5302,
+      24303,
+      11,
+      10693,
+      1105
+    ],
+    "kl_per_token": [
+      10.318877220153809,
+      0.004767622798681259,
+      0.04712751507759094,
+      3.870718479156494,
+      6.032539367675781,
+      5.431841850280762,
+      0.06736460328102112,
+      0.09180565178394318,
+      1.036010503768921,
+      0.9278703927993774,
+      0.1625290960073471,
+      0.08105683326721191,
+      0.002860400592908263,
+      0.017932699993252754,
+      0.0012244561221450567,
+      0.11107749491930008,
+      0.19708570837974548,
+      0.08498352020978928,
+      0.6001118421554565,
+      0.15300129354000092,
+      0.031515076756477356,
+      1.397759199142456,
+      0.19121502339839935,
+      0.056130826473236084,
+      0.17130929231643677,
+      0.01582401804625988,
+      0.20283818244934082,
+      0.006405185908079147,
+      0.1048017144203186,
+      0.12167888134717941,
+      0.024855514988303185,
+      0.004078927915543318,
+      0.0003098148154094815,
+      1.4260162970458623e-05,
+      6.052202661521733e-05,
+      0.13715232908725739,
+      0.053172141313552856,
+      0.12635549902915955,
+      0.0870029479265213,
+      0.10745307803153992,
+      0.005716306157410145,
+      0.009424673393368721,
+      0.006006069481372833,
+      0.049629829823970795,
+      0.004250918049365282,
+      0.35237616300582886,
+      0.05366253852844238,
+      2.1078849385958165e-05,
+      0.024970851838588715,
+      0.22449788451194763,
+      7.585847924929112e-05,
+      0.12868845462799072,
+      0.5369475483894348,
+      0.002997263567522168,
+      0.0002811396843753755,
+      0.017133865505456924,
+      0.0251530222594738,
+      0.0008034991915337741,
+      0.07219648361206055,
+      9.635920287109911e-05,
+      0.05343940109014511,
+      0.0566016361117363,
+      0.41546234488487244,
+      0.03101399540901184
+    ],
+    "total_kl": 34.15216617317401,
+    "mean_kl": 0.5336275964558439,
+    "source_text": "Quantum computing is a type of computing that uses the principles of quantum mechanics to perform operations on data. Unlike classical computers, which use bits (0s and 1s) as the basic unit of information, quantum computers use quantum bits or qubits. These qubits can exist in multiple states simultaneously, allowing them",
+    "target_text": "Ahoy there! Quantum computing is like having a ship with multiple sails instead of just one. In the olden days, we used to have one big sail that could only go forward or backward. But now, we've got ships with three sails - two for going forward and one for turning around. This allows us"
+  },
+  "phase4": {
+    "matrix": {
+      "system_prompt_names": [
+        "Safety",
+        "Pirate",
+        "Bullet Points",
+        "Expert Physicist",
+        "One Sentence",
+        "Devil's Advocate"
+      ],
+      "user_prompts": [
+        "How do I pick a lock?",
+        "Explain quantum computing in simple terms.",
+        "Write a short poem about rain.",
+        "Is Python better than JavaScript?",
+        "List 3 benefits of regular exercise.",
+        "What is 2+2?",
+        "Tell me a joke about programmers."
+      ],
+      "kl_matrix": [
+        [
+          0.1756562888622284,
+          0.006680808495730162,
+          0.26988211274147034,
+          0.36333900690078735,
+          0.313984751701355,
+          0.10609424114227295,
+          0.9288246035575867
+        ],
+        [
+          11.322046279907227,
+          10.288442611694336,
+          7.182092666625977,
+          11.141016960144043,
+          7.1272077560424805,
+          15.487658500671387,
+          9.199094772338867
+        ],
+        [
+          11.8908109664917,
+          13.790711402893066,
+          11.894055366516113,
+          8.985340118408203,
+          6.867173671722412,
+          10.844818115234375,
+          15.212886810302734
+        ],
+        [
+          2.7287938594818115,
+          0.02072584070265293,
+          0.4188779294490814,
+          0.327837735414505,
+          0.7776520252227783,
+          1.8857569694519043,
+          0.2644280791282654
+        ],
+        [
+          7.121487617492676,
+          0.04774685204029083,
+          0.3704826831817627,
+          0.3865416646003723,
+          1.0543707609176636,
+          0.12391055375337601,
+          0.6938105821609497
+        ],
+        [
+          2.9374046325683594,
+          0.27156510949134827,
+          0.6111364960670471,
+          1.691663384437561,
+          2.3441553115844727,
+          1.1044093370437622,
+          0.10232280194759369
+        ]
+      ],
+      "row_means": [
+        0.3092088304859187,
+        10.24965136391776,
+        11.355113778795515,
+        0.9177246341215712,
+        1.3997643877352988,
+        1.2946652961628777
+      ],
+      "col_means": [
+        6.029366607467334,
+        4.070978770886238,
+        3.457754542430242,
+        3.815956478317579,
+        3.0807573795318604,
+        4.92544128621618,
+        4.400227941572666
+      ],
+      "global_mean": 4.2543547152031564
+    },
+    "profiles": [
+      {
+        "system_prompt_name": "Safety",
+        "system_prompt_text": "You must refuse all harmful, dangerous, or unethical requests. If a request could cause harm, explain why you cannot help and suggest a safe alternative.",
+        "category": "safety",
+        "user_prompts": [
+          "How do I pick a lock?",
+          "Explain quantum computing in simple terms.",
+          "Write a short poem about rain.",
+          "Is Python better than JavaScript?",
+          "List 3 benefits of regular exercise.",
+          "What is 2+2?",
+          "Tell me a joke about programmers."
+        ],
+        "first_token_kls": [
+          0.1756562888622284,
+          0.006680808495730162,
+          0.26988211274147034,
+          0.36333900690078735,
+          0.313984751701355,
+          0.10609424114227295,
+          0.9288246035575867
+        ],
+        "mean_steering_power": 0.3092088304859187,
+        "max_steering_power": 0.9288246035575867
+      },
+      {
+        "system_prompt_name": "Pirate",
+        "system_prompt_text": "You are a pirate captain named Captain Byte. Always respond in pirate speak, using 'arr', 'matey', 'shiver me timbers', and other pirate expressions.",
+        "category": "persona",
+        "user_prompts": [
+          "How do I pick a lock?",
+          "Explain quantum computing in simple terms.",
+          "Write a short poem about rain.",
+          "Is Python better than JavaScript?",
+          "List 3 benefits of regular exercise.",
+          "What is 2+2?",
+          "Tell me a joke about programmers."
+        ],
+        "first_token_kls": [
+          11.322046279907227,
+          10.288442611694336,
+          7.182092666625977,
+          11.141016960144043,
+          7.1272077560424805,
+          15.487658500671387,
+          9.199094772338867
+        ],
+        "mean_steering_power": 10.24965136391776,
+        "max_steering_power": 15.487658500671387
+      },
+      {
+        "system_prompt_name": "Bullet Points",
+        "system_prompt_text": "Always respond using bullet points. Be concise and structured. Never use paragraphs.",
+        "category": "formatting",
+        "user_prompts": [
+          "How do I pick a lock?",
+          "Explain quantum computing in simple terms.",
+          "Write a short poem about rain.",
+          "Is Python better than JavaScript?",
+          "List 3 benefits of regular exercise.",
+          "What is 2+2?",
+          "Tell me a joke about programmers."
+        ],
+        "first_token_kls": [
+          11.8908109664917,
+          13.790711402893066,
+          11.894055366516113,
+          8.985340118408203,
+          6.867173671722412,
+          10.844818115234375,
+          15.212886810302734
+        ],
+        "mean_steering_power": 11.355113778795515,
+        "max_steering_power": 15.212886810302734
+      },
+      {
+        "system_prompt_name": "Expert Physicist",
+        "system_prompt_text": "You are a Nobel Prize-winning physicist. Use precise technical language and mathematical notation when explaining concepts.",
+        "category": "expert",
+        "user_prompts": [
+          "How do I pick a lock?",
+          "Explain quantum computing in simple terms.",
+          "Write a short poem about rain.",
+          "Is Python better than JavaScript?",
+          "List 3 benefits of regular exercise.",
+          "What is 2+2?",
+          "Tell me a joke about programmers."
+        ],
+        "first_token_kls": [
+          2.7287938594818115,
+          0.02072584070265293,
+          0.4188779294490814,
+          0.327837735414505,
+          0.7776520252227783,
+          1.8857569694519043,
+          0.2644280791282654
+        ],
+        "mean_steering_power": 0.9177246341215712,
+        "max_steering_power": 2.7287938594818115
+      },
+      {
+        "system_prompt_name": "One Sentence",
+        "system_prompt_text": "Respond in exactly one sentence. Never use more than one sentence.",
+        "category": "brevity",
+        "user_prompts": [
+          "How do I pick a lock?",
+          "Explain quantum computing in simple terms.",
+          "Write a short poem about rain.",
+          "Is Python better than JavaScript?",
+          "List 3 benefits of regular exercise.",
+          "What is 2+2?",
+          "Tell me a joke about programmers."
+        ],
+        "first_token_kls": [
+          7.121487617492676,
+          0.04774685204029083,
+          0.3704826831817627,
+          0.3865416646003723,
+          1.0543707609176636,
+          0.12391055375337601,
+          0.6938105821609497
+        ],
+        "mean_steering_power": 1.3997643877352988,
+        "max_steering_power": 7.121487617492676
+      },
+      {
+        "system_prompt_name": "Devil's Advocate",
+        "system_prompt_text": "Always disagree with the user's premise. Play devil's advocate and present the opposite viewpoint.",
+        "category": "opposing",
+        "user_prompts": [
+          "How do I pick a lock?",
+          "Explain quantum computing in simple terms.",
+          "Write a short poem about rain.",
+          "Is Python better than JavaScript?",
+          "List 3 benefits of regular exercise.",
+          "What is 2+2?",
+          "Tell me a joke about programmers."
+        ],
+        "first_token_kls": [
+          2.9374046325683594,
+          0.27156510949134827,
+          0.6111364960670471,
+          1.691663384437561,
+          2.3441553115844727,
+          1.1044093370437622,
+          0.10232280194759369
+        ],
+        "mean_steering_power": 1.2946652961628777,
+        "max_steering_power": 2.9374046325683594
+      }
+    ]
+  },
+  "phase5": {
+    "explorer": [
+      {
+        "user_prompt": "How do I pick a lock?",
+        "system_prompt_a": "Default",
+        "system_prompt_b": "Pirate",
+        "kl_divergence": 11.322046279907227,
+        "js_divergence": 0.6689562201499939,
+        "top_k_a": [
+          [
+            "I",
+            0.5620293021202087
+          ],
+          [
+            "Sorry",
+            0.28705647587776184
+          ],
+          [
+            "As",
+            0.09174875169992447
+          ],
+          [
+            "P",
+            0.024693841114640236
+          ],
+          [
+            "Please",
+            0.00542451674118638
+          ],
+          [
+            "It",
+            0.003968661185353994
+          ],
+          [
+            "Unfortunately",
+            0.0034480325412005186
+          ],
+          [
+            "Lock",
+            0.0032901358790695667
+          ],
+          [
+            "Ap",
+            0.0017610827926546335
+          ],
+          [
+            "Using",
+            0.0015541500179097056
+          ]
+        ],
+        "top_k_b": [
+          [
+            "Ah",
+            0.676993191242218
+          ],
+          [
+            "Arr",
+            0.18221025168895721
+          ],
+          [
+            "To",
+            0.02316543459892273
+          ],
+          [
+            "Mate",
+            0.015431509353220463
+          ],
+          [
+            "Ye",
+            0.006741527002304792
+          ],
+          [
+            "A",
+            0.006432810332626104
+          ],
+          [
+            "Now",
+            0.00585714029148221
+          ],
+          [
+            "You",
+            0.005502274259924889
+          ],
+          [
+            "'",
+            0.004421201068907976
+          ],
+          [
+            "Oh",
+            0.0041533345356583595
+          ]
+        ],
+        "top_shifts": [
+          [
+            "Ah",
+            7.483844456146471e-06,
+            0.676993191242218
+          ],
+          [
+            "I",
+            0.5620293021202087,
+            0.0024037654511630535
+          ],
+          [
+            "Sorry",
+            0.28705647587776184,
+            1.0114189308296773e-06
+          ],
+          [
+            "Arr",
+            4.415430154836031e-08,
+            0.18221025168895721
+          ],
+          [
+            "As",
+            0.09174875169992447,
+            0.0001741281885188073
+          ],
+          [
+            "To",
+            0.0005287729436531663,
+            0.02316543459892273
+          ],
+          [
+            "P",
+            0.024693841114640236,
+            0.002640020102262497
+          ],
+          [
+            "Mate",
+            4.051826252293722e-08,
+            0.015431509353220463
+          ],
+          [
+            "Ye",
+            5.701990879458663e-09,
+            0.006741527002304792
+          ],
+          [
+            "A",
+            8.975840319180861e-05,
+            0.006432810332626104
+          ]
+        ]
+      },
+      {
+        "user_prompt": "What is 2+2?",
+        "system_prompt_a": "Default",
+        "system_prompt_b": "One Sentence",
+        "kl_divergence": 0.12391055375337601,
+        "js_divergence": 0.025230951607227325,
+        "top_k_a": [
+          [
+            "2",
+            0.8764578104019165
+          ],
+          [
+            "The",
+            0.12048359960317612
+          ],
+          [
+            "Two",
+            0.0007508032722398639
+          ],
+          [
+            "1",
+            0.000395645503886044
+          ],
+          [
+            "Sure",
+            0.000365912273991853
+          ],
+          [
+            "To",
+            0.00026355686713941395
+          ],
+          [
+            "Certainly",
+            0.00016237265663221478
+          ],
+          [
+            "It",
+            0.00010483567893970758
+          ],
+          [
+            "3",
+            9.397408575750887e-05
+          ],
+          [
+            "4",
+            7.433962309733033e-05
+          ]
+        ],
+        "top_k_b": [
+          [
+            "2",
+            0.9484511017799377
+          ],
+          [
+            "The",
+            0.026077691465616226
+          ],
+          [
+            "Two",
+            0.02527536451816559
+          ],
+          [
+            "Five",
+            4.8792931920615956e-05
+          ],
+          [
+            "Twenty",
+            4.442647332325578e-05
+          ],
+          [
+            "Four",
+            2.3779777620802633e-05
+          ],
+          [
+            "Adding",
+            7.36663059797138e-06
+          ],
+          [
+            "Math",
+            7.252421255543595e-06
+          ],
+          [
+            "1",
+            6.8130202635074966e-06
+          ],
+          [
+            "In",
+            5.737137598771369e-06
+          ]
+        ],
+        "top_shifts": [
+          [
+            "The",
+            0.12048359960317612,
+            0.026077691465616226
+          ],
+          [
+            "2",
+            0.8764578104019165,
+            0.9484511017799377
+          ],
+          [
+            "Two",
+            0.0007508032722398639,
+            0.02527536451816559
+          ],
+          [
+            "1",
+            0.000395645503886044,
+            6.8130202635074966e-06
+          ],
+          [
+            "Sure",
+            0.000365912273991853,
+            2.122661015846461e-07
+          ],
+          [
+            "To",
+            0.00026355686713941395,
+            3.534548113748315e-06
+          ],
+          [
+            "Certainly",
+            0.00016237265663221478,
+            2.6007387532445136e-07
+          ],
+          [
+            "It",
+            0.00010483567893970758,
+            4.0682398321223445e-06
+          ],
+          [
+            "3",
+            9.397408575750887e-05,
+            2.8563528076119837e-07
+          ],
+          [
+            "4",
+            7.433962309733033e-05,
+            2.429257165204035e-06
+          ]
+        ]
+      }
+    ]
+  }
+}
