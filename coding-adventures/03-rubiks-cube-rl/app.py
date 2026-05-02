@@ -36,6 +36,7 @@ from train import (
 )
 from viz import (
     render_phase_header, render_cube, render_env_info, render_move_demo,
+    render_scramble_info,
     render_training_progress, render_curriculum_summary,
     render_solve_attempt, render_solve_sequence,
     render_difficulty_test, render_comparison,
@@ -143,19 +144,19 @@ def main():
 
     # Show a scramble
     scrambled = PocketCube()
-    scramble_moves = scrambled.scramble(5, rng=random.Random(seed))
-    console.print(render_cube(scrambled, f"Scrambled (depth 5): {' '.join(ACTION_NAMES[m] for m in scramble_moves)}"))
+    scramble_moves = scrambled.scramble(9, rng=random.Random(seed))
+    console.print(render_cube(scrambled, "Scrambled (depth 9)"))
 
     # Solution for the scramble
     solution = PocketCube.solution_for_scramble(scramble_moves)
-    console.print(f"  [dim]Solution: {' '.join(ACTION_NAMES[m] for m in solution)}[/dim]\n")
+    console.print(render_scramble_info(scramble_moves, solution))
 
     # LLM parallel
     console.print(render_llm_parallel("Cube ↔ LLM Alignment", [
         ("24 stickers → 144-dim one-hot", "Tokens → embedding vectors"),
         ("6 moves (U, U', R, R', F, F')", "Vocabulary of next-token choices"),
         ("One-hot state encoding", "Tokenisation + positional encoding"),
-        ("Curriculum: depth 1 → 7", "Progressive RLHF: easy → hard preferences"),
+        ("Curriculum: depth 1 → 11", "Progressive RLHF: easy → hard preferences"),
     ]))
 
     if capture_mode:
@@ -165,8 +166,35 @@ def main():
             "scramble_moves": scramble_moves,
             "solution": solution,
         }
+
+    # ── Training mode selection ──
+    if capture_mode:
+        training_mode = "full"
     else:
-        Prompt.ask("\n[dim]Press Enter to start training[/dim]")
+        console.print()
+        console.print("[bold bright_cyan]Choose training mode:[/bold bright_cyan]")
+        console.print("  [bold]1.[/bold] Quick  — curriculum depth 1-7,  ~2.5 min on GPU, ~5 min on CPU")
+        console.print("  [bold]2.[/bold] Full   — curriculum depth 1-11, ~12 min on GPU, ~25 min on CPU")
+        console.print()
+        choice = Prompt.ask(
+            "[dim]Enter 1 or 2[/dim]",
+            choices=["1", "2"],
+            default="1",
+        )
+        training_mode = "quick" if choice == "1" else "full"
+
+    if training_mode == "full":
+        max_depth = 11
+        max_eps = 6000
+        solve_depths = [1, 3, 5, 7, 9]
+        stress_range = range(1, 15)
+        compare_range = range(1, 12)
+    else:
+        max_depth = 7
+        max_eps = 3000
+        solve_depths = [1, 3, 5]
+        stress_range = range(1, 11)
+        compare_range = range(1, 8)
 
     # ══════════════════════════════════════════════════════════════════════
     # PHASE 2: PPO Training with Curriculum
@@ -174,14 +202,14 @@ def main():
 
     console.print(render_phase_header(
         2, "PPO Training with Curriculum",
-        "Train using PPO with curriculum learning — start at depth 1, advance when solve rate ≥ 80%.",
+        f"Train using PPO with curriculum learning — depth 1→{max_depth}, advance when solve rate ≥ 80%.",
     ))
 
     config = TrainConfig(
-        max_depth=7,
+        max_depth=max_depth,
         advance_threshold=0.80,
         eval_episodes=100,
-        max_episodes_per_depth=3000,
+        max_episodes_per_depth=max_eps,
         episodes_per_rollout=128,
         ppo_epochs=4,
         mini_batch_size=64,
@@ -243,7 +271,6 @@ def main():
         "Watch the trained agent solve cubes at increasing difficulty.",
     ))
 
-    solve_depths = [1, 3, 5]
     solve_results = []
 
     for depth in solve_depths:
@@ -286,10 +313,10 @@ def main():
 
     console.print(render_phase_header(
         4, "Stress Test",
-        "Test the agent across scramble depths 1-10 (100 cubes each).",
+        "Test the agent across scramble depths 1-{} (100 cubes each).".format(len(list(stress_range))),
     ))
 
-    test_depths = list(range(1, 11))
+    test_depths = list(stress_range)
     stress_results = []
     for depth in test_depths:
         tr = evaluate_policy(
@@ -316,7 +343,7 @@ def main():
         "Compare the trained PPO agent against a uniformly random agent.",
     ))
 
-    compare_depths = list(range(1, 8))
+    compare_depths = list(compare_range)
     random_results = random_agent_test(compare_depths, 100, config, random.Random(seed))
 
     trained_compare = []

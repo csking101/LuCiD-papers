@@ -247,6 +247,36 @@ def render_curriculum_summary(stats: TrainingStats) -> Table:
     return table
 
 
+# ─── Scramble info ────────────────────────────────────────────────────────────
+
+def render_scramble_info(
+    scramble_moves: list[int],
+    solution_moves: list[int],
+) -> Panel:
+    """Render a panel showing scramble moves and the inverse solution clearly."""
+    t = Text()
+    t.append("Scramble:  ", style="bold")
+    for i, m in enumerate(scramble_moves):
+        t.append(ACTION_NAMES[m], style="bright_cyan")
+        if i < len(scramble_moves) - 1:
+            t.append("  ", style="dim")
+    t.append(f"  ({len(scramble_moves)} moves)\n", style="dim")
+
+    t.append("Solution:  ", style="bold")
+    for i, m in enumerate(solution_moves):
+        t.append(ACTION_NAMES[m], style="bold green")
+        if i < len(solution_moves) - 1:
+            t.append("  ", style="dim")
+    t.append(f"  ({len(solution_moves)} moves)", style="dim")
+
+    return Panel(
+        t,
+        title="Scramble & Solution",
+        border_style="bright_cyan",
+        padding=(1, 2),
+    )
+
+
 # ─── Solve attempt ────────────────────────────────────────────────────────────
 
 def render_solve_attempt(result: SolveResult) -> Panel:
