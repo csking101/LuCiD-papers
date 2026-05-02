@@ -641,5 +641,13 @@ PAGE_DATA = {
             "url": "../../adventures/01/",
             "tags": ["PyTorch", "Rich CLI", "PPO", "GAE"],
         },
+        {
+            "num": "03",
+            "title": "Solve a Rubik\u2019s Cube with RL",
+            "status": "Done",
+            "desc": "PPO + curriculum learning on a 2\u00d72 Pocket Cube. Implements clipped surrogate objective and GAE in a pure RL setting without human feedback. 162 tests.",
+            "url": "../../adventures/03/",
+            "tags": ["PyTorch", "Rich CLI", "PPO", "Curriculum"],
+        },
     ],
 }
