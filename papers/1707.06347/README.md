@@ -70,3 +70,4 @@ cd scripts
 Hands-on interactive projects that implement concepts from this paper:
 
 - [**Path-Finding Preference Game**](../../coding-adventures/01-pathfinding-preference-game/) -- Uses PPO with clipped surrogate, GAE, and KL divergence penalty for both pre-training and RLHF fine-tuning. Watch PPO metrics (policy loss, clip fraction, entropy) evolve in real time.
+- [**KL Divergence: Implication on LLM Outputs**](../../coding-adventures/02-kl-divergence-llm-outputs/) -- Loads Qwen2.5-1.5B base + instruct to visualise how KL divergence manifests in real token distributions. Per-token KL analysis, category comparison, and KL-constrained generation.

@@ -47,6 +47,7 @@ Interactive demos that bring paper concepts to life. Each adventure ties togethe
 | # | Adventure | Papers | Description |
 |---|-----------|--------|-------------|
 | 1 | [Path-Finding Preference Game](coding-adventures/01-pathfinding-preference-game/) | 1706, 1707, 2009 | Full RLHF pipeline in a grid world -- you are the human annotator. Pre-train, rate paths, train a reward model, and PPO fine-tune. 201 tests, ~2 min runtime. |
+| 2 | [KL Divergence: Implication on LLM Outputs](coding-adventures/02-kl-divergence-llm-outputs/) | 1707, 1706, 2009 | Load Qwen2.5-1.5B base + instruct side-by-side. See per-token KL divergence, category analysis, and KL-constrained generation with real LLM outputs. 98 tests, 8GB VRAM. |
 
 See [`coding-adventures/`](coding-adventures/) for the full index.
 

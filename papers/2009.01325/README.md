@@ -68,3 +68,4 @@ cd scripts
 Hands-on interactive projects that implement concepts from this paper:
 
 - [**Path-Finding Preference Game**](../../coding-adventures/01-pathfinding-preference-game/) -- Implements the full SFT -> RM -> PPO pipeline from this paper in a grid world. Features Bradley-Terry reward model training, KL-penalised PPO, and observable reward overoptimisation when the KL constraint is removed.
+- [**KL Divergence: Implication on LLM Outputs**](../../coding-adventures/02-kl-divergence-llm-outputs/) -- Visualises the KL divergence between base and aligned LLMs on real text. Demonstrates the same KL budget concept from this paper's Figure 4 (reward overoptimisation vs KL).

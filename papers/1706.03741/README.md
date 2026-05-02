@@ -66,3 +66,4 @@ manim -ql --media_dir ../output/animations 06_reward_convergence.py RewardConver
 Hands-on interactive projects that implement concepts from this paper:
 
 - [**Path-Finding Preference Game**](../../coding-adventures/01-pathfinding-preference-game/) -- Full RLHF pipeline in a grid world. You rate trajectory pairs, train a Bradley-Terry reward model on your preferences, and PPO fine-tune an agent -- the same pipeline described in this paper, made tangible.
+- [**KL Divergence: Implication on LLM Outputs**](../../coding-adventures/02-kl-divergence-llm-outputs/) -- See how KL divergence between base and RLHF'd LLMs varies across safety, helpfulness, and style prompts. Connects to the KL penalty used in this paper's reward-learning framework.

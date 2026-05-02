@@ -11,6 +11,7 @@ These are different from the per-paper visualisations (static PNGs, interactive 
 | # | Adventure | Papers | Tech | Status |
 |---|-----------|--------|------|--------|
 | 1 | [Path-Finding Preference Game](01-pathfinding-preference-game/) | [1706](../papers/1706.03741/), [1707](../papers/1707.06347/), [2009](../papers/2009.01325/) | PyTorch + Rich | Done |
+| 2 | [KL Divergence: Implication on LLM Outputs](02-kl-divergence-llm-outputs/) | [1707](../papers/1707.06347/), [1706](../papers/1706.03741/), [2009](../papers/2009.01325/) | Qwen2.5 + Rich | Done |
 
 ---
 
