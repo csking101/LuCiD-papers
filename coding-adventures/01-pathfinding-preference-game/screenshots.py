@@ -1,71 +1,141 @@
 #!/usr/bin/env python3
-"""Generate SVG screenshots for Adventure 01 using Rich with mock data."""
+"""Generate SVG screenshots for Adventure 01 using the real viz.py functions.
 
+Constructs mock data objects (GridWorld, Trajectory, policy maps, etc.) and
+passes them to the actual rendering functions, so the screenshots are
+pixel-perfect matches of what users see in the terminal.
+
+No GPU or torch training required -- just numpy + rich.
+"""
+
+import sys
 from pathlib import Path
 
-from rich.console import Console
-from rich.table import Table
-from rich.panel import Panel
-from rich.columns import Columns
-from rich.text import Text
+import numpy as np
+
+# Add adventure dir to path so we can import local modules
+sys.path.insert(0, str(Path(__file__).parent))
+
+from rich.console import Console, Group
+
+from env import (
+    ACTION_DELTAS,
+    COIN,
+    GEM,
+    NUM_ACTIONS,
+    SIZE,
+    WALL,
+    GridWorld,
+    Trajectory,
+)
+from viz import (
+    render_grid,
+    render_heatmap,
+    render_llm_parallel_table,
+    render_metrics_table,
+    render_nn_forward,
+    render_phase_header,
+    render_policy_arrows,
+    render_policy_comparison,
+    render_preference_pair,
+    render_results_summary,
+    render_rm_architecture,
+    render_rm_spot_check,
+    sparkline,
+)
 
 OUTPUT_DIR = Path(__file__).parent / ".." / ".." / "docs" / "adventures" / "01"
 
 
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _build_trajectory(
+    env: GridWorld,
+    positions: list[tuple[int, int]],
+    reached_goal: bool = True,
+) -> Trajectory:
+    """Build a Trajectory from a list of (row, col) positions."""
+    states = [np.array([r / env.size, c / env.size], dtype=np.float32)
+              for r, c in positions]
+
+    # Derive actions from consecutive positions
+    actions = []
+    for (r1, c1), (r2, c2) in zip(positions[:-1], positions[1:]):
+        dr, dc = r2 - r1, c2 - c1
+        for a, (ar, ac) in enumerate(ACTION_DELTAS):
+            if (ar, ac) == (dr, dc):
+                actions.append(a)
+                break
+        else:
+            actions.append(3)  # default RIGHT
+
+    # Determine collected pickups along this path
+    collected = []
+    seen = set()
+    for r, c in positions:
+        if (r, c) in env.initial_pickups and (r, c) not in seen:
+            collected.append((r, c, env.initial_pickups[(r, c)]))
+            seen.add((r, c))
+
+    # Simple synthetic rewards
+    rewards = [-0.01] * len(actions)
+    if reached_goal:
+        rewards[-1] = 10.0
+
+    return Trajectory(
+        states=states,
+        actions=actions,
+        rewards=rewards,
+        positions=positions,
+        log_probs=[-1.2] * len(actions),
+        values=[float(i) / len(actions) * 8.0 for i in range(len(actions))],
+        done=True,
+        reached_goal=reached_goal,
+        pickups_collected=collected,
+    )
+
+
+def _save(console: Console, filename: str, title: str) -> None:
+    svg = console.export_svg(title=title)
+    (OUTPUT_DIR / filename).write_text(svg)
+    print(f"  ✓ {filename}")
+
+
+# ---------------------------------------------------------------------------
+# Screenshot 1: Grid World with a sample path
+# ---------------------------------------------------------------------------
+
 def generate_grid_world():
     console = Console(record=True, width=80)
+    env = GridWorld()
 
-    # 8x8 grid layout
-    grid = [
-        ["S", ".", ".", "#", ".", "$", ".", "."],
-        [".", "$", ".", "#", ".", ".", ".", "."],
-        [".", ".", ".", ".", ".", "#", "*", "."],
-        ["#", "#", ".", "#", ".", "#", ".", "."],
-        [".", ".", "$", ".", ".", ".", ".", "$"],
-        [".", "#", ".", "#", "#", ".", "*", "."],
-        [".", ".", ".", ".", "$", ".", ".", "."],
-        ["T", ".", "$", ".", ".", "*", ".", "G"],
+    # A realistic path: S→ right along top, down through gap, across middle,
+    # down through bottom gap, to goal. Collects some pickups along the way.
+    path_positions = [
+        (0, 0), (0, 1), (1, 1),  # start, grab coin at (1,1)
+        (1, 0), (2, 0), (2, 1),  # down and through wall gap
+        (3, 1),                    # grab coin at (3,1)
+        (3, 2), (4, 2),           # middle corridor
+        (4, 4), (3, 4), (3, 5),   # around barrier, grab coin at (3,5)
+        (3, 6),                    # grab gem at (3,6)
+        (4, 6),                    # grab coin at (4,6)
+        (5, 6), (5, 7),           # through bottom gap
+        (6, 7), (7, 7),           # to goal
     ]
 
-    cell_styles = {
-        "S": ("S", "bold white on blue"),
-        "G": ("G", "bold white on green"),
-        "T": ("T", "bold white on red"),
-        "#": ("#", "white on rgb(60,60,60)"),
-        "$": ("$", "bold yellow on rgb(40,40,40)"),
-        "*": ("*", "bold magenta on rgb(40,40,40)"),
-        ".": (" ", "on rgb(30,30,30)"),
-    }
+    traj = _build_trajectory(env, path_positions, reached_goal=True)
 
-    table = Table(
-        title="[bold]Grid World Environment[/]",
-        show_header=False,
-        show_lines=True,
-        border_style="bright_blue",
-        padding=(0, 1),
+    grid = render_grid(
+        env,
+        path=traj.positions,
+        path_style="bold cyan",
+        title="Agent Path (Episode 142)",
+        show_stats=True,
+        traj=traj,
     )
-    for _ in range(8):
-        table.add_column(width=3, justify="center")
-
-    for row in grid:
-        cells = []
-        for cell in row:
-            char, style = cell_styles[cell]
-            cells.append(f"[{style}] {char} [/]")
-        table.add_row(*cells)
-
-    legend = Text.from_markup(
-        "[bold]Legend:[/]  "
-        "[bold white on blue] S [/] Start  "
-        "[bold white on green] G [/] Goal  "
-        "[bold white on red] T [/] Trap  "
-        "[white on rgb(60,60,60)] # [/] Wall  "
-        "[bold yellow] $ [/] Coin (+0.5)  "
-        "[bold magenta] * [/] Gem (+2.0)"
-    )
-
-    console.print(Panel(table, border_style="bright_blue", subtitle="8×8 with 3-corridor layout"))
-    console.print(legend)
+    console.print(grid)
 
     svg = console.export_svg(title="Grid World Environment")
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -73,256 +143,234 @@ def generate_grid_world():
     print("  ✓ 01_grid_world.svg")
 
 
+# ---------------------------------------------------------------------------
+# Screenshot 2: Preference pair comparison
+# ---------------------------------------------------------------------------
+
 def generate_preferences():
     console = Console(record=True, width=90)
+    env = GridWorld()
 
-    # Segment A
-    seg_a = Table(title="[bold cyan]Segment A[/]", border_style="cyan", show_lines=True, show_header=False)
-    seg_a.add_column(width=3, justify="center")
-    for _ in range(7):
-        seg_a.add_column(width=3, justify="center")
+    # Path A: efficient, shorter, fewer pickups
+    path_a = [
+        (0, 0), (0, 1), (1, 1), (1, 0),
+        (2, 0), (2, 1), (3, 1), (3, 2),
+        (4, 2), (4, 4), (5, 4 + 2), (5, 7),  # skip to gap
+        (6, 7), (7, 7),
+    ]
+    # Fix: walk through valid cells only
+    path_a = [
+        (0, 0), (0, 1), (1, 1), (1, 0),
+        (2, 0), (2, 1), (3, 1), (3, 2),
+        (4, 2), (4, 4), (3, 4), (3, 5),
+        (4, 5 + 1), (5, 6), (5, 7),
+        (6, 7), (7, 7),
+    ]
 
-    path_a = {(0,0),(0,1),(0,2),(1,2),(2,2),(2,3),(2,4),(3,4),(4,4),(4,5),(4,6),(4,7),
-              (5,7),(6,7),(7,7)}
-    grid_a_rows = []
-    for r in range(8):
-        row = []
-        for c in range(8):
-            if (r,c) in path_a:
-                row.append("[bold cyan]•[/]")
-            elif r == 0 and c == 0:
-                row.append("[bold blue]S[/]")
-            elif r == 7 and c == 7:
-                row.append("[bold green]G[/]")
-            else:
-                row.append("[dim]·[/]")
-        grid_a_rows.append(row)
-    for row in grid_a_rows:
-        seg_a.add_row(*row)
+    # Path B: scenic detour, more pickups including gem at (0,7)
+    path_b = [
+        (0, 0), (0, 1), (0, 2), (0, 3), (0, 4),  # coin at (0,4)
+        (0, 5), (0, 6), (0, 7),  # gem at (0,7)
+        (1, 7), (1, 6), (1, 5), (1, 3), (1, 2),
+        (2, 1), (2, 0), (3, 0), (3, 1),  # coin at (3,1)
+        (3, 2), (4, 2), (4, 4),
+        (3, 4), (3, 5), (3, 6),  # gem at (3,6)
+        (4, 6),  # coin at (4,6)
+        (5, 6), (5, 7), (6, 7), (7, 7),
+    ]
 
-    panel_a = Panel(
-        seg_a,
-        title="[bold cyan]Segment A[/]",
-        subtitle="Steps: 14 | Coins: 2 | Turns: 5",
-        border_style="cyan",
-    )
+    traj_a = _build_trajectory(env, path_a, reached_goal=True)
+    traj_b = _build_trajectory(env, path_b, reached_goal=True)
 
-    # Segment B
-    seg_b = Table(title="[bold yellow]Segment B[/]", border_style="yellow", show_lines=True, show_header=False)
-    seg_b.add_column(width=3, justify="center")
-    for _ in range(7):
-        seg_b.add_column(width=3, justify="center")
+    pair_display = render_preference_pair(env, traj_a, traj_b, pair_num=12, total_pairs=30)
+    console.print(pair_display)
 
-    path_b = {(0,0),(1,0),(1,1),(2,1),(2,2),(2,3),(2,4),(2,5),(2,6),(3,6),(4,6),(5,6),
-              (6,6),(6,7),(7,7)}
-    grid_b_rows = []
-    for r in range(8):
-        row = []
-        for c in range(8):
-            if (r,c) in path_b:
-                row.append("[bold yellow]•[/]")
-            elif r == 0 and c == 0:
-                row.append("[bold blue]S[/]")
-            elif r == 7 and c == 7:
-                row.append("[bold green]G[/]")
-            else:
-                row.append("[dim]·[/]")
-        grid_b_rows.append(row)
-    for row in grid_b_rows:
-        seg_b.add_row(*row)
+    _save(console, "02_preferences.svg", "Human Preference Collection")
 
-    panel_b = Panel(
-        seg_b,
-        title="[bold yellow]Segment B[/]",
-        subtitle="Steps: 16 | Gems: 1 | Turns: 4",
-        border_style="yellow",
-    )
 
-    console.print(Panel(
-        "[bold]Preference Pair 12 / 30[/]",
-        border_style="bright_white",
-    ))
-    console.print(Columns([panel_a, panel_b], equal=True, expand=True))
-    console.print()
-    console.print(
-        "[bold bright_white]Which is better?[/]  "
-        "[cyan][1][/] Segment A    "
-        "[yellow][2][/] Segment B    "
-        "[dim][s] Skip[/]"
-    )
-
-    svg = console.export_svg(title="Human Preference Collection")
-    (OUTPUT_DIR / "02_preferences.svg").write_text(svg)
-    print("  ✓ 02_preferences.svg")
-
+# ---------------------------------------------------------------------------
+# Screenshot 3: Reward Model training
+# ---------------------------------------------------------------------------
 
 def generate_reward_model():
-    console = Console(record=True, width=72)
+    console = Console(record=True, width=80)
 
-    table = Table(
-        title="[bold]Reward Model Training[/]",
-        border_style="cyan",
-        show_lines=False,
+    # RM architecture (static display)
+    arch = render_rm_architecture()
+    console.print(arch)
+
+    # Metrics with realistic training curves
+    loss_vals = [0.693, 0.641, 0.584, 0.512, 0.447, 0.381, 0.319, 0.264,
+                 0.218, 0.189, 0.156, 0.134, 0.119, 0.111]
+    acc_vals = [0.50, 0.55, 0.62, 0.68, 0.73, 0.78, 0.82, 0.84,
+                0.87, 0.89, 0.91, 0.92, 0.93, 0.933]
+
+    metrics = {
+        "Train Loss": (f"{loss_vals[-1]:.4f}", sparkline(loss_vals)),
+        "Val Loss": (f"{loss_vals[-1] * 1.85:.4f}", sparkline([v * 1.85 for v in loss_vals])),
+        "Accuracy": (f"{acc_vals[-1]:.1%}", sparkline(acc_vals)),
+        "Epoch": ("100 / 100", ""),
+    }
+    metrics_panel = render_metrics_table(metrics, title="Reward Model Training")
+    console.print(metrics_panel)
+
+    # Spot-check of an RM prediction
+    spot = render_rm_spot_check(
+        pair_idx=7,
+        r_a=4.82,
+        r_b=2.31,
+        prob_a=0.92,
+        human_label=0.0,  # human preferred A
     )
-    table.add_column("Epoch", justify="right", style="bold")
-    table.add_column("Train Loss", justify="right", style="red")
-    table.add_column("Val Loss", justify="right", style="yellow")
-    table.add_column("Accuracy", justify="right", style="green")
+    console.print(spot)
 
-    data = [
-        (1,   0.6931, 0.6928, "50.0%"),
-        (10,  0.5842, 0.5901, "62.3%"),
-        (20,  0.4713, 0.4890, "71.7%"),
-        (30,  0.3821, 0.4102, "78.3%"),
-        (50,  0.2647, 0.3105, "84.0%"),
-        (70,  0.1893, 0.2541, "88.7%"),
-        (90,  0.1342, 0.2190, "91.3%"),
-        (100, 0.1108, 0.2053, "93.3%"),
-    ]
+    _save(console, "03_reward_model.svg", "Reward Model Training")
 
-    for epoch, tl, vl, acc in data:
-        table.add_row(str(epoch), f"{tl:.4f}", f"{vl:.4f}", acc)
 
-    console.print(table)
-    console.print()
-    console.print(
-        "[dim]Loss:[/]  ████████████████░░░░ → ███░░░░░░░░░░░░░░░░░  "
-        "[green]↓ converging[/]"
-    )
-    console.print(
-        "[dim]Acc: [/]  ██░░░░░░░░░░░░░░░░░░ → ██████████████████░░  "
-        "[green]↑ 93.3%[/]"
-    )
-
-    svg = console.export_svg(title="Reward Model Training")
-    (OUTPUT_DIR / "03_reward_model.svg").write_text(svg)
-    print("  ✓ 03_reward_model.svg")
-
+# ---------------------------------------------------------------------------
+# Screenshot 4: PPO fine-tuning dashboard
+# ---------------------------------------------------------------------------
 
 def generate_ppo_training():
-    console = Console(record=True, width=88)
+    console = Console(record=True, width=90)
+    env = GridWorld()
 
-    table = Table(
-        title="[bold]PPO Fine-Tuning with KL Penalty[/]",
-        border_style="magenta",
-        show_lines=False,
-    )
-    table.add_column("Iter", justify="right", style="bold")
-    table.add_column("Goal Rate", justify="right", style="green")
-    table.add_column("Trap Rate", justify="right", style="red")
-    table.add_column("Avg Reward", justify="right", style="cyan")
-    table.add_column("Entropy", justify="right", style="yellow")
-    table.add_column("KL Div", justify="right", style="magenta")
+    # Phase header
+    header = render_phase_header(4)
+    console.print(header)
 
-    data = [
-        (1,   "42%", "18%",  "1.23",  "1.386", "0.000"),
-        (10,  "48%", "14%",  "2.87",  "1.301", "0.012"),
-        (20,  "56%", "12%",  "4.15",  "1.214", "0.031"),
-        (30,  "63%", "10%",  "5.42",  "1.148", "0.058"),
-        (40,  "70%",  "8%",  "6.71",  "1.095", "0.089"),
-        (50,  "76%",  "6%",  "7.83",  "1.052", "0.124"),
-        (60,  "81%",  "4%",  "8.56",  "1.018", "0.157"),
-        (70,  "85%",  "4%",  "9.12",  "0.991", "0.183"),
-        (80,  "88%",  "2%",  "9.47",  "0.972", "0.201"),
-        (100, "92%",  "2%", "10.03",  "0.958", "0.218"),
-    ]
+    # Training metrics with realistic RLHF curves
+    reward_vals = [1.2, 2.1, 3.4, 4.8, 5.9, 6.7, 7.5, 8.1, 8.7, 9.1, 9.5, 9.8, 10.0]
+    kl_vals = [0.0, 0.008, 0.019, 0.035, 0.058, 0.082, 0.109, 0.134, 0.157, 0.178, 0.195, 0.209, 0.218]
+    goal_vals = [0.42, 0.46, 0.52, 0.58, 0.64, 0.70, 0.75, 0.80, 0.84, 0.87, 0.90, 0.91, 0.92]
+    entropy_vals = [1.386, 1.35, 1.30, 1.25, 1.19, 1.14, 1.10, 1.06, 1.03, 1.00, 0.98, 0.96, 0.958]
 
-    for it, gr, tr, ar, ent, kl in data:
-        table.add_row(str(it), gr, tr, ar, ent, kl)
+    metrics = {
+        "RM Score": (f"{reward_vals[-1]:.2f}", sparkline(reward_vals)),
+        "Goal Rate": (f"{goal_vals[-1]:.0%}", sparkline(goal_vals)),
+        "KL Divergence": (f"{kl_vals[-1]:.3f}", sparkline(kl_vals)),
+        "Entropy": (f"{entropy_vals[-1]:.3f}", sparkline(entropy_vals)),
+        "β (KL coeff)": ("0.200", ""),
+        "Episode": ("100 / 100", ""),
+    }
+    metrics_panel = render_metrics_table(metrics, title="PPO Fine-Tuning")
+    console.print(metrics_panel)
 
-    console.print(table)
-    console.print()
-    console.print(
-        "[dim]β (KL coeff) = 0.20  |  "
-        "RM Score trend:[/] ▁▂▃▄▅▆▇██  "
-        "[dim]KL trend:[/] ▁▁▂▂▃▃▄▅▆▇"
-    )
+    # Value heatmap — higher values near goal, lower near start
+    values = np.zeros((SIZE, SIZE), dtype=np.float32)
+    for r in range(SIZE):
+        for c in range(SIZE):
+            if env.grid[r, c] != WALL:
+                # Distance-based value: closer to goal = higher
+                dist = abs(r - 7) + abs(c - 7)
+                values[r, c] = max(0, 10.0 - dist * 0.7) + np.random.uniform(0, 0.5)
+    heatmap = render_heatmap(values, env, title="Value Heatmap V(s)", border_style="magenta")
+    console.print(heatmap)
 
-    svg = console.export_svg(title="PPO Fine-Tuning with KL Penalty")
-    (OUTPUT_DIR / "04_ppo_training.svg").write_text(svg)
-    print("  ✓ 04_ppo_training.svg")
+    # Policy arrows — mostly pointing toward goal with some exploration
+    policy_map = np.zeros((SIZE, SIZE), dtype=int)
+    for r in range(SIZE):
+        for c in range(SIZE):
+            if env.grid[r, c] == WALL:
+                continue
+            # Generally: go down if above goal row, go right if left of goal col
+            if r < 7 and c < 7:
+                policy_map[r, c] = 1 if r < c else 3  # DOWN or RIGHT
+            elif r < 7:
+                policy_map[r, c] = 1  # DOWN
+            elif c < 7:
+                policy_map[r, c] = 3  # RIGHT
+            else:
+                policy_map[r, c] = 3  # at goal, default RIGHT
+    arrows = render_policy_arrows(policy_map, env, title="RLHF Policy (Greedy)")
+    console.print(arrows)
 
+    _save(console, "04_ppo_training.svg", "PPO Fine-Tuning with KL Penalty")
+
+
+# ---------------------------------------------------------------------------
+# Screenshot 5: Pre-trained vs RLHF comparison
+# ---------------------------------------------------------------------------
 
 def generate_comparison():
     console = Console(record=True, width=90)
+    env = GridWorld()
 
-    # Arrow grids showing policy direction at each cell
-    arrows_before = [
-        ["→", "→", "↓", " ", "↓", "→", "↓", "↓"],
-        ["↓", "→", "↓", " ", "↓", "←", "↓", "↓"],
-        ["↓", "→", "→", "→", "↓", " ", "↓", "↓"],
-        [" ", " ", "↓", " ", "↓", " ", "↓", "↓"],
-        ["→", "→", "→", "→", "→", "→", "↓", "→"],
-        ["↓", " ", "↓", " ", " ", "↓", "→", "↓"],
-        ["→", "→", "→", "→", "→", "→", "→", "↓"],
-        ["→", "→", "→", "→", "→", "→", "→", "★"],
-    ]
-    arrows_after = [
-        ["→", "→", "↓", " ", "↓", "↓", "↓", "↓"],
-        ["↓", "↓", "↓", " ", "↓", "↓", "↓", "↓"],
-        ["↓", "→", "→", "→", "→", " ", "↓", "↓"],
-        [" ", " ", "↓", " ", "↓", " ", "↓", "↓"],
-        ["→", "→", "→", "↓", "↓", "→", "→", "↓"],
-        ["↓", " ", "↓", " ", " ", "↓", "↓", "↓"],
-        ["→", "→", "→", "→", "→", "→", "→", "↓"],
-        ["→", "→", "→", "→", "→", "→", "→", "★"],
-    ]
+    # Pre-trained policy: somewhat random, biased toward goal but noisy
+    rng = np.random.RandomState(42)
+    pretrained_map = np.zeros((SIZE, SIZE), dtype=int)
+    for r in range(SIZE):
+        for c in range(SIZE):
+            if env.grid[r, c] == WALL:
+                continue
+            # Noisy goal-seeking: 60% optimal, 40% random
+            if rng.random() < 0.6:
+                if r < 7 and c < 7:
+                    pretrained_map[r, c] = 1 if r <= c else 3
+                elif r < 7:
+                    pretrained_map[r, c] = 1
+                elif c < 7:
+                    pretrained_map[r, c] = 3
+            else:
+                pretrained_map[r, c] = rng.randint(0, NUM_ACTIONS)
 
-    def make_arrow_table(arrows, style):
-        t = Table(show_header=False, show_lines=True, border_style=style, padding=(0, 1))
-        for _ in range(8):
-            t.add_column(width=2, justify="center")
-        for row in arrows:
-            cells = []
-            for a in row:
-                if a == " ":
-                    cells.append("[dim]#[/]")
-                elif a == "★":
-                    cells.append("[bold green]★[/]")
-                else:
-                    cells.append(f"[{style}]{a}[/]")
-            t.add_row(*cells)
-        return t
+    # RLHF policy: cleaner, more consistent goal-seeking + detours for pickups
+    rlhf_map = np.zeros((SIZE, SIZE), dtype=int)
+    for r in range(SIZE):
+        for c in range(SIZE):
+            if env.grid[r, c] == WALL:
+                continue
+            # Strong goal-seeking with pickup awareness
+            if r < 7 and c < 7:
+                rlhf_map[r, c] = 1 if r < c else 3  # DOWN or RIGHT
+            elif r < 7:
+                rlhf_map[r, c] = 1  # DOWN
+            elif c < 7:
+                rlhf_map[r, c] = 3  # RIGHT
+            else:
+                rlhf_map[r, c] = 3
 
-    before_table = make_arrow_table(arrows_before, "cyan")
-    after_table = make_arrow_table(arrows_after, "bright_green")
+    # Policy comparison (3-column: pre-trained, RLHF, diff)
+    comparison = render_policy_comparison(pretrained_map, rlhf_map, env)
+    console.print(comparison)
 
-    panel_before = Panel(
-        before_table,
-        title="[bold cyan]Before RLHF[/]",
-        subtitle="Goal: 42% | Trap: 18% | Avg Steps: 24",
-        border_style="cyan",
-    )
-    panel_after = Panel(
-        after_table,
-        title="[bold bright_green]After RLHF[/]",
-        subtitle="Goal: 92% | Trap: 2% | Avg Steps: 16",
-        border_style="bright_green",
-    )
+    # Results summary table
+    pretrained_stats = {
+        "Goal Rate (%)": 44.0,
+        "Avg Steps": 23.6,
+        "Avg Reward": 3.21,
+        "Avg Pickups": 1.8,
+    }
+    rlhf_stats = {
+        "Goal Rate (%)": 92.0,
+        "Avg Steps": 15.4,
+        "Avg Reward": 9.87,
+        "Avg Pickups": 4.2,
+    }
+    summary = render_results_summary(pretrained_stats, rlhf_stats)
+    console.print(summary)
 
-    console.print(Panel(
-        "[bold]Pre-training vs RLHF Policy[/]\n"
-        "[dim]Arrows show greedy action at each cell. Walls shown as #.[/]",
-        border_style="bright_white",
-    ))
-    console.print(Columns([panel_before, panel_after], equal=True, expand=True))
-    console.print()
-    console.print(
-        "[bold]Alignment Tax:[/]  KL(π_RLHF ‖ π_pretrained) = [yellow]0.2180[/]  "
-        "[dim]— how far the policy shifted to match your preferences[/]"
-    )
+    # LLM parallel mapping table
+    parallel = render_llm_parallel_table()
+    console.print(parallel)
 
-    svg = console.export_svg(title="Pre-training vs RLHF Policy")
-    (OUTPUT_DIR / "05_comparison.svg").write_text(svg)
-    print("  ✓ 05_comparison.svg")
+    _save(console, "05_comparison.svg", "Pre-training vs RLHF Policy")
 
+
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
     print("Generating Adventure 01 screenshots...")
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    np.random.seed(42)
+
     generate_grid_world()
     generate_preferences()
     generate_reward_model()
     generate_ppo_training()
     generate_comparison()
+
     print("Done!")

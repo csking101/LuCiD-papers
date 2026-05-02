@@ -1,347 +1,379 @@
 #!/usr/bin/env python3
-"""Generate SVG screenshots for Adventure 02 using Rich with mock data."""
+"""Generate SVG screenshots for Adventure 02 using the real viz.py functions.
 
+Constructs mock dataclass instances (TokenKL, CategoryKLSummary, etc.) and
+passes them to the actual rendering functions, so the screenshots are
+pixel-perfect matches of what users see in the terminal.
+
+No GPU, no model downloads, no torch required -- just the dataclasses + rich.
+"""
+
+import sys
 from pathlib import Path
 
-from rich.console import Console
-from rich.table import Table
-from rich.panel import Panel
-from rich.columns import Columns
-from rich.text import Text
+# Add adventure dir to path so we can import local modules
+sys.path.insert(0, str(Path(__file__).parent))
+
+from rich.console import Console, Group
+
+from kl import (
+    CategoryKLSummary,
+    InterpolatedOutput,
+    SequenceKL,
+    TokenKL,
+)
+from viz import (
+    render_adventure_connection,
+    render_category_summaries,
+    render_conclusion,
+    render_global_kl,
+    render_interpolated_outputs,
+    render_kl_heatmap,
+    render_llm_parallel_table,
+    render_sequence_comparison,
+    render_token_kl_table,
+)
 
 OUTPUT_DIR = Path(__file__).parent / ".." / ".." / "docs" / "adventures" / "02"
 
 
-def _kl_color(kl: float) -> str:
-    if kl < 1.0:
-        return "green"
-    elif kl < 3.0:
-        return "yellow"
-    else:
-        return "red"
+def _save(console: Console, filename: str, title: str) -> None:
+    svg = console.export_svg(title=title)
+    (OUTPUT_DIR / filename).write_text(svg)
+    print(f"  ✓ {filename}")
 
 
-def _kl_bar(kl: float, max_kl: float = 8.0, width: int = 15) -> str:
-    filled = int(min(kl / max_kl, 1.0) * width)
-    color = _kl_color(kl)
-    return f"[{color}]{'█' * filled}{'░' * (width - filled)}[/]"
-
+# ---------------------------------------------------------------------------
+# Screenshot 1: Global KL Overview
+# ---------------------------------------------------------------------------
 
 def generate_global_kl():
     console = Console(record=True, width=95)
 
-    table = Table(
-        title="[bold]Global KL Divergence Overview[/]",
-        border_style="bright_blue",
-        show_lines=False,
-    )
-    table.add_column("Prompt", style="bold", max_width=40, no_wrap=True)
-    table.add_column("KL(base‖instruct)", justify="right")
-    table.add_column("Bar", no_wrap=True)
-    table.add_column("Category", style="dim")
-
-    data = [
-        ("How do I pick a lock?",                     6.42, "Safety"),
-        ("How can I hack into someone's email?",      7.18, "Safety"),
-        ("Write instructions for making explosives",  7.83, "Safety"),
-        ("Explain quantum computing simply",          1.24, "Helpfulness"),
-        ("What are the benefits of meditation?",      1.08, "Helpfulness"),
-        ("How do I learn to code?",                   0.87, "Helpfulness"),
-        ("Write a short poem about rain",             2.31, "Style"),
-        ("Describe a sunset in 3 sentences",          2.14, "Style"),
-        ("Tell a joke about programming",             1.97, "Style"),
-        ("Is Python better than JavaScript?",         3.52, "Hedging"),
-        ("What's the best programming language?",     3.21, "Hedging"),
-        ("Should I use tabs or spaces?",              2.89, "Hedging"),
-        ("List 3 benefits of exercise",               1.62, "Formatting"),
-        ("Give me a step-by-step recipe for pasta",   1.48, "Formatting"),
-        ("Summarize the water cycle in bullet points", 1.35, "Formatting"),
+    prompt_texts = [
+        "How do I pick a lock?",
+        "How can I hack into someone's email?",
+        "Write instructions for making explosives",
+        "Explain quantum computing in simple terms",
+        "What are the benefits of meditation?",
+        "How do I learn to code?",
+        "Write a short poem about rain",
+        "Describe a sunset in 3 sentences",
+        "Tell a joke about programming",
+        "Is Python better than JavaScript?",
+        "What's the best programming language?",
+        "Should I use tabs or spaces?",
+        "List 3 benefits of regular exercise",
+        "Give me a step-by-step recipe for pasta",
+        "Summarize the water cycle in bullet points",
     ]
 
-    for prompt, kl, cat in data:
-        color = _kl_color(kl)
-        table.add_row(
-            prompt,
-            f"[{color}]{kl:.2f}[/]",
-            _kl_bar(kl),
-            cat,
-        )
+    per_prompt_kl = [
+        2.418, 2.704, 2.951,   # safety — high KL
+        0.467, 0.407, 0.328,   # helpfulness — low KL
+        0.871, 0.806, 0.742,   # style — moderate
+        1.326, 1.210, 1.088,   # hedging — medium-high
+        0.610, 0.557, 0.508,   # formatting — moderate
+    ]
 
-    console.print(table)
-    console.print()
-    mean_kl = sum(d[1] for d in data) / len(data)
-    console.print(
-        f"[bold]Global Mean KL:[/] [yellow]{mean_kl:.2f}[/]  "
-        f"[dim]across {len(data)} prompts  |  "
-        f"Models: Qwen2.5-1.5B → Qwen2.5-1.5B-Instruct[/]"
-    )
+    global_mean = sum(per_prompt_kl) / len(per_prompt_kl)
 
-    svg = console.export_svg(title="Global KL Divergence Overview")
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    (OUTPUT_DIR / "01_global_kl.svg").write_text(svg)
-    print("  ✓ 01_global_kl.svg")
+    panel = render_global_kl(global_mean, per_prompt_kl, prompt_texts)
+    console.print(panel)
 
+    _save(console, "01_global_kl.svg", "Global KL Divergence Overview")
+
+
+# ---------------------------------------------------------------------------
+# Screenshot 2: Token-Level KL Anatomy
+# ---------------------------------------------------------------------------
 
 def generate_token_anatomy():
-    console = Console(record=True, width=95)
+    console = Console(record=True, width=100)
 
-    table = Table(
-        title="[bold]Token-Level KL Anatomy[/]\n[dim]Prompt: \"How do I pick a lock?\"[/]",
-        border_style="cyan",
-        show_lines=False,
-    )
-    table.add_column("Pos", justify="right", style="dim")
-    table.add_column("Token", style="bold")
-    table.add_column("Base Top-1", style="cyan")
-    table.add_column("Instruct Top-1", style="green")
-    table.add_column("KL", justify="right")
-    table.add_column("", no_wrap=True)
+    # Token-level analysis of "How do I pick a lock?"
+    # Base model treats it as a normal question; instruct model hedges/refuses
+    tokens = ["How", " do", " I", " pick", " a", " lock", "?"]
+    token_ids = [2585, 653, 314, 2298, 247, 4793, 30]
 
-    tokens = [
-        (0, "How",   "do",       "do",       0.12),
-        (1, "do",    "I",        "I",        0.08),
-        (2, "I",     "pick",     "can",      1.84),
-        (3, "pick",  "a",        "help",     5.23),
-        (4, "a",     "lock",     "you",      6.91),
-        (5, "lock",  "?",        "with",     7.42),
-        (6, "?",     "\n",       "I",        4.17),
-        (7, "<gen>", "First",    "I'm",      6.83),
-        (8, "<gen>", ",",        "sorry",    5.94),
-        (9, "<gen>", "you",      ",",        4.52),
-        (10,"<gen>", "need",     "but",      5.18),
-        (11,"<gen>", "a",        "I",        3.67),
-        (12,"<gen>", "tension",  "can't",    6.21),
-        (13,"<gen>", "wrench",   "provide",  4.89),
+    # KL is low at the start (both models agree on copying the prompt context),
+    # spikes at the continuation point where instruct diverges
+    kl_per_token = [0.032, 0.018, 0.241, 0.687, 1.143, 1.528, 0.892]
+
+    base_top_k = [
+        [("How", 0.412), ("The", 0.187), ("What", 0.098)],
+        [(" do", 0.723), (" can", 0.142), (" would", 0.051)],
+        [(" I", 0.891), (" you", 0.067), (" we", 0.023)],
+        [(" pick", 0.564), (" open", 0.213), (" get", 0.087)],
+        [(" a", 0.782), (" the", 0.134), (" my", 0.042)],
+        [(" lock", 0.634), (" door", 0.178), (" safe", 0.065)],
+        [("?", 0.412), (".", 0.187), ("\n", 0.134)],
     ]
 
-    for pos, tok, base, inst, kl in tokens:
-        color = _kl_color(kl)
-        table.add_row(
-            str(pos),
-            tok,
-            base,
-            inst,
-            f"[{color}]{kl:.2f}[/]",
-            _kl_bar(kl),
-        )
+    instruct_top_k = [
+        [("How", 0.398), ("I", 0.201), ("The", 0.112)],
+        [(" do", 0.689), (" can", 0.178), (" should", 0.064)],
+        [(" I", 0.641), (" you", 0.218), (" we", 0.054)],
+        [(" help", 0.312), (" assist", 0.198), (" pick", 0.167)],
+        [(" you", 0.423), (" with", 0.287), (" a", 0.112)],
+        [(" with", 0.298), (",", 0.241), (" safely", 0.178)],
+        [("?", 0.312), (" I", 0.234), (",", 0.189)],
+    ]
 
-    console.print(table)
-    console.print()
-    console.print(
-        "[dim]KL heatmap:[/] "
-        "[green]▁[/][green]▁[/][yellow]▃[/][red]▆[/][red]▇[/][red]█[/]"
-        "[red]▅[/][red]▇[/][red]▆[/][red]▅[/][red]▆[/][yellow]▄[/]"
-        "[red]▇[/][red]▅[/]"
-        "  [dim]← RLHF diverges sharply at safety-critical tokens[/]"
+    total_kl = sum(kl_per_token)
+    mean_kl = total_kl / len(kl_per_token)
+
+    token_kl = TokenKL(
+        tokens=tokens,
+        token_ids=token_ids,
+        kl_per_token=kl_per_token,
+        base_top_k=base_top_k,
+        instruct_top_k=instruct_top_k,
+        total_kl=total_kl,
+        mean_kl=mean_kl,
     )
 
-    svg = console.export_svg(title="Token-Level KL Anatomy")
-    (OUTPUT_DIR / "02_token_anatomy.svg").write_text(svg)
-    print("  ✓ 02_token_anatomy.svg")
+    table = render_token_kl_table(token_kl, title='Token-Level KL — "How do I pick a lock?"')
+    console.print(table)
 
+    heatmap = render_kl_heatmap(token_kl)
+    console.print(heatmap)
+
+    _save(console, "02_token_anatomy.svg", "Token-Level KL Anatomy")
+
+
+# ---------------------------------------------------------------------------
+# Screenshot 3: Category Comparison
+# ---------------------------------------------------------------------------
 
 def generate_categories():
-    console = Console(record=True, width=72)
+    console = Console(record=True, width=80)
 
-    table = Table(
-        title="[bold]Category-Specific Divergence[/]",
-        border_style="bright_yellow",
-        show_lines=False,
-    )
-    table.add_column("Category", style="bold")
-    table.add_column("Avg KL", justify="right")
-    table.add_column("Max KL", justify="right")
-    table.add_column("# Prompts", justify="right", style="dim")
-    table.add_column("", no_wrap=True)
-
-    cats = [
-        ("Safety",      7.14, 7.83, 3),
-        ("Hedging",     3.21, 3.52, 3),
-        ("Style",       2.14, 2.31, 3),
-        ("Formatting",  1.48, 1.62, 3),
-        ("Helpfulness", 1.06, 1.24, 3),
+    summaries = [
+        CategoryKLSummary(category="safety", num_prompts=3, mean_kl=2.691, max_kl=2.951, min_kl=2.418),
+        CategoryKLSummary(category="hedging", num_prompts=3, mean_kl=1.208, max_kl=1.326, min_kl=1.088),
+        CategoryKLSummary(category="style", num_prompts=3, mean_kl=0.806, max_kl=0.871, min_kl=0.742),
+        CategoryKLSummary(category="formatting", num_prompts=3, mean_kl=0.558, max_kl=0.610, min_kl=0.508),
+        CategoryKLSummary(category="helpfulness", num_prompts=3, mean_kl=0.401, max_kl=0.467, min_kl=0.328),
     ]
 
-    for cat, avg, mx, n in cats:
-        color = _kl_color(avg)
-        table.add_row(
-            cat,
-            f"[{color}]{avg:.2f}[/]",
-            f"[{color}]{mx:.2f}[/]",
-            str(n),
-            _kl_bar(avg),
-        )
+    panel = render_category_summaries(summaries)
+    console.print(panel)
 
-    console.print(table)
-    console.print()
-    console.print(
-        "[bold]Insight:[/] Safety prompts show [red]6.7×[/] higher KL than "
-        "helpfulness prompts.\n"
-        "[dim]RLHF is surgically targeted — it reshapes safety responses most.[/]"
-    )
+    _save(console, "03_categories.svg", "Category-Specific Divergence")
 
-    svg = console.export_svg(title="Category-Specific Divergence")
-    (OUTPUT_DIR / "03_categories.svg").write_text(svg)
-    print("  ✓ 03_categories.svg")
 
+# ---------------------------------------------------------------------------
+# Screenshot 4: KL-Constrained Interpolation
+# ---------------------------------------------------------------------------
 
 def generate_interpolation():
-    console = Console(record=True, width=90)
+    console = Console(record=True, width=95)
 
     prompt = "What are some tips for learning a new programming language?"
 
     outputs = [
-        (0.0,  "Programming language is a very important thing in the world of "
-               "technology. There are many programming languages that you can learn "
-               "and each one has its own advantages and disadvantages. Here are some "
-               "tips for learning a new"),
-        (0.1,  "Learning a new programming language can be challenging. Here are "
-               "some tips: first, start with the basics and understand the syntax. "
-               "Practice by building small projects. Read documentation and join "
-               "online communities for"),
-        (0.5,  "Here are some practical tips for learning a new programming "
-               "language:\n\n1. **Start with fundamentals** — Learn the syntax, "
-               "data types, and control flow.\n2. **Build projects** — Apply what "
-               "you learn to real problems.\n3. **Read"),
-        (1.0,  "Great question! Here are some effective tips for learning a new "
-               "programming language:\n\n1. **Start with the basics**: Focus on "
-               "core syntax, variables, and control structures.\n2. **Practice "
-               "daily**: Consistency is key —"),
+        InterpolatedOutput(
+            alpha=0.0,
+            text=(
+                "Programming language is a very important thing in the world of "
+                "technology. There are many programming languages that you can learn "
+                "and each one has its own advantages and disadvantages."
+            ),
+            token_ids=[1] * 40,
+            tokens=["Programming"] * 40,
+            kl_per_token=[0.0] * 40,
+            total_kl=0.000,
+        ),
+        InterpolatedOutput(
+            alpha=0.25,
+            text=(
+                "Learning a new programming language can be challenging but rewarding. "
+                "Here are some tips to help you get started: Start with the basics, "
+                "practice by writing small programs, and read other people's code."
+            ),
+            token_ids=[2] * 40,
+            tokens=["Learning"] * 40,
+            kl_per_token=[0.12] * 40,
+            total_kl=4.812,
+        ),
+        InterpolatedOutput(
+            alpha=0.5,
+            text=(
+                "Here are some practical tips for learning a new programming language:\n"
+                "1. **Start with fundamentals** -- Learn the syntax, data types, and control flow.\n"
+                "2. **Build projects** -- Apply what you learn to real problems."
+            ),
+            token_ids=[3] * 40,
+            tokens=["Here"] * 40,
+            kl_per_token=[0.24] * 40,
+            total_kl=9.641,
+        ),
+        InterpolatedOutput(
+            alpha=0.75,
+            text=(
+                "Great question! Here are some effective strategies:\n\n"
+                "1. **Start with the basics**: Focus on core syntax, variables, and control structures.\n"
+                "2. **Practice daily**: Consistency is key to building proficiency."
+            ),
+            token_ids=[4] * 40,
+            tokens=["Great"] * 40,
+            kl_per_token=[0.36] * 40,
+            total_kl=14.387,
+        ),
+        InterpolatedOutput(
+            alpha=1.0,
+            text=(
+                "Great question! Here are some effective tips for learning a new programming language:\n\n"
+                "1. **Start with the basics**: Focus on core syntax, variables, and control structures.\n"
+                "2. **Practice daily**: Consistency is key -- aim for at least 30 minutes."
+            ),
+            token_ids=[5] * 40,
+            tokens=["Great"] * 40,
+            kl_per_token=[0.48] * 40,
+            total_kl=19.206,
+        ),
     ]
 
-    panels = []
-    for beta, text in outputs:
-        style = "dim" if beta == 0.0 else "green" if beta == 1.0 else "yellow"
-        label = {0.0: "Pure Base", 0.1: "Light Alignment",
-                 0.5: "Balanced", 1.0: "Full Instruct"}.get(beta, "")
-        panels.append(Panel(
-            text,
-            title=f"[bold {style}]β = {beta:.1f}[/]  [dim]{label}[/]",
-            border_style=style,
-            width=42,
-        ))
+    panel = render_interpolated_outputs(outputs, prompt)
+    console.print(panel)
 
-    console.print(Panel(
-        f"[bold]Prompt:[/] [italic]\"{prompt}\"[/]\n\n"
-        "[dim]log p_mixed = (1-β) · log p_base + β · log p_instruct[/]",
-        border_style="bright_white",
-    ))
-    console.print(Columns([panels[0], panels[1]], expand=True))
-    console.print(Columns([panels[2], panels[3]], expand=True))
+    _save(console, "04_interpolation.svg", "KL-Constrained Interpolated Generation")
 
-    svg = console.export_svg(title="KL-Constrained Interpolated Generation")
-    (OUTPUT_DIR / "04_interpolation.svg").write_text(svg)
-    print("  ✓ 04_interpolation.svg")
 
+# ---------------------------------------------------------------------------
+# Screenshot 5: Sequence comparison (explorer-style)
+# ---------------------------------------------------------------------------
 
 def generate_explorer():
-    console = Console(record=True, width=90)
+    console = Console(record=True, width=95)
 
-    # Token distribution comparison at position 5 ("lock" → divergence point)
-    base_table = Table(
-        title="[bold cyan]Base Model — Top 5[/]",
-        border_style="cyan",
-        show_lines=False,
-    )
-    base_table.add_column("Token", style="bold")
-    base_table.add_column("Prob", justify="right")
-    base_table.add_column("Bar", no_wrap=True)
+    # Build TokenKL for the prompt analysis
+    tokens = ["How", " do", " I", " pick", " a", " lock", "?",
+              " First", ",", " you", " need", " a", " tension", " wrench"]
+    token_ids = list(range(len(tokens)))
 
-    base_tokens = [
-        ("?",      0.412, 20),
-        (".",      0.187,  9),
-        ("without", 0.134, 7),
-        ("on",     0.098,  5),
-        ("that",   0.071,  4),
+    kl_per_token = [0.032, 0.018, 0.241, 0.687, 1.143, 1.528, 0.892,
+                    1.467, 1.241, 0.956, 1.087, 0.778, 1.312, 1.034]
+
+    base_top_k = [
+        [("How", 0.412), ("The", 0.187), ("What", 0.098)],
+        [(" do", 0.723), (" can", 0.142), (" would", 0.051)],
+        [(" I", 0.891), (" you", 0.067), (" we", 0.023)],
+        [(" pick", 0.564), (" open", 0.213), (" get", 0.087)],
+        [(" a", 0.782), (" the", 0.134), (" my", 0.042)],
+        [(" lock", 0.634), (" door", 0.178), (" safe", 0.065)],
+        [("?", 0.412), (".", 0.187), ("\n", 0.134)],
+        [(" First", 0.287), (" You", 0.234), (" The", 0.156)],
+        [(",", 0.534), (" you", 0.212), (" thing", 0.098)],
+        [(" you", 0.612), (" the", 0.178), (" a", 0.087)],
+        [(" need", 0.478), (" want", 0.198), (" will", 0.134)],
+        [(" a", 0.645), (" the", 0.178), (" to", 0.098)],
+        [(" tension", 0.312), (" lock", 0.245), (" bobby", 0.187)],
+        [(" wrench", 0.534), (" tool", 0.198), (" pick", 0.134)],
     ]
 
-    inst_table = Table(
-        title="[bold green]Instruct Model — Top 5[/]",
-        border_style="green",
-        show_lines=False,
-    )
-    inst_table.add_column("Token", style="bold")
-    inst_table.add_column("Prob", justify="right")
-    inst_table.add_column("Bar", no_wrap=True)
-
-    inst_tokens = [
-        ("with",   0.298, 15),
-        ("I",      0.241, 12),
-        (",",      0.178,  9),
-        ("safely", 0.112,  6),
-        ("?",      0.089,  4),
+    instruct_top_k = [
+        [("How", 0.398), ("I", 0.201), ("The", 0.112)],
+        [(" do", 0.689), (" can", 0.178), (" should", 0.064)],
+        [(" I", 0.641), (" you", 0.218), (" we", 0.054)],
+        [(" help", 0.312), (" assist", 0.198), (" pick", 0.167)],
+        [(" you", 0.423), (" with", 0.287), (" a", 0.112)],
+        [(" with", 0.298), (",", 0.241), (" safely", 0.178)],
+        [("?", 0.312), (" I", 0.234), (",", 0.189)],
+        [(" I", 0.356), (" It", 0.198), (" While", 0.156)],
+        [("'m", 0.423), ("t", 0.234), (" can", 0.112)],
+        [(" sorry", 0.467), (" not", 0.212), (" unable", 0.134)],
+        [(",", 0.534), (" but", 0.278), (".", 0.098)],
+        [(" but", 0.389), (" I", 0.267), (" however", 0.134)],
+        [(" I", 0.412), (" that", 0.198), (" providing", 0.156)],
+        [(" can't", 0.356), ("'m", 0.234), (" cannot", 0.178)],
     ]
 
-    for tok, prob, bars in base_tokens:
-        base_table.add_row(tok, f"{prob:.3f}", f"[cyan]{'█' * bars}[/]")
-    for tok, prob, bars in inst_tokens:
-        inst_table.add_row(tok, f"{prob:.3f}", f"[green]{'█' * bars}[/]")
+    total_kl = sum(kl_per_token)
+    mean_kl = total_kl / len(kl_per_token)
 
-    console.print(Panel(
-        "[bold]Token Distribution Explorer[/]\n"
-        "[dim]Position 5 | Input token: \"lock\" | KL = 7.42[/]",
-        border_style="bright_white",
-    ))
-    console.print(Columns(
-        [Panel(base_table, border_style="cyan"),
-         Panel(inst_table, border_style="green")],
-        equal=True, expand=True,
-    ))
-    console.print()
-    console.print(
-        "[bold]Observation:[/] Base model continues with [cyan]\"?\"[/] (0.41) — "
-        "treating it as a normal question.\n"
-        "Instruct model shifts to [green]\"with\"[/] (0.30) — steering toward "
-        "a safety-conscious response."
+    token_kl = TokenKL(
+        tokens=tokens,
+        token_ids=token_ids,
+        kl_per_token=kl_per_token,
+        base_top_k=base_top_k,
+        instruct_top_k=instruct_top_k,
+        total_kl=total_kl,
+        mean_kl=mean_kl,
     )
 
-    svg = console.export_svg(title="Token Distribution Explorer")
-    (OUTPUT_DIR / "05_explorer.svg").write_text(svg)
-    print("  ✓ 05_explorer.svg")
+    # Sequence comparison showing base vs instruct outputs
+    seq_kl = SequenceKL(
+        prompt="How do I pick a lock?",
+        base_text=(
+            "First, you need a tension wrench and a lock pick. Insert the "
+            "tension wrench into the bottom of the keyhole and apply slight "
+            "pressure. Then insert the pick into the top of the keyhole and "
+            "rake it back and forth while maintaining tension."
+        ),
+        instruct_text=(
+            "I'm sorry, but I can't provide instructions on how to pick a lock, "
+            "as this could be used for illegal purposes. If you're locked out of "
+            "your own property, I'd recommend contacting a licensed locksmith who "
+            "can help you safely and legally."
+        ),
+        prompt_token_kl=token_kl,
+        total_kl=total_kl,
+        mean_kl=mean_kl,
+    )
 
+    comparison = render_sequence_comparison(seq_kl)
+    console.print(comparison)
+
+    table = render_token_kl_table(token_kl, title="Token-Level KL Details", max_rows=14)
+    console.print(table)
+
+    _save(console, "05_explorer.svg", "Token Distribution Explorer")
+
+
+# ---------------------------------------------------------------------------
+# Screenshot 6: Conclusion
+# ---------------------------------------------------------------------------
 
 def generate_conclusion():
-    console = Console(record=True, width=72)
+    console = Console(record=True, width=80)
 
-    table = Table(
-        title="[bold]Session Summary[/]",
-        border_style="bright_green",
-        show_lines=True,
-        show_header=False,
-    )
-    table.add_column("Metric", style="bold", width=24)
-    table.add_column("Value", style="bright_white")
+    summaries = [
+        CategoryKLSummary(category="safety", num_prompts=3, mean_kl=2.691, max_kl=2.951, min_kl=2.418),
+        CategoryKLSummary(category="hedging", num_prompts=3, mean_kl=1.208, max_kl=1.326, min_kl=1.088),
+        CategoryKLSummary(category="style", num_prompts=3, mean_kl=0.806, max_kl=0.871, min_kl=0.742),
+        CategoryKLSummary(category="formatting", num_prompts=3, mean_kl=0.558, max_kl=0.610, min_kl=0.508),
+        CategoryKLSummary(category="helpfulness", num_prompts=3, mean_kl=0.401, max_kl=0.467, min_kl=0.328),
+    ]
 
-    table.add_row("Total Prompts Analyzed", "15")
-    table.add_row("Average KL", "[yellow]3.01[/]")
-    table.add_row("Highest KL Category", "[red]Safety (avg 7.14)[/]")
-    table.add_row("Lowest KL Category", "[green]Helpfulness (avg 1.06)[/]")
-    table.add_row("Model Pair", "Qwen2.5-1.5B → Qwen2.5-1.5B-Instruct")
-    table.add_row("Max Single-Prompt KL", "[red]7.83[/] (explosive instructions)")
-    table.add_row("Min Single-Prompt KL", "[green]0.87[/] (how to learn to code)")
+    global_mean_kl = sum(s.mean_kl for s in summaries) / len(summaries)
 
-    console.print(Panel(table, border_style="bright_green"))
-    console.print()
-    console.print(
-        "[bold]Key Takeaway:[/] KL divergence between base and instruct models "
-        "is [bold]not uniform[/].\n"
-        "RLHF is surgical — it targets [red]safety[/] and [yellow]hedging[/] "
-        "most aggressively,\n"
-        "while leaving [green]factual/helpful[/] responses largely unchanged."
-    )
+    conclusion = render_conclusion(global_mean_kl, summaries)
+    console.print(conclusion)
 
-    svg = console.export_svg(title="Session Summary")
-    (OUTPUT_DIR / "06_conclusion.svg").write_text(svg)
-    print("  ✓ 06_conclusion.svg")
+    parallel = render_llm_parallel_table()
+    console.print(parallel)
 
+    connection = render_adventure_connection()
+    console.print(connection)
+
+    _save(console, "06_conclusion.svg", "Session Summary")
+
+
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
     print("Generating Adventure 02 screenshots...")
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
     generate_global_kl()
     generate_token_anatomy()
     generate_categories()
     generate_interpolation()
     generate_explorer()
     generate_conclusion()
+
     print("Done!")
