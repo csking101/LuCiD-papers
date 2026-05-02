@@ -715,6 +715,23 @@
             width: 100%;
             display: block;
         }
+        .adventure-thumb-gallery {
+            margin-top: 12px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+        .adventure-thumb-gallery .adventure-thumb {
+            margin-top: 0;
+        }
+        .adventure-thumb-label {
+            font-size: 0.72em;
+            color: #484f58;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 4px;
+        }
 
         /* ============================================================
            RESPONSIVE / MOBILE
@@ -1596,8 +1613,28 @@
                         
                     </div>
                     
-                    <div class="adventure-thumb">
-                        <img src="../../adventures/01/01_grid_world.svg" alt="Path-Finding Preference Game preview" loading="lazy">
+                    <div class="adventure-thumb-gallery">
+                        
+                        <div class="adventure-thumb">
+                            <p class="adventure-thumb-label">Grid World & Pre-training</p>
+                            <img src="../../adventures/01/01_grid_world.svg" alt="Path-Finding Preference Game preview" loading="lazy">
+                        </div>
+                        
+                        <div class="adventure-thumb">
+                            <p class="adventure-thumb-label">Human Preference Collection</p>
+                            <img src="../../adventures/01/02_preferences.svg" alt="Path-Finding Preference Game preview" loading="lazy">
+                        </div>
+                        
+                        <div class="adventure-thumb">
+                            <p class="adventure-thumb-label">Reward Model Training</p>
+                            <img src="../../adventures/01/03_reward_model.svg" alt="Path-Finding Preference Game preview" loading="lazy">
+                        </div>
+                        
+                        <div class="adventure-thumb">
+                            <p class="adventure-thumb-label">Pre-trained vs RLHF Policy</p>
+                            <img src="../../adventures/01/05_comparison.svg" alt="Path-Finding Preference Game preview" loading="lazy">
+                        </div>
+                        
                     </div>
                     
                 </a>

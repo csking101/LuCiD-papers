@@ -129,19 +129,26 @@
         .badge-done { background: #3fb95033; color: #3fb950; }
         .badge-learning { background: #1f6feb33; color: #58a6ff; }
         .badge-upcoming { background: #21262d; color: #8b949e; }
-        .adventure-thumb {
-            margin-top: 12px;
-            display: flex;
-            gap: 10px;
-            overflow-x: auto;
-            padding-bottom: 6px;
+        .adventure-gallery {
+            margin-top: 16px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
         }
-        .adventure-thumb img {
-            height: 120px;
+        .adventure-gallery img {
+            width: 100%;
             border-radius: 6px;
             border: 1px solid #30363d;
             background: #0d1117;
-            flex-shrink: 0;
+            display: block;
+        }
+        .adventure-gallery .gallery-label {
+            font-size: 0.75em;
+            color: #484f58;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 4px;
         }
         footer {
             margin-top: 3em;
@@ -268,10 +275,27 @@
                 <span class="tag tag-mp4">Interactive CLI</span>
                 <span class="tag tag-png">201 Tests</span>
             </div>
-            <div class="adventure-thumb">
-                <img src="adventures/01/01_grid_world.svg" alt="Grid World" title="Grid World Environment">
-                <img src="adventures/01/03_reward_model.svg" alt="Reward Model" title="Reward Model Training">
-                <img src="adventures/01/05_comparison.svg" alt="Policy Comparison" title="Pre-trained vs RLHF Policy">
+            <div class="adventure-gallery">
+                <div>
+                    <p class="gallery-label">Phase 1 &mdash; Grid World &amp; Pre-training</p>
+                    <img src="adventures/01/01_grid_world.svg" alt="Grid World" title="Grid World Environment">
+                </div>
+                <div>
+                    <p class="gallery-label">Phase 2 &mdash; Human Preference Collection</p>
+                    <img src="adventures/01/02_preferences.svg" alt="Preferences" title="Human Preference Collection">
+                </div>
+                <div>
+                    <p class="gallery-label">Phase 3 &mdash; Reward Model Training</p>
+                    <img src="adventures/01/03_reward_model.svg" alt="Reward Model" title="Reward Model Training">
+                </div>
+                <div>
+                    <p class="gallery-label">Phase 4 &mdash; PPO Fine-Tuning with KL Penalty</p>
+                    <img src="adventures/01/04_ppo_training.svg" alt="PPO Training" title="PPO Fine-Tuning">
+                </div>
+                <div>
+                    <p class="gallery-label">Conclusion &mdash; Pre-trained vs RLHF Policy</p>
+                    <img src="adventures/01/05_comparison.svg" alt="Policy Comparison" title="Pre-trained vs RLHF Policy">
+                </div>
             </div>
             <p style="margin-top: 10px;">
                 <a href="https://github.com/csking101/LuCiD-papers/tree/main/coding-adventures/01-pathfinding-preference-game">View on GitHub</a>
@@ -294,10 +318,31 @@
                 <span class="tag tag-mp4">Interactive CLI</span>
                 <span class="tag tag-png">98 Tests</span>
             </div>
-            <div class="adventure-thumb">
-                <img src="adventures/02/01_global_kl.svg" alt="Global KL" title="Global KL Overview">
-                <img src="adventures/02/02_token_anatomy.svg" alt="Token Anatomy" title="Token-Level KL Anatomy">
-                <img src="adventures/02/04_interpolation.svg" alt="Interpolation" title="KL-Constrained Interpolation">
+            <div class="adventure-gallery">
+                <div>
+                    <p class="gallery-label">Phase 1 &mdash; Global KL Overview</p>
+                    <img src="adventures/02/01_global_kl.svg" alt="Global KL" title="Global KL Overview">
+                </div>
+                <div>
+                    <p class="gallery-label">Phase 2 &mdash; Token-Level KL Anatomy</p>
+                    <img src="adventures/02/02_token_anatomy.svg" alt="Token Anatomy" title="Token-Level KL Anatomy">
+                </div>
+                <div>
+                    <p class="gallery-label">Phase 3 &mdash; Category-Specific Divergence</p>
+                    <img src="adventures/02/03_categories.svg" alt="Categories" title="Category-Specific Divergence">
+                </div>
+                <div>
+                    <p class="gallery-label">Phase 4 &mdash; KL-Constrained Interpolated Generation</p>
+                    <img src="adventures/02/04_interpolation.svg" alt="Interpolation" title="KL-Constrained Interpolation">
+                </div>
+                <div>
+                    <p class="gallery-label">Phase 5 &mdash; Token Distribution Explorer</p>
+                    <img src="adventures/02/05_explorer.svg" alt="Explorer" title="Token Distribution Explorer">
+                </div>
+                <div>
+                    <p class="gallery-label">Conclusion &mdash; Session Summary</p>
+                    <img src="adventures/02/06_conclusion.svg" alt="Conclusion" title="Session Summary">
+                </div>
             </div>
             <p style="margin-top: 10px;">
                 <a href="https://github.com/csking101/LuCiD-papers/tree/main/coding-adventures/02-kl-divergence-llm-outputs">View on GitHub</a>

@@ -715,6 +715,23 @@
             width: 100%;
             display: block;
         }
+        .adventure-thumb-gallery {
+            margin-top: 12px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+        .adventure-thumb-gallery .adventure-thumb {
+            margin-top: 0;
+        }
+        .adventure-thumb-label {
+            font-size: 0.72em;
+            color: #484f58;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 4px;
+        }
 
         /* ============================================================
            RESPONSIVE / MOBILE
@@ -1507,8 +1524,28 @@
                         
                     </div>
                     
-                    <div class="adventure-thumb">
-                        <img src="../../adventures/02/01_global_kl.svg" alt="KL Divergence: Implication on LLM Outputs preview" loading="lazy">
+                    <div class="adventure-thumb-gallery">
+                        
+                        <div class="adventure-thumb">
+                            <p class="adventure-thumb-label">Global KL Overview</p>
+                            <img src="../../adventures/02/01_global_kl.svg" alt="KL Divergence: Implication on LLM Outputs preview" loading="lazy">
+                        </div>
+                        
+                        <div class="adventure-thumb">
+                            <p class="adventure-thumb-label">Category-Specific Divergence</p>
+                            <img src="../../adventures/02/03_categories.svg" alt="KL Divergence: Implication on LLM Outputs preview" loading="lazy">
+                        </div>
+                        
+                        <div class="adventure-thumb">
+                            <p class="adventure-thumb-label">KL-Constrained Interpolation</p>
+                            <img src="../../adventures/02/04_interpolation.svg" alt="KL Divergence: Implication on LLM Outputs preview" loading="lazy">
+                        </div>
+                        
+                        <div class="adventure-thumb">
+                            <p class="adventure-thumb-label">Session Summary</p>
+                            <img src="../../adventures/02/06_conclusion.svg" alt="KL Divergence: Implication on LLM Outputs preview" loading="lazy">
+                        </div>
+                        
                     </div>
                     
                 </a>

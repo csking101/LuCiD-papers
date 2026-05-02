@@ -455,7 +455,12 @@ PAGE_DATA = {
             "desc": "Full RLHF pipeline in a grid world \u2014 you are the human annotator. Pre-train an agent, rate trajectory pairs, train a Bradley-Terry reward model, and PPO fine-tune with KL penalty. 201 tests.",
             "url": "https://github.com/csking101/LuCiD-papers/tree/main/coding-adventures/01-pathfinding-preference-game",
             "tags": ["PyTorch", "Rich CLI", "RLHF", "PPO"],
-            "svg_thumb": "../../adventures/01/01_grid_world.svg",
+            "svg_thumbs": [
+                {"src": "../../adventures/01/01_grid_world.svg", "label": "Grid World & Pre-training"},
+                {"src": "../../adventures/01/02_preferences.svg", "label": "Human Preference Collection"},
+                {"src": "../../adventures/01/03_reward_model.svg", "label": "Reward Model Training"},
+                {"src": "../../adventures/01/05_comparison.svg", "label": "Pre-trained vs RLHF Policy"},
+            ],
         },
     ],
 }

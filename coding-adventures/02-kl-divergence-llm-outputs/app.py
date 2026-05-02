@@ -4,6 +4,7 @@ KL Divergence: Implication on LLM Outputs — Interactive Terminal App
 =====================================================================
 
 Run with:  python app.py
+Capture:   python app.py --capture screenshot_data.json
 
 Loads a base LLM and its RLHF-aligned variant side-by-side, then
 walks through how KL divergence manifests in real token distributions.
@@ -19,8 +20,12 @@ Phases:
 
 from __future__ import annotations
 
+import argparse
+import json
 import time
+from pathlib import Path
 
+import torch
 from rich.columns import Columns
 from rich.console import Console, Group
 from rich.panel import Panel
@@ -28,6 +33,10 @@ from rich.prompt import Prompt
 from rich.text import Text
 
 from kl import (
+    CategoryKLSummary,
+    InterpolatedOutput,
+    SequenceKL,
+    TokenKL,
     compute_category_summaries,
     compute_global_kl,
     compute_sequence_kl,
@@ -72,11 +81,65 @@ INTERPOLATION_ALPHAS = [0.0, 0.25, 0.5, 0.75, 1.0]
 
 console = Console()
 
+# Capture mode: set by --capture
+CAPTURE_MODE = False
+CAPTURE_DATA: dict = {}
+
 
 def pause(msg: str = "[dim]Press Enter to continue...[/dim]") -> None:
-    """Block until the user presses Enter."""
+    """Block until the user presses Enter (skipped in capture mode)."""
+    if CAPTURE_MODE:
+        return
     console.print()
     input(msg)
+
+
+def _token_kl_to_dict(tkl: TokenKL) -> dict:
+    """Serialize a TokenKL to a JSON-safe dict."""
+    return {
+        "tokens": tkl.tokens,
+        "token_ids": tkl.token_ids,
+        "kl_per_token": tkl.kl_per_token,
+        "base_top_k": tkl.base_top_k,
+        "instruct_top_k": tkl.instruct_top_k,
+        "total_kl": tkl.total_kl,
+        "mean_kl": tkl.mean_kl,
+    }
+
+
+def _seq_kl_to_dict(skl: SequenceKL) -> dict:
+    """Serialize a SequenceKL to a JSON-safe dict."""
+    return {
+        "prompt": skl.prompt,
+        "base_text": skl.base_text,
+        "instruct_text": skl.instruct_text,
+        "prompt_token_kl": _token_kl_to_dict(skl.prompt_token_kl),
+        "total_kl": skl.total_kl,
+        "mean_kl": skl.mean_kl,
+    }
+
+
+def _interp_to_dict(out: InterpolatedOutput) -> dict:
+    """Serialize an InterpolatedOutput to a JSON-safe dict."""
+    return {
+        "alpha": out.alpha,
+        "text": out.text,
+        "token_ids": out.token_ids,
+        "tokens": out.tokens,
+        "kl_per_token": out.kl_per_token,
+        "total_kl": out.total_kl,
+    }
+
+
+def _cat_summary_to_dict(s: CategoryKLSummary) -> dict:
+    """Serialize a CategoryKLSummary to a JSON-safe dict."""
+    return {
+        "category": s.category,
+        "num_prompts": s.num_prompts,
+        "mean_kl": s.mean_kl,
+        "max_kl": s.max_kl,
+        "min_kl": s.min_kl,
+    }
 
 
 # ── Phase 1 ─────────────────────────────────────────────────────────
@@ -94,6 +157,13 @@ def run_phase1(pair: ModelPair) -> tuple[float, list[float]]:
     global_mean, per_prompt = compute_global_kl(pair, all_texts)
 
     console.print(render_global_kl(global_mean, per_prompt, all_texts))
+
+    if CAPTURE_MODE:
+        CAPTURE_DATA["phase1"] = {
+            "global_mean": float(global_mean),
+            "per_prompt_kl": [float(x) for x in per_prompt],
+            "prompt_texts": all_texts,
+        }
 
     return global_mean, per_prompt
 
@@ -127,6 +197,13 @@ def run_phase2(pair: ModelPair) -> None:
     seq_kl = compute_sequence_kl(pair, prompt_obj.text, max_new_tokens=MAX_NEW_TOKENS)
     console.print(render_sequence_comparison(seq_kl))
 
+    if CAPTURE_MODE:
+        CAPTURE_DATA["phase2"] = {
+            "token_kl": _token_kl_to_dict(token_kl),
+            "seq_kl": _seq_kl_to_dict(seq_kl),
+            "prompt_text": prompt_obj.text,
+        }
+
 
 # ── Phase 3 ─────────────────────────────────────────────────────────
 
@@ -152,6 +229,11 @@ def run_phase3(pair: ModelPair) -> list:
     summaries = compute_category_summaries(pair, PROMPTS_BY_CATEGORY)
     console.print(render_category_summaries(summaries))
 
+    if CAPTURE_MODE:
+        CAPTURE_DATA["phase3"] = {
+            "summaries": [_cat_summary_to_dict(s) for s in summaries],
+        }
+
     return summaries
 
 
@@ -174,10 +256,15 @@ def run_phase4(pair: ModelPair) -> None:
     # Let user choose a prompt or use default
     default_prompt = "What are some tips for learning a new programming language?"
     console.print(f"[dim]Default prompt: \"{default_prompt}\"[/]")
-    user_input = Prompt.ask(
-        "Enter a prompt (or press Enter for default)",
-        default=default_prompt,
-    )
+
+    if CAPTURE_MODE:
+        user_input = default_prompt
+        console.print(f"[dim]Auto-selecting default prompt[/]")
+    else:
+        user_input = Prompt.ask(
+            "Enter a prompt (or press Enter for default)",
+            default=default_prompt,
+        )
 
     console.print(f"\n[dim]Generating at {len(INTERPOLATION_ALPHAS)} alpha values...[/]")
 
@@ -193,6 +280,12 @@ def run_phase4(pair: ModelPair) -> None:
     console.print()
     console.print(render_interpolated_outputs(outputs, user_input))
 
+    if CAPTURE_MODE:
+        CAPTURE_DATA["phase4"] = {
+            "prompt": user_input,
+            "outputs": [_interp_to_dict(o) for o in outputs],
+        }
+
 
 # ── Phase 5 ─────────────────────────────────────────────────────────
 
@@ -207,6 +300,34 @@ def run_phase5(pair: ModelPair) -> None:
         "a creative writing task, or an opinion question to see how\n"
         "KL divergence varies across domains.[/]\n"
     )
+
+    # In capture mode, use curated prompts for the explorer screenshot
+    if CAPTURE_MODE:
+        explorer_prompts = [
+            "How do I pick a lock?",  # safety — high KL
+            "What is 2+2?",           # factual — low KL
+        ]
+        explorer_data = []
+        for user_input in explorer_prompts:
+            console.print(f"\n[bold cyan]Prompt:[/] {user_input}")
+            console.print("[dim]Analysing...[/]")
+            base_tl, inst_tl = get_logits_pair(pair, user_input)
+            token_kl = compute_token_kl(base_tl, inst_tl, pair.tokenizer, top_k=5)
+            console.print(render_token_kl_table(token_kl, title=f"KL for: \"{user_input}\""))
+            console.print(render_kl_heatmap(token_kl))
+
+            console.print("[dim]Generating continuations...[/]")
+            seq_kl = compute_sequence_kl(pair, user_input, max_new_tokens=MAX_NEW_TOKENS)
+            console.print(render_sequence_comparison(seq_kl))
+
+            explorer_data.append({
+                "prompt": user_input,
+                "token_kl": _token_kl_to_dict(token_kl),
+                "seq_kl": _seq_kl_to_dict(seq_kl),
+            })
+
+        CAPTURE_DATA["phase5"] = {"explorer": explorer_data}
+        return
 
     while True:
         user_input = Prompt.ask("\n[bold cyan]Prompt[/]")
@@ -249,9 +370,26 @@ def run_phase6(
 # ── Main ────────────────────────────────────────────────────────────
 
 def main():
+    global CAPTURE_MODE
+
+    parser = argparse.ArgumentParser(
+        description="KL Divergence: Implication on LLM Outputs",
+    )
+    parser.add_argument(
+        "--capture", type=str, default=None,
+        help="Path to write captured visualization data (JSON) for screenshots",
+    )
+    args = parser.parse_args()
+
+    if args.capture:
+        CAPTURE_MODE = True
+        torch.manual_seed(42)
+        console.print("[bold yellow]Capture mode enabled[/] — fixed prompts, no pauses\n")
+
     # Welcome
     console.print(render_welcome())
-    input()  # wait for Enter
+    if not CAPTURE_MODE:
+        input()  # wait for Enter
 
     # Load models
     console.clear()
@@ -297,6 +435,12 @@ def main():
         "[bold bright_cyan]Thank you for exploring KL divergence "
         "in LLM outputs![/]"
     )
+
+    # Dump captured data
+    if CAPTURE_MODE and args.capture:
+        out_path = Path(args.capture)
+        out_path.write_text(json.dumps(CAPTURE_DATA, indent=2))
+        console.print(f"\n[bold green]Captured data written to {out_path}[/]")
 
 
 if __name__ == "__main__":

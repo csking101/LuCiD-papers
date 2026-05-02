@@ -715,6 +715,23 @@
             width: 100%;
             display: block;
         }
+        .adventure-thumb-gallery {
+            margin-top: 12px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+        .adventure-thumb-gallery .adventure-thumb {
+            margin-top: 0;
+        }
+        .adventure-thumb-label {
+            font-size: 0.72em;
+            color: #484f58;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 4px;
+        }
 
         /* ============================================================
            RESPONSIVE / MOBILE
@@ -885,7 +902,16 @@
                         <span class="adventure-tag">{{ tag }}</span>
                         {% endfor %}
                     </div>
-                    {% if adv.get('svg_thumb') %}
+                    {% if adv.get('svg_thumbs') %}
+                    <div class="adventure-thumb-gallery">
+                        {% for thumb in adv.svg_thumbs %}
+                        <div class="adventure-thumb">
+                            {% if thumb.get('label') %}<p class="adventure-thumb-label">{{ thumb.label }}</p>{% endif %}
+                            <img src="{{ thumb.src }}" alt="{{ adv.title }} preview" loading="lazy">
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% elif adv.get('svg_thumb') %}
                     <div class="adventure-thumb">
                         <img src="{{ adv.svg_thumb }}" alt="{{ adv.title }} preview" loading="lazy">
                     </div>

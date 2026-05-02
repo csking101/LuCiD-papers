@@ -4,6 +4,7 @@ Path-Finding Preference Game — Interactive Terminal App
 ========================================================
 
 Run with:  python app.py
+Capture:   python app.py --capture screenshot_data.json
 
 An interactive RLHF demo in the terminal using Rich.  Walks through
 four phases that mirror LLM alignment:
@@ -16,8 +17,11 @@ four phases that mirror LLM alignment:
 
 from __future__ import annotations
 
+import argparse
 import copy
+import json
 import time
+from pathlib import Path
 from typing import Optional
 
 import numpy as np
@@ -29,7 +33,7 @@ from rich.panel import Panel
 from rich.prompt import Prompt
 from rich.text import Text
 
-from env import GridWorld
+from env import COIN, GEM, PICKUP_VALUES, GridWorld, Trajectory
 from policy import EpisodeMetrics, PolicyNetwork, compute_policy_kl
 from preferences import PreferenceDatabase
 from reward_model import RewardModel, RMTrainMetrics, bradley_terry_prob
@@ -74,14 +78,57 @@ TRAJ_TEMPERATURE = 1.5
 
 console = Console()
 
+# Capture mode: set by --capture, controls auto-pause/auto-preference
+CAPTURE_MODE = False
+CAPTURE_DATA: dict = {}
+
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 def pause(msg: str = "[dim]Press Enter to continue...[/dim]") -> None:
-    """Block until the user presses Enter."""
+    """Block until the user presses Enter (skipped in capture mode)."""
+    if CAPTURE_MODE:
+        return
     console.print()
     input(msg)
+
+
+def auto_preference(traj_a: Trajectory, traj_b: Trajectory) -> str:
+    """Mixed/natural auto-preference: prefer shorter paths with more pickups.
+
+    Score = -length + 3 * num_pickups_collected + 1 * reached_goal * 5
+    Ties → skip.
+    """
+    def score(t: Trajectory) -> float:
+        return (-t.length
+                + 3 * len(t.pickups_collected)
+                + 5 * int(t.reached_goal)
+                - 0.5 * t.num_turns)
+
+    sa, sb = score(traj_a), score(traj_b)
+    if sa > sb + 0.5:
+        return "1"
+    elif sb > sa + 0.5:
+        return "2"
+    return "s"
+
+
+def _traj_to_dict(traj: Trajectory) -> dict:
+    """Serialize a Trajectory to a JSON-safe dict."""
+    return {
+        "positions": traj.positions,
+        "actions": traj.actions,
+        "rewards": traj.rewards,
+        "done": traj.done,
+        "reached_goal": traj.reached_goal,
+        "pickups_collected": traj.pickups_collected,
+        "length": traj.length,
+        "num_turns": traj.num_turns,
+        "unique_cells": traj.unique_cells,
+        "pickup_reward": traj.pickup_reward,
+        "total_reward": traj.total_reward,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -179,6 +226,18 @@ def run_phase1(env: GridWorld, policy: PolicyNetwork) -> None:
     console.print(render_nn_forward(nn_info))
     console.print()
 
+    # Capture Phase 1 data
+    if CAPTURE_MODE:
+        # Find a good representative trajectory (deterministic rollout)
+        demo_traj = env.rollout(
+            lambda o: policy.get_action(o, deterministic=True)
+        )
+        CAPTURE_DATA["phase1"] = {
+            "demo_traj": _traj_to_dict(demo_traj),
+            "policy_map": policy_map.tolist(),
+            "val_map": val_map.tolist(),
+        }
+
 
 # ---------------------------------------------------------------------------
 # Phase 2: Preference collection
@@ -220,11 +279,16 @@ def run_phase2(
             console.print(pattern_text)
 
         console.print()
-        choice = Prompt.ask(
-            "Which path do you prefer?",
-            choices=["1", "2", "s"],
-            default="1",
-        )
+
+        if CAPTURE_MODE:
+            choice = auto_preference(traj_a, traj_b)
+            console.print(f"[dim]Auto-preference: {choice}[/]")
+        else:
+            choice = Prompt.ask(
+                "Which path do you prefer?",
+                choices=["1", "2", "s"],
+                default="1",
+            )
 
         if choice == "1":
             pref_db.add(traj_a, traj_b, 0.0)  # A preferred
@@ -232,6 +296,15 @@ def run_phase2(
             pref_db.add(traj_a, traj_b, 1.0)  # B preferred
         else:
             pref_db.add(traj_a, traj_b, 0.5)  # skip / tie
+
+        # Capture a representative pair (around the middle, pair ~12)
+        if CAPTURE_MODE and i == min(12, len(pairs) - 1):
+            CAPTURE_DATA["phase2"] = {
+                "traj_a": _traj_to_dict(traj_a),
+                "traj_b": _traj_to_dict(traj_b),
+                "pair_num": i,
+                "total_pairs": NUM_PREFERENCE_PAIRS,
+            }
 
     console.print()
     counts = pref_db.count_by_preference()
@@ -259,6 +332,10 @@ def run_phase3(
     console.print(render_phase_header(3))
     console.print(render_rm_architecture())
     console.print()
+
+    # Track last metrics + last spot check for capture
+    _last_rm_metrics = {}
+    _last_spot_check = {}
 
     with Live(console=console, refresh_per_second=8, transient=False) as live:
         def callback(metrics: RMTrainMetrics):
@@ -295,11 +372,24 @@ def run_phase3(
                     r_b = rm.trajectory_reward(sb).item()
                 prob_a = bradley_terry_prob(rm, sa, sb)
                 spot = render_rm_spot_check(idx, r_a, r_b, prob_a, pair.label)
+                _last_spot_check.update({
+                    "pair_idx": int(idx), "r_a": r_a, "r_b": r_b,
+                    "prob_a": prob_a, "human_label": pair.label,
+                })
             else:
                 spot = Text("")
 
             row = Columns([heatmap, metrics_panel], equal=True, expand=True)
             live.update(Group(row, spot))
+
+            # Store for capture
+            _last_rm_metrics.update({
+                "loss_history": [float(x) for x in metrics.loss_history],
+                "accuracy_history": [float(x) for x in metrics.accuracy_history],
+                "final_loss": float(metrics.loss),
+                "final_accuracy": float(metrics.accuracy),
+                "rm_heatmap": heatmap_data.tolist(),
+            })
 
         train_rm(rm, pref_db, epochs=RM_EPOCHS, callback=callback)
 
@@ -307,6 +397,12 @@ def run_phase3(
         Panel("[bold cyan]Reward model training complete![/]", border_style="cyan")
     )
     console.print()
+
+    if CAPTURE_MODE:
+        CAPTURE_DATA["phase3"] = {
+            **_last_rm_metrics,
+            "spot_check": _last_spot_check,
+        }
 
 
 # ---------------------------------------------------------------------------
@@ -326,6 +422,8 @@ def run_phase4(
     pretrained_traj = env.rollout(
         lambda obs: pretrained_policy.get_action(obs, deterministic=True)
     )
+
+    _last_rlhf_metrics = {}
 
     with Live(console=console, refresh_per_second=6, transient=False) as live:
         def callback(metrics: EpisodeMetrics):
@@ -395,6 +493,15 @@ def run_phase4(
 
             live.update(Group(grids_row, mid_row))
 
+            # Store for capture
+            _last_rlhf_metrics.update({
+                "reward_history": [float(x) for x in metrics.rm_score_history],
+                "kl_history": [float(x) for x in metrics.kl_history],
+                "goal_rate_history": [float(x) for x in metrics.goal_rate_history],
+                "entropy_history": [float(x) for x in (metrics.entropy_history or [])],
+                "policy_loss_history": [float(x) for x in metrics.policy_loss_history],
+            })
+
         rlhf_train(
             env, policy, rm, pretrained_policy,
             episodes=RLHF_EPISODES,
@@ -424,6 +531,16 @@ def run_phase4(
     rl_map = policy.policy_heatmap(env.size, env=env)
     console.print(render_policy_comparison(pt_map, rl_map, env))
     console.print()
+
+    # Capture Phase 4 data
+    if CAPTURE_MODE:
+        val_map = policy.value_heatmap(env.size)
+        CAPTURE_DATA["phase4"] = {
+            **_last_rlhf_metrics,
+            "val_map": val_map.tolist(),
+            "rlhf_policy_map": rl_map.tolist(),
+            "pretrained_traj": _traj_to_dict(pretrained_traj),
+        }
 
 
 # ---------------------------------------------------------------------------
@@ -481,11 +598,36 @@ def run_conclusion(
     # LLM parallel table
     console.print(render_llm_parallel_table())
 
+    # Capture conclusion data
+    if CAPTURE_MODE:
+        CAPTURE_DATA["conclusion"] = {
+            "pt_stats": pt_stats,
+            "rl_stats": rl_stats,
+            "pt_traj": _traj_to_dict(pt_traj),
+            "rl_traj": _traj_to_dict(rl_traj),
+            "kl": float(kl),
+            "pt_map": pt_map.tolist(),
+            "rl_map": rl_map.tolist(),
+        }
+
 
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 def main():
+    global CAPTURE_MODE
+
+    parser = argparse.ArgumentParser(description="Path-Finding Preference Game")
+    parser.add_argument(
+        "--capture", type=str, default=None,
+        help="Path to write captured visualization data (JSON) for screenshots",
+    )
+    args = parser.parse_args()
+
+    if args.capture:
+        CAPTURE_MODE = True
+        console.print("[bold yellow]Capture mode enabled[/] — auto-preferences, no pauses\n")
+
     # Seed for reproducibility
     torch.manual_seed(42)
     np.random.seed(42)
@@ -498,7 +640,8 @@ def main():
 
     # Welcome
     console.print(render_welcome())
-    input()  # wait for Enter
+    if not CAPTURE_MODE:
+        input()  # wait for Enter
 
     # Phase 1: Pre-training
     console.clear()
@@ -538,6 +681,12 @@ def main():
         "[bold bright_cyan]Thank you for playing the Path-Finding "
         "Preference Game![/]"
     )
+
+    # Dump captured data
+    if CAPTURE_MODE and args.capture:
+        out_path = Path(args.capture)
+        out_path.write_text(json.dumps(CAPTURE_DATA, indent=2))
+        console.print(f"\n[bold green]Captured data written to {out_path}[/]")
 
 
 if __name__ == "__main__":

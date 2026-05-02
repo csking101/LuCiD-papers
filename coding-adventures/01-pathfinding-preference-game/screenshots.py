@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
-"""Generate SVG screenshots for Adventure 01 using the real viz.py functions.
+"""Generate SVG screenshots for Adventure 01 from real captured data.
 
-Constructs mock data objects (GridWorld, Trajectory, policy maps, etc.) and
-passes them to the actual rendering functions, so the screenshots are
-pixel-perfect matches of what users see in the terminal.
+Loads ``screenshot_data.json`` (produced by ``app.py --capture``) and
+reconstructs the data objects needed by ``viz.py``, so the screenshots
+are pixel-perfect renderings of actual training runs — not synthetic data.
 
-No GPU or torch training required -- just numpy + rich.
+Usage::
+
+    python screenshots.py                     # uses ./screenshot_data.json
+    python screenshots.py path/to/data.json   # custom path
 """
 
+import json
 import sys
 from pathlib import Path
 
@@ -16,24 +20,14 @@ import numpy as np
 # Add adventure dir to path so we can import local modules
 sys.path.insert(0, str(Path(__file__).parent))
 
-from rich.console import Console, Group
+from rich.console import Console
 
-from env import (
-    ACTION_DELTAS,
-    COIN,
-    GEM,
-    NUM_ACTIONS,
-    SIZE,
-    WALL,
-    GridWorld,
-    Trajectory,
-)
+from env import GridWorld, Trajectory
 from viz import (
     render_grid,
     render_heatmap,
-    render_llm_parallel_table,
     render_metrics_table,
-    render_nn_forward,
+    render_llm_parallel_table,
     render_phase_header,
     render_policy_arrows,
     render_policy_comparison,
@@ -48,53 +42,48 @@ OUTPUT_DIR = Path(__file__).parent / ".." / ".." / "docs" / "adventures" / "01"
 
 
 # ---------------------------------------------------------------------------
-# Helpers
+# Deserialization helpers
 # ---------------------------------------------------------------------------
 
-def _build_trajectory(
-    env: GridWorld,
-    positions: list[tuple[int, int]],
-    reached_goal: bool = True,
-) -> Trajectory:
-    """Build a Trajectory from a list of (row, col) positions."""
-    states = [np.array([r / env.size, c / env.size], dtype=np.float32)
+def _dict_to_traj(d: dict) -> Trajectory:
+    """Reconstruct a Trajectory from a serialized JSON dict.
+
+    The JSON format comes from ``_traj_to_dict()`` in ``app.py``:
+    positions, actions, rewards, done, reached_goal, pickups_collected,
+    length, num_turns, unique_cells, pickup_reward, total_reward.
+    """
+    positions = [tuple(p) for p in d["positions"]]
+    actions = d["actions"]
+    rewards = d["rewards"]
+    pickups_collected = [tuple(pc) for pc in d["pickups_collected"]]
+
+    # Reconstruct normalised state vectors from positions
+    size = 8  # default grid size
+    states = [np.array([r / size, c / size], dtype=np.float32)
               for r, c in positions]
 
-    # Derive actions from consecutive positions
-    actions = []
-    for (r1, c1), (r2, c2) in zip(positions[:-1], positions[1:]):
-        dr, dc = r2 - r1, c2 - c1
-        for a, (ar, ac) in enumerate(ACTION_DELTAS):
-            if (ar, ac) == (dr, dc):
-                actions.append(a)
-                break
-        else:
-            actions.append(3)  # default RIGHT
-
-    # Determine collected pickups along this path
-    collected = []
-    seen = set()
-    for r, c in positions:
-        if (r, c) in env.initial_pickups and (r, c) not in seen:
-            collected.append((r, c, env.initial_pickups[(r, c)]))
-            seen.add((r, c))
-
-    # Simple synthetic rewards
-    rewards = [-0.01] * len(actions)
-    if reached_goal:
-        rewards[-1] = 10.0
+    # log_probs and values aren't captured — fill with plausible dummies
+    n_actions = len(actions)
+    log_probs = [-1.0] * n_actions
+    values = [float(i) / max(n_actions, 1) * 8.0 for i in range(n_actions)]
 
     return Trajectory(
         states=states,
         actions=actions,
         rewards=rewards,
         positions=positions,
-        log_probs=[-1.2] * len(actions),
-        values=[float(i) / len(actions) * 8.0 for i in range(len(actions))],
-        done=True,
-        reached_goal=reached_goal,
-        pickups_collected=collected,
+        log_probs=log_probs,
+        values=values,
+        done=d["done"],
+        reached_goal=d["reached_goal"],
+        pickups_collected=pickups_collected,
     )
+
+
+def _load_data(path: Path) -> dict:
+    """Load and return the captured JSON data."""
+    with open(path) as f:
+        return json.load(f)
 
 
 def _save(console: Console, filename: str, title: str) -> None:
@@ -104,85 +93,45 @@ def _save(console: Console, filename: str, title: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Screenshot 1: Grid World with a sample path
+# Screenshot 1: Grid World with a real demo trajectory
 # ---------------------------------------------------------------------------
 
-def generate_grid_world():
+def generate_grid_world(data: dict):
     console = Console(record=True, width=80)
     env = GridWorld()
 
-    # A realistic path: S→ right along top, down through gap, across middle,
-    # down through bottom gap, to goal. Collects some pickups along the way.
-    path_positions = [
-        (0, 0), (0, 1), (1, 1),  # start, grab coin at (1,1)
-        (1, 0), (2, 0), (2, 1),  # down and through wall gap
-        (3, 1),                    # grab coin at (3,1)
-        (3, 2), (4, 2),           # middle corridor
-        (4, 4), (3, 4), (3, 5),   # around barrier, grab coin at (3,5)
-        (3, 6),                    # grab gem at (3,6)
-        (4, 6),                    # grab coin at (4,6)
-        (5, 6), (5, 7),           # through bottom gap
-        (6, 7), (7, 7),           # to goal
-    ]
-
-    traj = _build_trajectory(env, path_positions, reached_goal=True)
+    traj = _dict_to_traj(data["phase1"]["demo_traj"])
 
     grid = render_grid(
         env,
         path=traj.positions,
         path_style="bold cyan",
-        title="Agent Path (Episode 142)",
+        title=f"Agent Path (Episode — Pre-training Demo)",
         show_stats=True,
         traj=traj,
     )
     console.print(grid)
 
-    svg = console.export_svg(title="Grid World Environment")
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    (OUTPUT_DIR / "01_grid_world.svg").write_text(svg)
-    print("  ✓ 01_grid_world.svg")
+    _save(console, "01_grid_world.svg", "Grid World Environment")
 
 
 # ---------------------------------------------------------------------------
 # Screenshot 2: Preference pair comparison
 # ---------------------------------------------------------------------------
 
-def generate_preferences():
+def generate_preferences(data: dict):
     console = Console(record=True, width=90)
     env = GridWorld()
 
-    # Path A: efficient, shorter, fewer pickups
-    path_a = [
-        (0, 0), (0, 1), (1, 1), (1, 0),
-        (2, 0), (2, 1), (3, 1), (3, 2),
-        (4, 2), (4, 4), (5, 4 + 2), (5, 7),  # skip to gap
-        (6, 7), (7, 7),
-    ]
-    # Fix: walk through valid cells only
-    path_a = [
-        (0, 0), (0, 1), (1, 1), (1, 0),
-        (2, 0), (2, 1), (3, 1), (3, 2),
-        (4, 2), (4, 4), (3, 4), (3, 5),
-        (4, 5 + 1), (5, 6), (5, 7),
-        (6, 7), (7, 7),
-    ]
+    traj_a = _dict_to_traj(data["phase2"]["traj_a"])
+    traj_b = _dict_to_traj(data["phase2"]["traj_b"])
+    pair_num = data["phase2"]["pair_num"]
+    total_pairs = data["phase2"]["total_pairs"]
 
-    # Path B: scenic detour, more pickups including gem at (0,7)
-    path_b = [
-        (0, 0), (0, 1), (0, 2), (0, 3), (0, 4),  # coin at (0,4)
-        (0, 5), (0, 6), (0, 7),  # gem at (0,7)
-        (1, 7), (1, 6), (1, 5), (1, 3), (1, 2),
-        (2, 1), (2, 0), (3, 0), (3, 1),  # coin at (3,1)
-        (3, 2), (4, 2), (4, 4),
-        (3, 4), (3, 5), (3, 6),  # gem at (3,6)
-        (4, 6),  # coin at (4,6)
-        (5, 6), (5, 7), (6, 7), (7, 7),
-    ]
-
-    traj_a = _build_trajectory(env, path_a, reached_goal=True)
-    traj_b = _build_trajectory(env, path_b, reached_goal=True)
-
-    pair_display = render_preference_pair(env, traj_a, traj_b, pair_num=12, total_pairs=30)
+    pair_display = render_preference_pair(
+        env, traj_a, traj_b,
+        pair_num=pair_num, total_pairs=total_pairs,
+    )
     console.print(pair_display)
 
     _save(console, "02_preferences.svg", "Human Preference Collection")
@@ -192,35 +141,44 @@ def generate_preferences():
 # Screenshot 3: Reward Model training
 # ---------------------------------------------------------------------------
 
-def generate_reward_model():
+def generate_reward_model(data: dict):
     console = Console(record=True, width=80)
+    p3 = data["phase3"]
 
     # RM architecture (static display)
     arch = render_rm_architecture()
     console.print(arch)
 
-    # Metrics with realistic training curves
-    loss_vals = [0.693, 0.641, 0.584, 0.512, 0.447, 0.381, 0.319, 0.264,
-                 0.218, 0.189, 0.156, 0.134, 0.119, 0.111]
-    acc_vals = [0.50, 0.55, 0.62, 0.68, 0.73, 0.78, 0.82, 0.84,
-                0.87, 0.89, 0.91, 0.92, 0.93, 0.933]
+    # Metrics from real training
+    loss_vals = p3["loss_history"]
+    acc_vals = p3["accuracy_history"]
 
     metrics = {
-        "Train Loss": (f"{loss_vals[-1]:.4f}", sparkline(loss_vals)),
-        "Val Loss": (f"{loss_vals[-1] * 1.85:.4f}", sparkline([v * 1.85 for v in loss_vals])),
-        "Accuracy": (f"{acc_vals[-1]:.1%}", sparkline(acc_vals)),
-        "Epoch": ("100 / 100", ""),
+        "Train Loss": (f"{p3['final_loss']:.4f}", sparkline(loss_vals)),
+        "Accuracy": (f"{p3['final_accuracy']:.1%}", sparkline(acc_vals)),
+        "Epoch": (f"{len(loss_vals)} / {len(loss_vals)}", ""),
     }
     metrics_panel = render_metrics_table(metrics, title="Reward Model Training")
     console.print(metrics_panel)
 
-    # Spot-check of an RM prediction
+    # RM heatmap — real learned reward values
+    rm_heatmap = np.array(p3["rm_heatmap"], dtype=np.float32)
+    env = GridWorld()
+    heatmap = render_heatmap(
+        rm_heatmap, env,
+        title="Learned Reward r(s)",
+        border_style="cyan",
+    )
+    console.print(heatmap)
+
+    # Spot-check of a real RM prediction
+    sc = p3["spot_check"]
     spot = render_rm_spot_check(
-        pair_idx=7,
-        r_a=4.82,
-        r_b=2.31,
-        prob_a=0.92,
-        human_label=0.0,  # human preferred A
+        pair_idx=sc["pair_idx"],
+        r_a=sc["r_a"],
+        r_b=sc["r_b"],
+        prob_a=sc["prob_a"],
+        human_label=sc["human_label"],
     )
     console.print(spot)
 
@@ -231,58 +189,39 @@ def generate_reward_model():
 # Screenshot 4: PPO fine-tuning dashboard
 # ---------------------------------------------------------------------------
 
-def generate_ppo_training():
+def generate_ppo_training(data: dict):
     console = Console(record=True, width=90)
     env = GridWorld()
+    p4 = data["phase4"]
 
     # Phase header
     header = render_phase_header(4)
     console.print(header)
 
-    # Training metrics with realistic RLHF curves
-    reward_vals = [1.2, 2.1, 3.4, 4.8, 5.9, 6.7, 7.5, 8.1, 8.7, 9.1, 9.5, 9.8, 10.0]
-    kl_vals = [0.0, 0.008, 0.019, 0.035, 0.058, 0.082, 0.109, 0.134, 0.157, 0.178, 0.195, 0.209, 0.218]
-    goal_vals = [0.42, 0.46, 0.52, 0.58, 0.64, 0.70, 0.75, 0.80, 0.84, 0.87, 0.90, 0.91, 0.92]
-    entropy_vals = [1.386, 1.35, 1.30, 1.25, 1.19, 1.14, 1.10, 1.06, 1.03, 1.00, 0.98, 0.96, 0.958]
+    # Training metrics from real PPO run
+    reward_vals = p4["reward_history"]
+    kl_vals = p4["kl_history"]
+    goal_vals = p4["goal_rate_history"]
+    entropy_vals = p4["entropy_history"]
 
     metrics = {
         "RM Score": (f"{reward_vals[-1]:.2f}", sparkline(reward_vals)),
         "Goal Rate": (f"{goal_vals[-1]:.0%}", sparkline(goal_vals)),
         "KL Divergence": (f"{kl_vals[-1]:.3f}", sparkline(kl_vals)),
         "Entropy": (f"{entropy_vals[-1]:.3f}", sparkline(entropy_vals)),
-        "β (KL coeff)": ("0.200", ""),
-        "Episode": ("100 / 100", ""),
+        "Episode": (f"{len(reward_vals)} / {len(reward_vals)}", ""),
     }
     metrics_panel = render_metrics_table(metrics, title="PPO Fine-Tuning")
     console.print(metrics_panel)
 
-    # Value heatmap — higher values near goal, lower near start
-    values = np.zeros((SIZE, SIZE), dtype=np.float32)
-    for r in range(SIZE):
-        for c in range(SIZE):
-            if env.grid[r, c] != WALL:
-                # Distance-based value: closer to goal = higher
-                dist = abs(r - 7) + abs(c - 7)
-                values[r, c] = max(0, 10.0 - dist * 0.7) + np.random.uniform(0, 0.5)
-    heatmap = render_heatmap(values, env, title="Value Heatmap V(s)", border_style="magenta")
+    # Value heatmap from real training
+    val_map = np.array(p4["val_map"], dtype=np.float32)
+    heatmap = render_heatmap(val_map, env, title="Value Heatmap V(s)", border_style="magenta")
     console.print(heatmap)
 
-    # Policy arrows — mostly pointing toward goal with some exploration
-    policy_map = np.zeros((SIZE, SIZE), dtype=int)
-    for r in range(SIZE):
-        for c in range(SIZE):
-            if env.grid[r, c] == WALL:
-                continue
-            # Generally: go down if above goal row, go right if left of goal col
-            if r < 7 and c < 7:
-                policy_map[r, c] = 1 if r < c else 3  # DOWN or RIGHT
-            elif r < 7:
-                policy_map[r, c] = 1  # DOWN
-            elif c < 7:
-                policy_map[r, c] = 3  # RIGHT
-            else:
-                policy_map[r, c] = 3  # at goal, default RIGHT
-    arrows = render_policy_arrows(policy_map, env, title="RLHF Policy (Greedy)")
+    # Policy arrows from real RLHF policy
+    rlhf_policy = np.array(p4["rlhf_policy_map"], dtype=int)
+    arrows = render_policy_arrows(rlhf_policy, env, title="RLHF Policy (Greedy)")
     console.print(arrows)
 
     _save(console, "04_ppo_training.svg", "PPO Fine-Tuning with KL Penalty")
@@ -292,62 +231,21 @@ def generate_ppo_training():
 # Screenshot 5: Pre-trained vs RLHF comparison
 # ---------------------------------------------------------------------------
 
-def generate_comparison():
+def generate_comparison(data: dict):
     console = Console(record=True, width=90)
     env = GridWorld()
+    conc = data["conclusion"]
 
-    # Pre-trained policy: somewhat random, biased toward goal but noisy
-    rng = np.random.RandomState(42)
-    pretrained_map = np.zeros((SIZE, SIZE), dtype=int)
-    for r in range(SIZE):
-        for c in range(SIZE):
-            if env.grid[r, c] == WALL:
-                continue
-            # Noisy goal-seeking: 60% optimal, 40% random
-            if rng.random() < 0.6:
-                if r < 7 and c < 7:
-                    pretrained_map[r, c] = 1 if r <= c else 3
-                elif r < 7:
-                    pretrained_map[r, c] = 1
-                elif c < 7:
-                    pretrained_map[r, c] = 3
-            else:
-                pretrained_map[r, c] = rng.randint(0, NUM_ACTIONS)
-
-    # RLHF policy: cleaner, more consistent goal-seeking + detours for pickups
-    rlhf_map = np.zeros((SIZE, SIZE), dtype=int)
-    for r in range(SIZE):
-        for c in range(SIZE):
-            if env.grid[r, c] == WALL:
-                continue
-            # Strong goal-seeking with pickup awareness
-            if r < 7 and c < 7:
-                rlhf_map[r, c] = 1 if r < c else 3  # DOWN or RIGHT
-            elif r < 7:
-                rlhf_map[r, c] = 1  # DOWN
-            elif c < 7:
-                rlhf_map[r, c] = 3  # RIGHT
-            else:
-                rlhf_map[r, c] = 3
+    # Real policy maps
+    pt_map = np.array(conc["pt_map"], dtype=int)
+    rl_map = np.array(conc["rl_map"], dtype=int)
 
     # Policy comparison (3-column: pre-trained, RLHF, diff)
-    comparison = render_policy_comparison(pretrained_map, rlhf_map, env)
+    comparison = render_policy_comparison(pt_map, rl_map, env)
     console.print(comparison)
 
-    # Results summary table
-    pretrained_stats = {
-        "Goal Rate (%)": 44.0,
-        "Avg Steps": 23.6,
-        "Avg Reward": 3.21,
-        "Avg Pickups": 1.8,
-    }
-    rlhf_stats = {
-        "Goal Rate (%)": 92.0,
-        "Avg Steps": 15.4,
-        "Avg Reward": 9.87,
-        "Avg Pickups": 4.2,
-    }
-    summary = render_results_summary(pretrained_stats, rlhf_stats)
+    # Results summary from real evaluation
+    summary = render_results_summary(conc["pt_stats"], conc["rl_stats"])
     console.print(summary)
 
     # LLM parallel mapping table
@@ -362,15 +260,23 @@ def generate_comparison():
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
+    data_path = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(__file__).parent / "screenshot_data.json"
+
+    if not data_path.exists():
+        print(f"Error: {data_path} not found.")
+        print("Run 'python app.py --capture screenshot_data.json' first.")
+        sys.exit(1)
+
+    data = _load_data(data_path)
+    print(f"Loaded capture data from {data_path}")
     print("Generating Adventure 01 screenshots...")
+
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    np.random.seed(42)
-
-    generate_grid_world()
-    generate_preferences()
-    generate_reward_model()
-    generate_ppo_training()
-    generate_comparison()
+    generate_grid_world(data)
+    generate_preferences(data)
+    generate_reward_model(data)
+    generate_ppo_training(data)
+    generate_comparison(data)
 
     print("Done!")
